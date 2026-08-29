@@ -1,0 +1,17 @@
+﻿RegistryBasePath: "./registries"
+
+Datapacks:
+  - DatapackPath: "./datapacks/my_datapack"
+    RewardNamespace: "bacap_rewards"
+    LanguagePackPath: "./resourcepacks/lang_pack"
+
+    # Access mode for the datapack.
+    # Possible values: ReadOnly, ReadWrite
+    Access: ReadOnly
+
+    AdvancementMessageSettings:
+      Entries:
+        # A mapping of advancement tiers to their specific configurations.
+        # Possible keys: Challenge, Goal, Task, etc.
+        Challenge:
+          MessagePrefix: "Awesome!"
