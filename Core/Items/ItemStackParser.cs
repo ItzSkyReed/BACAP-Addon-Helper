@@ -75,8 +75,8 @@ public static class ItemStackParser
                 return item;
             },
             ParserParts.IdentifierParser,
-            ComponentsBlock.Optional()
-        ).Between(Whitespace);
+            Parser.Try(ComponentsBlock).Optional()
+        );
 
     /// <summary>
     /// Parses a raw item stack string into an <see cref="ItemStack"/> instance.
