@@ -24,7 +24,10 @@
         {
             // /give parser
             Register("give", Parser.Map(ICommand (target, _, item, countOpt) =>
-                    new GiveCommand(target, item, countOpt.GetValueOrDefault(1)),
+                {
+                    int? parsedCount = countOpt.HasValue ? countOpt.Value : null;
+                    return new GiveCommand(target, item, parsedCount);
+                },
                 CommandArgsParser.TargetSelector,
                 CommandArgsParser.Whitespace,
                 ItemStackParser.Item,
@@ -68,6 +71,9 @@
 
             // /xp alias
             Register("xp", ExperienceCommandParser.Parser);
+
+            // /function
+            Register("function", FunctionCommandParser.Parser);
         }
 
         /// <summary>
@@ -121,6 +127,10 @@
                 command = result.Value;
                 return true;
             }
+
+
+            // Console.WriteLine($"[yellow]Pidgin Error:[/] {result.Error}\n");
+            // Console.WriteLine(input);
 
             command = null;
             return false;

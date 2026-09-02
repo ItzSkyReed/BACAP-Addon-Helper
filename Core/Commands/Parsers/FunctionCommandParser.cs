@@ -19,7 +19,7 @@ public static class FunctionCommandParser
             .AtLeastOnceString();
 
     private static readonly Parser<char, string> NameParser =
-        Map((hash, id) => hash.GetValueOrDefault() + id,
+        Map((hash, id) => (hash.HasValue ? "#" : "") + id,
             Try(Char('#')).Optional(),
             IdentifierParser);
 
