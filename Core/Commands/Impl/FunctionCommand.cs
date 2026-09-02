@@ -55,7 +55,7 @@ public record FunctionCommand(
         var sb = new StringBuilder($"function {CommandName}");
 
         if (Arguments != null)
-            sb.Append($" {Arguments}");
+            sb.Append($" {Arguments.ToSnbtString(pretty: false)}");
 
         else if (WithSourceType != FunctionWithSourceType.None)
         {
