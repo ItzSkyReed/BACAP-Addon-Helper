@@ -5,66 +5,52 @@ using BacapGenerator.Services;
 using BacapGenerator.Utils;
 using Core.Advancements.Models;
 using Core.TextComponents.Components;
+using Core.TextComponents.Extensions;
 using JetBrains.Annotations;
 
 namespace BacapGenerator.Models.Advancements;
 
 /// <summary>
 /// Represents a valid, playable BACAP advancement with UI elements and rewards.
+/// Contains purely in-memory state.
 /// </summary>
 public class BacapAdvancement : ManagedAdvancement
 {
     private BacapAdvancementTab _tab;
     private BacapAdvancementTier _tier;
-    private string _mcPath;
-    public IReadOnlyDatapack Datapack { get; }
 
-    public MacroFunction MacroFunction { get; private set; } = null!;
-    public ExpRewardFunction ExpRewardFunction { get; private set; } = null!;
-    public MsgFunction MsgFunction { get; private set; } = null!;
-    public ItemRewardFunction ItemRewardFunction { get; private set; } = null!;
-    public TrophyRewardFunction TrophyRewardFunction { get; private set; } = null!;
+    public MacroFunction MacroFunction { get; internal set; } = null!;
+    public ExpRewardFunction ExpRewardFunction { get; internal set; } = null!;
+    public MsgFunction MsgFunction { get; internal set; } = null!;
+    public ItemRewardFunction ItemRewardFunction { get; internal set; } = null!;
+    public TrophyRewardFunction TrophyRewardFunction { get; internal set; } = null!;
 
-
-    private BacapAdvancement(FileInfo file, Advancement advancement, IReadOnlyDatapack datapack, BacapAdvancementTab tab,
-        BacapAdvancementTier tier, string mcPath)
-        : base(file, advancement)
+    private BacapAdvancement(FileInfo file, Advancement advancement, IReadOnlyDatapack datapack, BacapAdvancementTab tab, BacapAdvancementTier tier)
+        : base(file, advancement, datapack)
     {
         ArgumentNullException.ThrowIfNull(advancement);
         _tab = tab;
         _tier = tier;
-        _mcPath = mcPath;
-        Datapack = datapack;
     }
-
 
     /// <summary>
     /// Attempts to validate and create a new BacapAdvancement.
     /// Used by factories to avoid throwing exceptions on invalid JSON files.
     /// </summary>
-    /// <param name="file">The physical file information.</param>
-    /// <param name="advancement">The parsed Core JSON model.</param>
-    /// <param name="datapack">The datapack of the advancement</param>
-    /// <param name="result">The resulting object if validation succeeds.</param>
-    /// <param name="errorMessage">The error message if validation fails.</param>
-    /// <returns>True if the advancement is valid BACAP format; otherwise, false.</returns>
     public static bool TryCreate(
         FileInfo file,
         Advancement advancement,
         IReadOnlyDatapack datapack,
         out BacapAdvancement? result,
-        out string? errorMessage)
+        out AdvancementValidationError error)
     {
         result = null;
 
-        // Use the shared validation logic
-        if (!TryValidate(file, advancement, datapack, out var tab, out var tier, out var mcpath, out errorMessage))
-            return false; // Creation failed, no exception thrown
+        if (!TryValidate(file, advancement, out var tab, out var tier, out error))
+            return false;
 
+        result = new BacapAdvancement(file, advancement, datapack, tab, tier);
 
-        result = new BacapAdvancement(file, advancement, datapack, tab, tier, mcpath);
-
-        UpdateFilePaths(result);
 
         return true;
     }
@@ -75,115 +61,93 @@ public class BacapAdvancement : ManagedAdvancement
     private static bool TryValidate(
         FileInfo file,
         Advancement advancement,
-        IReadOnlyDatapack datapack,
         out BacapAdvancementTab tab,
         out BacapAdvancementTier tier,
-        out string mcpath,
-        out string? errorMessage)
+        out AdvancementValidationError errorMessage)
     {
         tab = null!;
         tier = default;
-        mcpath = string.Empty;
-        errorMessage = null;
+        errorMessage = AdvancementValidationError.Unknown;
 
         if (advancement.Display?.Title is null)
         {
-            errorMessage = "A valid BACAP advancement must contain a Display with a Title.";
+            errorMessage = AdvancementValidationError.MissingDisplay;
             return false;
         }
 
         if (string.IsNullOrWhiteSpace(advancement.Rewards?.Function))
         {
-            errorMessage = "A valid BACAP advancement must contain a Reward Function.";
+            errorMessage = AdvancementValidationError.MissingRewardFunction;
             return false;
         }
 
         if (!BacapUtils.TryExtractTab(advancement.Rewards.Function, out var tabName) ||
             !BacapAdvancementTab.TryFromFolderName(tabName, out tab!))
         {
-            errorMessage = "Unknown or missing BACAP advancement tab in Reward Function.";
+            errorMessage = AdvancementValidationError.NotParsableTier;
             return false;
         }
 
         var color = advancement.Display.Description?.GetTag<string>("color");
 
-        if (!BacapTierResolver.TryResolve(
-                filename: file.Name,
+        if (BacapTierResolver.TryResolve(
+                filename: Path.GetFileNameWithoutExtension(file.Name),
                 tab: tab,
                 hidden: advancement.Display.Hidden,
                 frame: advancement.Display.Frame,
                 descriptionColor: color,
                 out tier))
-        {
-            errorMessage = $"Unable to resolve BACAP tier for file '{file.Name}'.";
-            return false;
-        }
+            return true;
+        errorMessage = AdvancementValidationError.NotParsableTier;
+        return false;
 
-        var relativePath = Path.GetRelativePath(datapack.DatapackDataPath.ToString(), file.FullName);
-
-        mcpath = MinecraftUtils.ToMinecraftPath(relativePath);
-
-        return true;
     }
 
-    public override string ToString() => $"{GetType().Name}({File}): {_mcPath} {Tier}";
+    public override string ToString() => $"{GetType().Name}({File}): {McPath} {Tier}";
 
     /// <summary>
     /// Gets or sets the <see cref="Advancement"/> object.
     /// Mutating this property validates the new state.
     /// </summary>
-    /// <exception cref="ArgumentNullException">Thrown when setting a null value.</exception>
-    /// <exception cref="ArgumentException">Thrown when the new advancement data breaks BACAP rules.</exception>
     /// <summary>
     /// Gets or sets the <see cref="Advancement"/> object.
     /// Mutating this property validates the new state.
     /// </summary>
-    /// <exception cref="ArgumentNullException">Thrown when setting a null value.</exception>
-    /// <exception cref="ArgumentException">Thrown when the new advancement data breaks BACAP rules.</exception>
+    // ReSharper disable once AnnotationConflictInHierarchy
+    // ReSharper disable once UseNullableReferenceTypesAnnotationSyntax
     public override Advancement Advancement
     {
         get => base.Advancement!;
+#pragma warning disable CS8765 // Nullability of type of parameter doesn't match overridden member (possibly because of nullability attributes).
         set
+#pragma warning restore CS8765 // Nullability of type of parameter doesn't match overridden member (possibly because of nullability attributes).
         {
             EnsureMutable();
-            ArgumentNullException.ThrowIfNull(value);
+            ArgumentNullException.ThrowIfNull(value); // 3. Отсекаем null в рантайме
 
-            // Pass 'Datapack' context here to correctly resolve the relative path inside TryValidate.
-            // If validation fails, we MUST throw to prevent invalid state.
-            if (!TryValidate(File, value, Datapack, out var newTab, out var newTier, out var newMcPath, out var error))
+            if (!TryValidate(File, value, out var newTab, out var newTier, out var error))
             {
                 throw new ArgumentException($"Cannot update advancement: {error}", nameof(value));
             }
 
-            DeleteFilesFromDisk();
-
-            // Apply the new valid state
+            // Apply the new valid state. Disk is NOT touched.
             _tab = newTab;
             _tier = newTier;
-            _mcPath = newMcPath;
             base.Advancement = value;
 
             Sync();
-            UpdateFilePaths(this);
+            UpdateFunctionFilePaths();
         }
     }
 
-
-    /// <summary>
-    /// Gets or sets the translation key string for the advancement title.
-    /// </summary>
-    /// <exception cref="ArgumentException">Thrown when attempting to set a null, empty, or whitespace string.</exception>
-    /// <example>
-    /// <code>
-    /// adv.TitleText = "advancements.adventure.kill_a_mob.title";
-    /// </code>
-    /// </example>
     public string TitleText
     {
+        [PublicAPI]
         get => (TitleComponent as TranslatableComponent)?.Translate
                ?? (TitleComponent as PlainTextComponent)?.Text
                ?? TitleComponent.ToString()!;
 
+        [PublicAPI]
         set
         {
             EnsureMutable();
@@ -192,21 +156,14 @@ public class BacapAdvancement : ManagedAdvancement
         }
     }
 
-    /// <summary>
-    /// Gets or sets the root <see cref="TextComponent"/> for the advancement title.
-    /// </summary>
-    /// <exception cref="ArgumentNullException">Thrown when value is null.</exception>
-    /// <exception cref="InvalidOperationException">Thrown when advancement data or display is missing.</exception>
-    /// <example>
-    /// <code>
-    /// adv.TitleComponent = new TranslatableComponent("my.adv.key", Style: new TextStyle(Color: "gold"));
-    /// </code>
-    /// </example>
+    [PublicAPI] public string FullDescriptionText => DescriptionComponent.ExtractPlainText();
+
+    [PublicAPI] public string CleanDescriptionText => DescriptionComponent.ExtractFirstParagraph();
+
     [PublicAPI]
     public TextComponent TitleComponent
     {
         get => Advancement.Display!.Title!;
-
         set
         {
             EnsureMutable();
@@ -216,40 +173,75 @@ public class BacapAdvancement : ManagedAdvancement
                 throw new InvalidOperationException("Cannot set Title on an uninitialized advancement Data object.");
 
             var currentDisplay = Advancement.Display ?? new AdvancementDisplay();
-
             Advancement = Advancement with { Display = currentDisplay with { Title = value } };
 
             Sync();
         }
     }
 
-    [PublicAPI]
-    public string McPath
+    public string DescriptionText
     {
-        get => _mcPath;
+        [PublicAPI]
+        get => (DescriptionComponent as TranslatableComponent)?.Translate
+               ?? (DescriptionComponent as PlainTextComponent)?.Text
+               ?? DescriptionComponent.ToString()!;
 
+        [PublicAPI]
         set
         {
-            if (_mcPath == value) return;
-
             EnsureMutable();
+            ArgumentException.ThrowIfNullOrEmpty(value);
+            DescriptionComponent = new TranslatableComponent(value);
+        }
+    }
 
-            DeleteFilesFromDisk();
+    [PublicAPI]
+    public TextComponent DescriptionComponent
+    {
+        get => Advancement.Display!.Description!;
+        set
+        {
+            EnsureMutable();
+            ArgumentNullException.ThrowIfNull(value);
 
-            _mcPath = value;
+            if (Advancement == null)
+                throw new InvalidOperationException("Cannot set Description on an uninitialized advancement Data object.");
 
-            var physicalPath = MinecraftUtils.ResolvePhysicalPath(Datapack.DatapackDataPath.ToString(), "advancement", _mcPath);
-            File = new FileInfo(physicalPath);
+            var currentDisplay = Advancement.Display ?? new AdvancementDisplay();
+            Advancement = Advancement with { Display = currentDisplay with { Description = value } };
 
             Sync();
-            UpdateFilePaths(this);
         }
     }
 
     /// <summary>
-    /// Gets or sets the predefined <see cref="BacapAdvancementTab"/>.
+    /// Gets or sets the Minecraft path (McPath) of the BACAP advancement.
     /// </summary>
-    /// <exception cref="ArgumentNullException">Thrown when setting a null value.</exception>
+    /// <remarks>
+    /// Overrides the base implementation to synchronize attached functions and update function file paths after the base file update.
+    /// </remarks>
+    /// <exception cref="InvalidOperationException">Thrown when attempting to modify a read-only instance.</exception>
+    /// <example>
+    /// <code>
+    /// bacapAdvancement.McPath = "bacap:tab/advancement_name";
+    /// </code>
+    /// </example>
+    [PublicAPI]
+    public override string McPath
+    {
+        get => base.McPath;
+        set
+        {
+            if (base.McPath == value)
+                return;
+
+            base.McPath = value;
+
+            Sync();
+            UpdateFunctionFilePaths();
+        }
+    }
+
     [PublicAPI]
     public BacapAdvancementTab Tab
     {
@@ -259,8 +251,7 @@ public class BacapAdvancement : ManagedAdvancement
             EnsureMutable();
             ArgumentNullException.ThrowIfNull(value);
 
-            if (_tab == value)
-                return;
+            if (_tab == value) return;
 
             var currentFunc = Advancement.Rewards!.Function!;
             var updatedFunction = MinecraftUtils.ReplaceFirstPathSegment(currentFunc, value.FolderName);
@@ -273,18 +264,13 @@ public class BacapAdvancement : ManagedAdvancement
                 }
             };
 
-            DeleteFilesFromDisk();
-
-            UpdateFilePaths(this);
-
             _tab = value;
+
             Sync();
+            UpdateFunctionFilePaths();
         }
     }
 
-    /// <summary>
-    /// Gets or sets the parent McPath string.
-    /// </summary>
     [PublicAPI]
     public string? Parent
     {
@@ -295,17 +281,10 @@ public class BacapAdvancement : ManagedAdvancement
             if (Tier != BacapAdvancementTier.Root)
                 ArgumentNullException.ThrowIfNull(value);
 
-            Advancement = Advancement with
-            {
-                Parent = value
-            };
+            Advancement = Advancement with { Parent = value };
         }
     }
 
-
-    /// <summary>
-    /// Gets or sets the predefined BACAP advancement <see cref="BacapAdvancementTier"/>.
-    /// </summary>
     public BacapAdvancementTier Tier
     {
         get => _tier;
@@ -316,15 +295,10 @@ public class BacapAdvancement : ManagedAdvancement
                 throw new ArgumentException("Creating Root advancements is not allowed");
 
             _tier = value;
-
             Sync();
         }
     }
 
-    /// <summary>
-    /// Synchronizes all internal ASTs and models in memory without touching the disk.
-    /// Called automatically when mutable properties change.
-    /// </summary>
     [PublicAPI]
     public void Sync()
     {
@@ -338,70 +312,22 @@ public class BacapAdvancement : ManagedAdvancement
     }
 
     /// <summary>
-    /// Flushes all changes to disk. Acts like a database commit.
+    /// Recalculates and updates the FileInfo references of attached functions based on the current state.
+    /// Does NOT instantiate new function objects, ensuring the AST is preserved in memory.
     /// </summary>
-    [PublicAPI]
-    public void Save()
+    private void UpdateFunctionFilePaths()
     {
-        EnsureMutable();
+        var relativePath = $"{MinecraftUtils.StripNamespace(Advancement.Rewards!.Function!)}.mcfunction";
+        var basePath = Path.Combine(Datapack.DatapackDataPath.ToString(), Datapack.Settings.RewardNamespace, "function");
 
-        Sync();
+        MacroFunction.File = new FileInfo(Path.Combine(basePath, relativePath));
 
-        File.Directory?.Create();
-        System.IO.File.WriteAllText(File.FullName, Advancement.ToJson());
-        File.Refresh();
+        MsgFunction.File = new FileInfo(Path.Combine(basePath, "msg", relativePath));
 
-        MacroFunction.WriteFile();
-        MsgFunction.WriteFile();
-        ExpRewardFunction.WriteFile();
-        ItemRewardFunction.WriteFile();
-        TrophyRewardFunction.WriteFile();
-    }
+        ExpRewardFunction.File = new FileInfo(Path.Combine(basePath, "exp", relativePath));
 
-    /// <summary>
-    /// Deletes the advancement JSON and all associated function files from their current paths on disk.
-    /// </summary>
-    private void DeleteFilesFromDisk()
-    {
-        EnsureMutable();
+        ItemRewardFunction.File = new FileInfo(Path.Combine(basePath, "reward", relativePath));
 
-        if (File.Exists) File.Delete();
-
-        DeleteIfExists(MacroFunction.File);
-        DeleteIfExists(MsgFunction.File);
-        DeleteIfExists(ExpRewardFunction.File);
-        DeleteIfExists(ItemRewardFunction.File);
-        DeleteIfExists(TrophyRewardFunction.File);
-        return;
-
-        static void DeleteIfExists(FileInfo fileInfo)
-        {
-            if (fileInfo.Exists) fileInfo.Delete();
-        }
-    }
-
-    /// <summary>
-    /// Recalculates and updates FileInfo references for the advancement and all sub-functions based on the new tab.
-    /// </summary>
-    private static void UpdateFilePaths(BacapAdvancement advancement)
-    {
-        var relativePath = $"{MinecraftUtils.StripNamespace(advancement.Advancement.Rewards!.Function!)}.mcfunction";
-
-        var macroPath = Path.Combine(advancement.Datapack.DatapackDataPath.ToString(),
-            advancement.Datapack.Settings.RewardNamespace, "function", relativePath);
-        var msgPath = Path.Combine(advancement.Datapack.DatapackDataPath.ToString(),
-            advancement.Datapack.Settings.RewardNamespace, "function", "msg", relativePath);
-        var expRewardPath = Path.Combine(advancement.Datapack.DatapackDataPath.ToString(),
-            advancement.Datapack.Settings.RewardNamespace, "function", "exp", relativePath);
-        var itemRewardPath = Path.Combine(advancement.Datapack.DatapackDataPath.ToString(),
-            advancement.Datapack.Settings.RewardNamespace, "function", "reward", relativePath);
-        var trophyRewardPath = Path.Combine(advancement.Datapack.DatapackDataPath.ToString(),
-            advancement.Datapack.Settings.RewardNamespace, "function", "trophy", relativePath);
-
-        advancement.MacroFunction = new MacroFunction(new FileInfo(macroPath), advancement);
-        advancement.MsgFunction = new MsgFunction(new FileInfo(msgPath), advancement);
-        advancement.ExpRewardFunction = new ExpRewardFunction(new FileInfo(expRewardPath), advancement);
-        advancement.ItemRewardFunction = new ItemRewardFunction(new FileInfo(itemRewardPath), advancement);
-        advancement.TrophyRewardFunction = new TrophyRewardFunction(new FileInfo(trophyRewardPath), advancement);
+        TrophyRewardFunction.File = new FileInfo(Path.Combine(basePath, "trophy", relativePath));
     }
 }

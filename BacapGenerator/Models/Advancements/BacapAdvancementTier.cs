@@ -2,11 +2,11 @@
 
 public enum BacapAdvancementTier
 {
+    Root,
     Task,
     Goal,
     Challenge,
     SuperChallenge,
-    Root,
     Milestone,
     AdvancementLegend,
     Hidden

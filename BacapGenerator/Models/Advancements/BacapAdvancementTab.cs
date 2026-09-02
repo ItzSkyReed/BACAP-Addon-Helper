@@ -18,33 +18,40 @@ public sealed record BacapAdvancementTab
     /// </summary>
     public string DisplayName { get; }
 
-    private BacapAdvancementTab(string folderName, string displayName)
+    /// <summary>
+    /// Gets the color associated with the advancement.
+    /// </summary>
+    public string Color { get; }
+
+    private BacapAdvancementTab(string folderName, string displayName, string color)
     {
         FolderName = folderName;
         DisplayName = displayName;
+        Color = color;
     }
 
-    public static readonly BacapAdvancementTab Adventure = new("adventure", "Adventure");
-    public static readonly BacapAdvancementTab Animal = new("animal", "Animals");
-    public static readonly BacapAdvancementTab Bacap = new("bacap", "B&C Advancements");
-    public static readonly BacapAdvancementTab Biomes = new("biomes", "Biomes");
-    public static readonly BacapAdvancementTab Building = new("building", "Building");
-    public static readonly BacapAdvancementTab Challenges = new("challenges", "Super Challenges");
-    public static readonly BacapAdvancementTab Enchanting = new("enchanting", "Enchanting");
-    public static readonly BacapAdvancementTab End = new("end", "The End");
-    public static readonly BacapAdvancementTab Farming = new("farming", "Farming");
-    public static readonly BacapAdvancementTab Mining = new("mining", "Mining");
-    public static readonly BacapAdvancementTab Monsters = new("monsters", "Monsters");
-    public static readonly BacapAdvancementTab Nether = new("nether", "Nether");
-    public static readonly BacapAdvancementTab Potion = new("potion", "Potions");
-    public static readonly BacapAdvancementTab Redstone = new("redstone", "Redstone");
-    public static readonly BacapAdvancementTab Statistics = new("statistics", "Statistics");
-    public static readonly BacapAdvancementTab Weaponry = new("weaponry", "Weaponry");
+    public static readonly BacapAdvancementTab Adventure = new("adventure", "Adventure", "#FFD966");
+    public static readonly BacapAdvancementTab Animal = new("animal", "Animals", "#6AA84F");
+    public static readonly BacapAdvancementTab Bacap = new("bacap", "B&C Advancements", "#F6B26B");
+    public static readonly BacapAdvancementTab Biomes = new("biomes", "Biomes", "#6AA84F");
+    public static readonly BacapAdvancementTab Building = new("building", "Building", "#E69138");
+    public static readonly BacapAdvancementTab Challenges = new("challenges", "Super Challenges", "#FF0003");
+    public static readonly BacapAdvancementTab Enchanting = new("enchanting", "Enchanting", "5B2AFF");
+    public static readonly BacapAdvancementTab End = new("end", "The End", "#FFF2CC");
+    public static readonly BacapAdvancementTab Farming = new("farming", "Farming", "#CCAC66");
+    public static readonly BacapAdvancementTab Mining = new("mining", "Mining", "#999999");
+    public static readonly BacapAdvancementTab Monsters = new("monsters", "Monsters", "#93AF90");
+    public static readonly BacapAdvancementTab Nether = new("nether", "Nether", "#E06666");
+    public static readonly BacapAdvancementTab Potion = new("potion", "Potions", "#FFD966");
+    public static readonly BacapAdvancementTab Redstone = new("redstone", "Redstone", "#CC0000");
+    public static readonly BacapAdvancementTab Statistics = new("statistics", "Statistics", "#E69138");
+    public static readonly BacapAdvancementTab Weaponry = new("weaponry", "Weaponry", "#9D7F56");
 
     /// <summary>
     /// Gets the collection of all predefined tabs.
     /// </summary>
-    public static IReadOnlyCollection<BacapAdvancementTab> All { get; } = [
+    public static IReadOnlyCollection<BacapAdvancementTab> All { get; } =
+    [
         Adventure, Animal, Bacap, Biomes, Building, Challenges,
         Enchanting, End, Farming, Mining, Monsters, Nether,
         Potion, Redstone, Statistics, Weaponry
@@ -66,7 +73,6 @@ public sealed record BacapAdvancementTab
 
         tab = null;
         return false;
-
     }
 
     /// <summary>
