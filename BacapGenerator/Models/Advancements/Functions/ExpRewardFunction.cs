@@ -36,12 +36,13 @@ public sealed class ExpRewardFunction : BaseFunction
 
     /// <summary>
     /// Initializes a new instance of the <see cref="ExpRewardFunction"/> class
-    /// and attempts to parse the existing experience amount from the file.
+    /// and attempts to parse the existing experience amount from the memory AST.
     /// </summary>
     /// <param name="file">The physical file information.</param>
+    /// <param name="parsedFunction">The parsed McFunction AST data.</param>
     /// <param name="bacapAdvancement">The BACAP advancement model associated with this function.</param>
-    public ExpRewardFunction(FileInfo file, BacapAdvancement bacapAdvancement)
-        : base(file, bacapAdvancement)
+    internal ExpRewardFunction(FileInfo file, McFunction parsedFunction, BacapAdvancement bacapAdvancement)
+        : base(file, parsedFunction, bacapAdvancement)
     {
         ParseExistingExperience();
     }
@@ -54,24 +55,33 @@ public sealed class ExpRewardFunction : BaseFunction
     [PublicAPI]
     public override void Update()
     {
-        // Build new commands
         var xpCommand = new ExperienceCommand(ExperienceAction.Add, Selector.SelectedPlayer, _experienceAmount);
         var tellrawCommand = CreateExperienceMessage(_experienceAmount);
 
         var xpLine = new ExecutableLine(xpCommand);
         var tellrawLine = new ExecutableLine(tellrawCommand);
 
-        // Find existing command indices directly through the AST!
         var xpIndex = Function.Lines.FindIndex(line =>
-            line is ExecutableLine { Command: ExperienceCommand { Action: ExperienceAction.Add } expCmd } &&
-            expCmd.Target == Selector.SelectedPlayer
-        );
+        {
+            if (line is ExecutableLine { Command: ExperienceCommand { Action: ExperienceAction.Add } expCmd })
+                return expCmd.Target == Selector.SelectedPlayer;
+
+            return false;
+        });
 
         var tellrawIndex = Function.Lines.FindIndex(line =>
-            line is ExecutableLine { Command: TellrawCommand tellCmd } &&
-            tellCmd.Target == Selector.SelectedPlayer &&
-            tellCmd.Message.ToJson().Contains("Experience", StringComparison.OrdinalIgnoreCase)
-        );
+        {
+            if (line is not ExecutableLine { Command: TellrawCommand tellCmd })
+                return false;
+
+            if (tellCmd.Target != Selector.SelectedPlayer) return false;
+
+            var hasExperienceTag = tellCmd.Message.Extra?.Any(extraComp =>
+                extraComp is TranslatableComponent { Translate: "Experience" }
+            ) ?? false;
+
+            return hasExperienceTag;
+        });
 
         // Replace or Insert XP Command
         if (xpIndex >= 0)
@@ -91,8 +101,10 @@ public sealed class ExpRewardFunction : BaseFunction
 
     /// <summary>
     /// Creates the specific tellraw command for the experience reward announcement.
-    /// Example: tellraw @s {"color":"blue","text":" +[exp],"extra":[{"translate":"Experience"}]}
     /// </summary>
+    /// <example>
+    /// tellraw @s {"color":"blue","text":" +[exp],"extra":[{"translate":"Experience"}]}
+    /// </example>
     private static TellrawCommand CreateExperienceMessage(int amount)
     {
         var rootMessage = new PlainTextComponent(
