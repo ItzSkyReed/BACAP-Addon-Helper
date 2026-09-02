@@ -110,13 +110,14 @@ public record TrimComponent(
     {
         var builder = Snbt.Compound();
 
+        if (MaterialId != null) builder.Put("material", MaterialId);
+        else if (InlineMaterial != null) builder.Put("material", InlineMaterial.ToSnbt());
+        else throw new InvalidOperationException("TrimComponent must contain either a MaterialId or an InlineMaterial.");
+
         if (PatternId != null) builder.Put("pattern", PatternId);
         else if (InlinePattern != null) builder.Put("pattern", InlinePattern.ToSnbt());
         else throw new InvalidOperationException("TrimComponent must contain either a PatternId or an InlinePattern.");
 
-        if (MaterialId != null) builder.Put("material", MaterialId);
-        else if (InlineMaterial != null) builder.Put("material", InlineMaterial.ToSnbt());
-        else throw new InvalidOperationException("TrimComponent must contain either a MaterialId or an InlineMaterial.");
 
         builder.PutOptional("show_in_tooltip", ShowInTooltip, true);
 

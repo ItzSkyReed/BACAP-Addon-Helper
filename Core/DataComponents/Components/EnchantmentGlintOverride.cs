@@ -1,7 +1,6 @@
 ﻿using Core.SNBT.Interfaces;
 using Core.SNBT.Nodes;
 using JetBrains.Annotations;
-
 using Core.DataComponents.Interfaces;
 
 namespace Core.DataComponents.Components;
@@ -15,30 +14,31 @@ namespace Core.DataComponents.Components;
 [UsedImplicitly]
 public record EnchantmentGlintOverrideComponent(
     bool Value
-) : IByteComponent<EnchantmentGlintOverrideComponent>
+) : IFlexibleComponent<EnchantmentGlintOverrideComponent>
 {
     /// <inheritdoc/>
     public static string ComponentId => "minecraft:enchantment_glint_override";
 
     /// <summary>
     /// Parses an <see cref="EnchantmentGlintOverrideComponent"/> from an SNBT node representation.
+    /// Supports both <see cref="SnbtByte"/> and <see cref="SnbtBool"/> nodes.
     /// </summary>
-    /// <param name="byteNode">The SNBT node to parse, which must be an <see cref="SnbtByte"/> representing a boolean.</param>
+    /// <param name="node">The SNBT node to parse.</param>
     /// <returns>A populated <see cref="EnchantmentGlintOverrideComponent"/> instance.</returns>
-    /// <example>
-    /// <code>
-    /// var node = SnbtParser.Parse("false");
-    /// var component = EnchantmentGlintOverrideComponent.Parse(node);
-    /// </code>
-    /// </example>
-    public static EnchantmentGlintOverrideComponent Parse(SnbtByte byteNode)
+    public static EnchantmentGlintOverrideComponent Parse(ISnbtNode node)
     {
-        return new EnchantmentGlintOverrideComponent(byteNode.Value != 0);
+        return node switch
+        {
+            SnbtByte byteNode => new EnchantmentGlintOverrideComponent(byteNode.Value != 0),
+            SnbtBool boolNode => new EnchantmentGlintOverrideComponent(boolNode.Value),
+            _ => throw new ArgumentException(
+                $"Component '{ComponentId}' requires node of type 'SnbtByte' or 'SnbtBool', but got '{node.GetType().Name}'.", nameof(node))
+        };
     }
 
     /// <summary>
     /// Serializes the component into an SNBT byte node (0b or 1b).
     /// </summary>
     /// <returns>An <see cref="ISnbtNode"/> containing the boolean state.</returns>
-    public ISnbtNode ToSnbt() => new SnbtByte((sbyte)(Value ? 1 : 0));
+    public ISnbtNode ToSnbt() => new SnbtBool(Value);
 }

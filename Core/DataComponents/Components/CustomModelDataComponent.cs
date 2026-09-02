@@ -114,29 +114,31 @@ public record CustomModelDataComponent(
 
     private static List<bool>? ParseFlags(ISnbtNode? node)
     {
-        if (node is SnbtByteArray byteArray)
+        switch (node)
         {
-            var result = new List<bool>(byteArray.Items.Count);
-            foreach (var item in byteArray.Items)
+            case SnbtByteArray byteArray:
             {
-                if (item is SnbtByte b)
-                    result.Add(b.Value != 0);
+                var result = new List<bool>(byteArray.Items.Count);
+                foreach (var item in byteArray.Items)
+                {
+                    if (item is SnbtByte b)
+                        result.Add(b.Value != 0);
+                }
+                return result;
             }
-            return result;
-        }
-
-        if (node is SnbtList list)
-        {
-            var result = new List<bool>(list.Items.Count);
-            foreach (var item in list.Items)
+            case SnbtList list:
             {
-                if (item is SnbtByte b)
-                    result.Add(b.Value != 0);
+                var result = new List<bool>(list.Items.Count);
+                foreach (var item in list.Items)
+                {
+                    if (item is SnbtByte b)
+                        result.Add(b.Value != 0);
+                }
+                return result;
             }
-            return result;
+            default:
+                return null;
         }
-
-        return null;
     }
 
     private static List<string>? ParseStrings(ISnbtNode? node)

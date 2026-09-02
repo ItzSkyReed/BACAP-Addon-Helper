@@ -162,6 +162,24 @@ public record ProfileComponent(
                 return new Guid(bytes, bigEndian: true);
             }
 
+            // Handle SnbtList (since standard JSON arrays deserialize as lists rather than int arrays)
+            case SnbtList { Items.Count: 4 } list:
+            {
+                if (list.Items[0] is not SnbtInt i0 ||
+                    list.Items[1] is not SnbtInt i1 ||
+                    list.Items[2] is not SnbtInt i2 ||
+                    list.Items[3] is not SnbtInt i3)
+                    return null;
+
+                Span<byte> bytes = stackalloc byte[16];
+                BinaryPrimitives.WriteInt32BigEndian(bytes[0..4], i0.Value);
+                BinaryPrimitives.WriteInt32BigEndian(bytes[4..8], i1.Value);
+                BinaryPrimitives.WriteInt32BigEndian(bytes[8..12], i2.Value);
+                BinaryPrimitives.WriteInt32BigEndian(bytes[12..16], i3.Value);
+
+                return new Guid(bytes, bigEndian: true);
+            }
+
             case SnbtString str when Guid.TryParse(str.Value, out var guid):
                 return guid;
 
