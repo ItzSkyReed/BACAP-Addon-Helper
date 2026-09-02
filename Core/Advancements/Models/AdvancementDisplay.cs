@@ -21,17 +21,25 @@ public record AdvancementDisplay
 
     [JsonPropertyName("title")]
     [JsonConverter(typeof(TextComponentJsonConverter))]
-    public TextComponent? Title { get; init; } = null!;
+    public TextComponent? Title { get; init; }
 
     [JsonPropertyName("description")]
     [JsonConverter(typeof(TextComponentJsonConverter))]
-    public TextComponent? Description { get; init; } = null!;
+    public TextComponent? Description { get; init; }
 
     [JsonPropertyName("frame")] public AdvancementFrame? Frame { get; init; } = AdvancementFrame.Task;
 
-    [JsonPropertyName("show_toast")] public bool? ShowToast { get; init; } = true;
+    [JsonIgnore]
+    public bool ShowToast { get; init; } = true;
 
-    [JsonPropertyName("announce_to_chat")] public bool? AnnounceToChat { get; init; } = true;
+    [JsonPropertyName("show_toast")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public bool? ShowToastJson => ShowToast ? null : false;
 
-    [JsonPropertyName("hidden")] public bool Hidden { get; init; } = false;
+    [JsonPropertyName("announce_to_chat")]
+    public bool AnnounceToChat { get; init; } = true;
+
+    [JsonPropertyName("hidden")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
+    public bool Hidden { get; init; }
 }

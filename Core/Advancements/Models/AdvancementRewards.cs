@@ -11,6 +11,7 @@ public record AdvancementRewards
     /// The amount of experience to give. Defaults to 0.
     /// </summary>
     [JsonPropertyName("experience")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
     public int Experience { get; init; } = 0;
 
     /// <summary>

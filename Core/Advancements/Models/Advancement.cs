@@ -9,9 +9,9 @@ namespace Core.Advancements.Models;
 /// </summary>
 public record Advancement
 {
-    [JsonPropertyName("parent")] public string? Parent { get; init; }
-
     [JsonPropertyName("display")] public AdvancementDisplay? Display { get; init; }
+
+    [JsonPropertyName("parent")] public string? Parent { get; init; }
 
     /// <summary>
     /// A dictionary where the Key is the Criterion Name, and the Value is the raw JSON of the trigger/conditions.
@@ -34,7 +34,9 @@ public record Advancement
     public AdvancementRewards? Rewards { get; init; }
 
     [JsonPropertyName("sends_telemetry_event")]
-    public bool? SendsTelemetryEvent { get; init; } = false;
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
+    public bool SendsTelemetryEvent { get; init; }
+
 
     /// <summary>
     /// Deserializes a JSON string into an <see cref="Advancement"/> using standard Minecraft JSON formatting rules.
