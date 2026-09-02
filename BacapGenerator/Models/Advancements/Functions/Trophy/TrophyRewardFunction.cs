@@ -1,5 +1,4 @@
-﻿using BacapGenerator.Utils;
-using JetBrains.Annotations;
+﻿using JetBrains.Annotations;
 using Core.Commands.Impl;
 using Core.Commands.Models;
 using Core.DataComponents.Components;
@@ -21,8 +20,14 @@ public sealed class TrophyRewardFunction : BaseFunction
 
     [PublicAPI] public IReadOnlyList<TrophyReward> Trophies => _trophies;
 
-    public TrophyRewardFunction(FileInfo file, BacapAdvancement bacapAdvancement)
-        : base(file, bacapAdvancement)
+    /// <summary>
+    /// Initializes a new instance of the <see cref="TrophyRewardFunction"/> class.
+    /// </summary>
+    /// <param name="file">The physical file information.</param>
+    /// <param name="parsedFunction">The parsed McFunction AST data.</param>
+    /// <param name="bacapAdvancement">The BACAP advancement model associated with this function.</param>
+    internal TrophyRewardFunction(FileInfo file, McFunction parsedFunction, BacapAdvancement bacapAdvancement)
+        : base(file, parsedFunction, bacapAdvancement)
     {
         ParseExistingTrophies();
     }
@@ -71,6 +76,7 @@ public sealed class TrophyRewardFunction : BaseFunction
 
             if (isDuplicate)
                 continue;
+
             _trophies.Add(trophy);
             hasChanges = true;
         }
@@ -120,6 +126,11 @@ public sealed class TrophyRewardFunction : BaseFunction
 
         foreach (var line in linesToRemove)
             Function.Lines.Remove(line);
+
+        foreach (var trophy in _trophies)
+        {
+            trophy.Standardize(BacapAdvancement.Datapack);
+        }
 
         var newLines = new List<IMcFunctionLine>();
         foreach (var trophy in _trophies)
@@ -175,7 +186,7 @@ public sealed class TrophyRewardFunction : BaseFunction
     /// <exception cref="InvalidOperationException">Thrown when the trophy item does not contain a valid title.</exception>
     private static TellrawCommand CreateTrophyMessage(TrophyReward trophy)
     {
-        var title = trophy.TitleTranslationKey
+        var title = trophy.Title
                     ?? throw new InvalidOperationException($"Cannot create tellraw message: " +
                                                            $"Trophy item '{trophy.Item.Id}' is missing a custom name or translation key.");
 
