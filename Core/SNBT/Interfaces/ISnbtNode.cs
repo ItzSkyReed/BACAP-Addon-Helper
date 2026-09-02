@@ -2,5 +2,5 @@
 
 public interface ISnbtNode
 {
-    string ToSnbtString(bool pretty = true, string indent = "");
+    string ToSnbtString(bool pretty = false, string indent = "");
 }

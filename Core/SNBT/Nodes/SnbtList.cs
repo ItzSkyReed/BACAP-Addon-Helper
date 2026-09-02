@@ -21,7 +21,7 @@ public record SnbtList(List<ISnbtNode> Items) : ISnbtNode
         if (Items.Count == 0) return "[]";
 
         if (!pretty)
-            return "[" + string.Join(",", Items.Select(i => i.ToSnbtString(false))) + "]";
+            return "[" + string.Join(",", Items.Select(i => i.ToSnbtString())) + "]";
 
         var sb = new StringBuilder();
         sb.AppendLine("[");
