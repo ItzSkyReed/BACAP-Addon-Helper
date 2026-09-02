@@ -12,13 +12,14 @@ public record McFunction(List<IMcFunctionLine> Lines)
 {
 /// <summary>
     /// Serializes the entire function into a string ready to be written to an .mcfunction file.
+    /// Trims any trailing newlines or whitespace from the end of the file.
     /// </summary>
     /// <param name="maxLineLength">
     /// The maximum allowed length for a single line. If a command exceeds this limit,
     /// it is wrapped using the line continuation character ('\').
     /// If null or less than or equal to 0, line wrapping is disabled.
     /// </param>
-    /// <returns>A formatted .mcfunction string.</returns>
+    /// <returns>A formatted .mcfunction string without trailing empty lines.</returns>
     /// <example>
     /// <code>
     /// var mcFunction = new McFunction(lines);
@@ -30,39 +31,41 @@ public record McFunction(List<IMcFunctionLine> Lines)
     {
         var sb = new StringBuilder();
 
-        foreach (var line in Lines)
+        for (var i = 0; i < Lines.Count; i++)
         {
-            var builtLine = line.Build();
+            var builtLine = Lines[i].Build();
 
             // Skip wrapping if disabled, line is short enough, or if it's a comment
             // (Minecraft does not support line continuations for comments)
             if (maxLineLength is null or <= 0 || builtLine.Length <= maxLineLength || builtLine.StartsWith('#'))
+                sb.Append(builtLine);
+            else
             {
-                sb.AppendLine(builtLine);
-                continue;
-            }
+                // Use Span to slice the string without allocating new string objects for each chunk
+                var span = builtLine.AsSpan();
 
-            // Use Span to slice the string without allocating new string objects for each chunk
-            var span = builtLine.AsSpan();
-
-            while (span.Length > 0)
-            {
-                if (span.Length <= maxLineLength.Value)
+                while (span.Length > 0)
                 {
-                    sb.AppendLine(span.ToString());
-                    break;
+                    if (span.Length <= maxLineLength.Value)
+                    {
+                        sb.Append(span);
+                        break;
+                    }
+
+                    var chunk = span[..maxLineLength.Value];
+                    sb.Append(chunk).AppendLine(@"\");
+
+                    // Slice the remaining part of the span
+                    span = span[maxLineLength.Value..];
                 }
-
-                // Extract the chunk of max length, append it with '\', and move to the next line
-                var chunk = span[..maxLineLength.Value];
-                sb.Append(chunk).AppendLine(@"\");
-
-                // Slice the remaining part of the span
-                span = span[maxLineLength.Value..];
             }
+
+            if (i < Lines.Count - 1)
+                sb.AppendLine();
         }
 
-        return sb.ToString();
+        // Clean up any trailing empty lines or whitespace from the final output
+        return sb.ToString().TrimEnd();
     }
 
     /// <summary>
