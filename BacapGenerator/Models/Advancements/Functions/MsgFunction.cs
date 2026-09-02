@@ -19,9 +19,10 @@ public sealed class MsgFunction : BaseFunction
     /// Initializes a new instance of the <see cref="MsgFunction"/> class.
     /// </summary>
     /// <param name="file">The physical file information.</param>
+    /// <param name="parsedFunction">The parsed McFunction AST data.</param>
     /// <param name="bacapAdvancement">The BACAP advancement model associated with this function.</param>
-    public MsgFunction(FileInfo file, BacapAdvancement bacapAdvancement)
-        : base(file, bacapAdvancement)
+    internal MsgFunction(FileInfo file, McFunction parsedFunction, BacapAdvancement bacapAdvancement)
+        : base(file, parsedFunction, bacapAdvancement)
     {
     }
 
@@ -36,18 +37,21 @@ public sealed class MsgFunction : BaseFunction
     {
         var settings = BacapAdvancement.Datapack.Settings.AdvancementMessageSettings;
 
+        ArgumentNullException.ThrowIfNull(settings);
+        ArgumentNullException.ThrowIfNull(settings.Entries);
+
         if (!settings.Entries.TryGetValue(BacapAdvancement.Tier, out var entry))
         {
             throw new ArgumentException(
-                $"Tier '{BacapAdvancement.Tier}' not found in the configuration file to generate advancement messages.");
+                $"Tier '{BacapAdvancement.Tier}' not found in the configuration file to generate advancement messages.",
+                nameof(settings));
         }
 
-        // Build the new command
         var newCommand = CreateMessage(
             rootTranslationKey: entry.TranslationKey,
             advancementTitle: BacapAdvancement.TitleText,
             titleColor: entry.TitleColor,
-            advancementDesc: "advancement.description.placeholder", // Replace with actual description key/text
+            advancementDesc: BacapAdvancement.CleanDescriptionText,
             descColor: entry.DescriptionColor,
             advancementTab: BacapAdvancement.Tab
         );
@@ -55,25 +59,28 @@ public sealed class MsgFunction : BaseFunction
         // Convert the command to whatever line model Function.Lines expects
         var newLine = newCommand.ToLine();
 
-        // Find the existing tellraw command by checking the AST nodes.
-        // We look for a tellraw targeted at @a that contains "%1$s" (the player placeholder).
+        // Find the existing tellraw command by checking the AST nodes directly.
         var existingIndex = Function.Lines.FindIndex(line =>
-            line is ExecutableLine { Command: TellrawCommand tellCmd } &&
-            tellCmd.Target == Selector.AllPlayers &&
-            tellCmd.Message.ToJson().Contains("%1$s")
-        );
+        {
+            if (line is not ExecutableLine { Command: TellrawCommand tellCmd })
+                return false;
+
+            if (tellCmd.Target != Selector.AllPlayers)
+                return false;
+
+            // Safely check the translatable component properties directly via AST
+            return tellCmd.Message is TranslatableComponent trans &&
+                   trans.Translate.Contains("%1$s", StringComparison.OrdinalIgnoreCase);
+
+        });
 
         // Replace or Insert
         if (existingIndex >= 0)
-        {
             // Replace the old message, leaving all other custom commands (titles, # comments) untouched
             Function.Lines[existingIndex] = newLine;
-        }
         else
-        {
             // If not found, it's safer to insert the announcement at the very top of the file
             Function.Lines.Insert(0, newLine);
-        }
     }
 
     private static TellrawCommand CreateMessage(
