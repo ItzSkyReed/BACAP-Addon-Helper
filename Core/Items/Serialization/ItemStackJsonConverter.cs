@@ -1,5 +1,6 @@
 ﻿using System.Text.Json;
 using System.Text.Json.Serialization;
+using Core.Serialization;
 using Core.SNBT;
 using Core.SNBT.Nodes;
 using JetBrains.Annotations;
@@ -22,13 +23,16 @@ public class ItemStackJsonConverter : JsonConverter<ItemStack>
     [PublicAPI]
     public override ItemStack Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
     {
+        using var document = JsonDocument.ParseValue(ref reader);
+        var rawJson = document.RootElement.GetRawText();
+
+        if (document.RootElement.ValueKind != JsonValueKind.Object)
+        {
+            throw new JsonException($"Expected a JSON object (compound) for ItemStack, but got {document.RootElement.ValueKind}. Raw JSON: {rawJson}");
+        }
+
         try
         {
-            using var document = JsonDocument.ParseValue(ref reader);
-
-            if (document.RootElement.ValueKind != JsonValueKind.Object)
-                throw new JsonException($"Expected a JSON object (compound) for ItemStack, but got {document.RootElement.ValueKind}.");
-
             var snbtNode = JsonToSnbtMapper.Map(document.RootElement);
 
             if (snbtNode is SnbtCompound compound)
@@ -36,11 +40,15 @@ public class ItemStackJsonConverter : JsonConverter<ItemStack>
                 return ItemStack.Parse(compound);
             }
 
-            throw new JsonException($"Expected mapped node to be SnbtCompound, but got {snbtNode.GetType().Name}.");
+            throw new JsonException($"Expected mapped node to be SnbtCompound, but got {snbtNode.GetType().Name}. Raw JSON: {rawJson}");
         }
-        catch (Exception ex) when (ex is not JsonException)
+        catch (JsonException)
         {
-            throw new JsonException("Failed to parse ItemStack from the provided JSON.", ex);
+            throw;
+        }
+        catch (Exception ex)
+        {
+            throw new JsonException($"Failed to parse ItemStack. Reason: {ex.Message}. Raw JSON: {rawJson}", ex);
         }
     }
 
@@ -50,84 +58,8 @@ public class ItemStackJsonConverter : JsonConverter<ItemStack>
     /// <param name="writer">The JSON writer.</param>
     /// <param name="value">The <see cref="ItemStack"/> to write.</param>
     /// <param name="options">The serializer options.</param>
-    [PublicAPI]
     public override void Write(Utf8JsonWriter writer, ItemStack value, JsonSerializerOptions options)
     {
-        writer.WriteStartObject();
-
-        writer.WriteString("id", value.Id);
-
-        if (value.Count != 1)
-            writer.WriteNumber("count", value.Count);
-
-        if (!value.Components.IsEmpty)
-        {
-            writer.WritePropertyName("components");
-            WriteSnbtNode(writer, value.Components.ToSnbt());
-        }
-
-        writer.WriteEndObject();
-    }
-
-    /// <summary>
-    /// Recursively translates an SNBT node into strict JSON tokens.
-    /// </summary>
-    /// <param name="writer">The JSON writer instance.</param>
-    /// <param name="node">The SNBT node to translate.</param>
-    private static void WriteSnbtNode(Utf8JsonWriter writer, ISnbtNode node)
-    {
-        switch (node)
-        {
-            case SnbtCompound compound:
-                writer.WriteStartObject();
-                foreach (var (key, val) in compound.Tags)
-                {
-                    writer.WritePropertyName(key);
-                    WriteSnbtNode(writer, val);
-                }
-                writer.WriteEndObject();
-                break;
-
-            case SnbtList list:
-                writer.WriteStartArray();
-                foreach (var item in CollectionsMarshal.AsSpan(list.Items))
-                    WriteSnbtNode(writer, item);
-                writer.WriteEndArray();
-                break;
-
-            case SnbtByteArray ba:
-                writer.WriteStartArray();
-                foreach (var item in CollectionsMarshal.AsSpan(ba.Items))
-                    WriteSnbtNode(writer, item);
-                writer.WriteEndArray();
-                break;
-
-            case SnbtIntArray ia:
-                writer.WriteStartArray();
-                foreach (var item in CollectionsMarshal.AsSpan(ia.Items))
-                    WriteSnbtNode(writer, item);
-                writer.WriteEndArray();
-                break;
-
-            case SnbtLongArray la:
-                writer.WriteStartArray();
-                foreach (var item in CollectionsMarshal.AsSpan(la.Items))
-                    WriteSnbtNode(writer, item);
-                writer.WriteEndArray();
-                break;
-
-            case SnbtString str: writer.WriteStringValue(str.Value); break;
-            case SnbtBool bl: writer.WriteBooleanValue(bl.Value); break;
-            case SnbtByte b: writer.WriteNumberValue(b.Value); break;
-            case SnbtShort s: writer.WriteNumberValue(s.Value); break;
-            case SnbtInt i: writer.WriteNumberValue(i.Value); break;
-            case SnbtLong l: writer.WriteNumberValue(l.Value); break;
-            case SnbtFloat f: writer.WriteNumberValue(f.Value); break;
-            case SnbtDouble d: writer.WriteNumberValue(d.Value); break;
-
-            default:
-                writer.WriteNullValue();
-                break;
-        }
+        value.ToSnbt().WriteTo(writer);
     }
 }
