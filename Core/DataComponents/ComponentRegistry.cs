@@ -91,20 +91,24 @@ public static class ComponentRegistry
 
     /// <summary>
     /// Parses a raw SNBT node into a strictly typed data component based on its identifier.
+    /// Automatically appends the default 'minecraft:' namespace if none is provided.
     /// Falls back to a <see cref="RawComponent"/> if the identifier is not registered.
     /// </summary>
-    /// <param name="componentId">The namespaced identifier of the component (e.g. <c>minecraft:custom_model_data</c>).</param>
+    /// <param name="componentId">The identifier of the component (e.g. <c>custom_data</c> or <c>modded:data</c>).</param>
     /// <param name="node">The SNBT payload to parse.</param>
     /// <returns>A populated <see cref="IDataComponent"/> instance.</returns>
     [PublicAPI]
     public static IDataComponent Parse(string componentId, ISnbtNode node)
     {
-        if (Parsers.TryGetValue(componentId, out var parser))
+        // Normalize the identifier to match Minecraft's default ResourceLocation behavior
+        var normalizedId = componentId.Contains(':') ? componentId : $"minecraft:{componentId}";
+
+        if (Parsers.TryGetValue(normalizedId, out var parser))
         {
             return parser(node);
         }
 
         // Lossless fallback for unregistered, unknown, or modded components
-        return new RawComponent(componentId, node);
+        return new RawComponent(normalizedId, node);
     }
 }
