@@ -39,7 +39,7 @@ public class MinecraftData
     /// Initializes and loads all Minecraft registries into memory.
     /// </summary>
     /// <param name="loader">The registry loader instance.</param>
-    public MinecraftData(RegistryLoader loader)
+    public MinecraftData(McRegistryLoader loader)
     {
         // Load key-value mappings
         Items = loader.LoadRegistry<ItemRegistryEntry>("items.json");

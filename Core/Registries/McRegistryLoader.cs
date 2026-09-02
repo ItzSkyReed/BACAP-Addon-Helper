@@ -6,19 +6,13 @@ namespace Core.Registries;
 /// <summary>
 /// Universal loader for Minecraft JSON registries.
 /// </summary>
-public class RegistryLoader
+public class McRegistryLoader(string basePath)
 {
-    private readonly string _basePath;
-    private readonly JsonSerializerOptions _jsonOptions;
-
-    public RegistryLoader(string basePath)
+    private readonly JsonSerializerOptions _jsonOptions = new()
     {
-        _basePath = basePath;
-        _jsonOptions = new JsonSerializerOptions
-        {
-            PropertyNameCaseInsensitive = true // So that "display_name" in JSON maps to DisplayName in C#
-        };
-    }
+        PropertyNameCaseInsensitive = true // So that "display_name" in JSON maps to DisplayName in C#
+    };
+
 
     /// <summary>
     /// Loads a registry JSON file into a frozen dictionary for optimized read access.
@@ -28,7 +22,7 @@ public class RegistryLoader
     /// <returns>A highly optimized, read-only frozen dictionary of registry keys to their data entries.</returns>
     public FrozenDictionary<string, TEntry> LoadRegistry<TEntry>(string fileName)
     {
-        var filePath = Path.Combine(_basePath, fileName);
+        var filePath = Path.Combine(basePath, fileName);
 
         if (!File.Exists(filePath))
             throw new FileNotFoundException($"Registry file '{fileName}' not found at '{filePath}'.");
@@ -49,7 +43,7 @@ public class RegistryLoader
     /// <returns>A highly optimized, read-only frozen set of strings.</returns>
     public FrozenSet<string> LoadRegistry(string fileName)
     {
-        var filePath = Path.Combine(_basePath, fileName);
+        var filePath = Path.Combine(basePath, fileName);
 
         if (!File.Exists(filePath))
             throw new FileNotFoundException($"Registry array file '{fileName}' not found at '{filePath}'.");
