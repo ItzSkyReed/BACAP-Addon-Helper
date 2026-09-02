@@ -14,6 +14,6 @@ public record TellrawCommand(
 {
     protected override string BuildInternal()
     {
-        return $"tellraw {Target} {Message.ToSnbt().ToSnbtString(false)}";
+        return $"tellraw {Target} {Message.ToSnbt().ToSnbtString()}";
     }
 }

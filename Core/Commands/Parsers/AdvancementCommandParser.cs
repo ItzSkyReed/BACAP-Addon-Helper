@@ -72,7 +72,7 @@ public static class AdvancementCommandParser
                             .Optional()
                             .Map(ICommand (criterionOpt) =>
                             {
-                                var crit = criterionOpt.GetValueOrDefault()?.Trim();
+                                var crit = criterionOpt.GetValueOrDefault().Trim();
                                 return new AdvancementCommand(
                                     ctx.Action,
                                     ctx.Target,
