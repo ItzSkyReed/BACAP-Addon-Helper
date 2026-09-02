@@ -1,9 +1,9 @@
-﻿using System.Collections.Generic;
-using System.IO;
+﻿
 using BacapGenerator.Models.Advancements;
 using BacapGenerator.Models.Datapacks.Settings;
 using BacapGenerator.Models.Interfaces;
 using Core.Registries;
+using JetBrains.Annotations;
 
 namespace BacapGenerator.Models.Datapacks;
 
@@ -14,6 +14,11 @@ namespace BacapGenerator.Models.Datapacks;
 public class Datapack : IReadOnlyDatapack
 {
     private readonly List<ManagedAdvancement> _advancements = [];
+
+    /// <summary>
+    /// Gets the unique identifier of the datapack as defined in the configuration.
+    /// </summary>
+    public string Id { get; }
 
     public DatapackSettings Settings { get; }
 
@@ -27,10 +32,15 @@ public class Datapack : IReadOnlyDatapack
     /// Initializes a new instance of the <see cref="Datapack"/> model.
     /// Does not perform any file I/O.
     /// </summary>
+    /// <param name="id">The unique identifier from the configuration.</param>
     /// <param name="settings">The datapack configuration.</param>
     /// <param name="minecraftData">The global Minecraft registry data.</param>
-    public Datapack(DatapackSettings settings, MinecraftData minecraftData)
+    /// <exception cref="ArgumentException">Thrown when the id is null or empty.</exception>
+    public Datapack(string id, DatapackSettings settings, MinecraftData minecraftData)
     {
+        ArgumentException.ThrowIfNullOrEmpty(id);
+
+        Id = id;
         Settings = settings;
         MinecraftData = minecraftData;
         DatapackDataPath = new DirectoryInfo(Path.Combine(Settings.DatapackPath, "data"));
