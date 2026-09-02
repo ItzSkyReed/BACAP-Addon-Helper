@@ -13,6 +13,7 @@
 
     <ItemGroup>
       <Folder Include="Registries\Providers\" />
+      <Folder Include="TextComponents\Serialization\" />
     </ItemGroup>
 
 </Project>

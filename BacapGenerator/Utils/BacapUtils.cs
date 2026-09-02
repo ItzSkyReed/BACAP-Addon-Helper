@@ -1,4 +1,5 @@
 ﻿using System.Diagnostics.CodeAnalysis;
+using System.Globalization;
 
 namespace BacapGenerator.Utils;
 
@@ -82,5 +83,61 @@ public static class BacapUtils
     {
         tab = ExtractTab(resourceLocation);
         return !tab.IsEmpty;
+    }
+
+    /// <summary>
+    /// Converts a string into a lower_snake_case slug, stripping punctuation/symbols
+    /// and collapsing consecutive separators into a single underscore.
+    /// </summary>
+    /// <param name="input">The input string to slugify.</param>
+    /// <returns>
+    /// A lower_snake_case formatted string without leading or trailing underscores,
+    /// or <see cref="string.Empty"/> if the input contains no letters or digits.
+    /// </returns>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="input"/> is <see langword="null"/>.</exception>
+    /// <example>
+    /// <code>
+    /// string result1 = StringSlugifier.ToSnakeCaseSlug("Hello World"); // "hello_world"
+    /// string result2 = StringSlugifier.ToSnakeCaseSlug("Hello is this.. The world?"); // "hello_is_this_the_world"
+    /// </code>
+    /// </example>
+    public static string ToSnakeCaseSlug(string input)
+    {
+        ArgumentNullException.ThrowIfNull(input);
+
+        if (input.Length == 0)
+            return string.Empty;
+
+        // Use stack allocation for small/medium strings to avoid GC pressure, falling back to heap array for large strings.
+        const int maxStackLimit = 64;
+
+        var buffer = input.Length <= maxStackLimit
+            ? stackalloc char[input.Length]
+            : new char[input.Length];
+
+        var writeIndex = 0;
+        var lastWasSeparator = true; // Prevents leading underscores
+
+        foreach (var c in input)
+        {
+            if (char.IsLetterOrDigit(c))
+            {
+                buffer[writeIndex++] = char.ToLower(c, CultureInfo.InvariantCulture);
+                lastWasSeparator = false;
+            }
+            else if (!lastWasSeparator)
+            {
+                buffer[writeIndex++] = '_';
+                lastWasSeparator = true;
+            }
+        }
+
+        // Trim trailing underscore if present
+        if (writeIndex > 0 && buffer[writeIndex - 1] == '_')
+            writeIndex--;
+
+        var result = writeIndex == 0 ? string.Empty : new string(buffer[..writeIndex]);
+
+        return result;
     }
 }
