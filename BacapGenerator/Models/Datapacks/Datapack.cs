@@ -47,6 +47,26 @@ public class Datapack : IReadOnlyDatapack
     }
 
     /// <summary>
+    /// Replaces an existing managed advancement with an updated or promoted instance.
+    /// </summary>
+    /// <param name="oldAdvancement">The current advancement instance to be replaced.</param>
+    /// <param name="newAdvancement">The new advancement instance.</param>
+    /// <returns><see langword="true"/> if the item was found and replaced; otherwise, <see langword="false"/>.</returns>
+    [PublicAPI]
+    public bool ReplaceAdvancement(ManagedAdvancement oldAdvancement, ManagedAdvancement newAdvancement)
+    {
+        ArgumentNullException.ThrowIfNull(oldAdvancement);
+        ArgumentNullException.ThrowIfNull(newAdvancement);
+
+        var index = _advancements.IndexOf(oldAdvancement);
+        if (index < 0)
+            return false;
+
+        _advancements[index] = newAdvancement;
+        return true;
+    }
+
+    /// <summary>
     /// Populates the datapack with loaded advancements.
     /// Marked as internal so only the Factory within the same assembly can populate it.
     /// </summary>
