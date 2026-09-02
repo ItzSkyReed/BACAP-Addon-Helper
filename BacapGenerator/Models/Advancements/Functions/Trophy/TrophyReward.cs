@@ -38,6 +38,27 @@ public record TrophyReward(ItemStack Item)
         }
     }
 
+    public IReadOnlyList<string> DescriptionLines
+    {
+        get
+        {
+            if (!Item.Components.TryGet<LoreComponent>(out var loreComponent))
+                return [];
+
+            return loreComponent.Lines
+                .Select(line => line switch
+                {
+                    TranslatableComponent tc => tc.Translate,
+                    PlainTextComponent ptc => ptc.Text,
+                    _ => string.Empty
+                })
+                .Where(line => !string.IsNullOrWhiteSpace(line))
+                .Where(line => !IsGeneratedLine(line))
+                .Where(line => line != Title)
+                .ToList();
+        }
+    }
+
     /// <summary>
     /// Gets the title color directly from the item's CustomName component.
     /// </summary>
