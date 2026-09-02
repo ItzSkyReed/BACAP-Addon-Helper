@@ -89,7 +89,7 @@ public record ItemStack(
         if (Components.IsEmpty || Components.ToSnbt() is not SnbtCompound { Tags.Count: > 0 } compNode)
             return Id;
 
-        var pairs = compNode.Tags.Select(kv => $"{kv.Key}={kv.Value.ToSnbtString(false)}");
+        var pairs = compNode.Tags.Select(kv => $"{kv.Key}={kv.Value.ToSnbtString()}");
         return $"{Id}[{string.Join(", ", pairs)}]";
     }
 
