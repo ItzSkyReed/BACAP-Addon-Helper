@@ -38,15 +38,15 @@ public record FireworkExplosion(
 
         if (Colors is { Count: > 0 })
         {
-            var nodes = Colors.Select(c => (ISnbtNode)new SnbtInt(c)).ToList();
-            builder.Put("colors", new SnbtIntArray(nodes));
+            var nodes = Colors.Select(ISnbtNode (c) => new SnbtInt(c)).ToList();
+            builder.Put("colors", new SnbtList(nodes));
         }
 
         if (FadeColors is not { Count: > 0 })
             return builder.Build();
         {
-            var nodes = FadeColors.Select(c => (ISnbtNode)new SnbtInt(c)).ToList();
-            builder.Put("fade_colors", new SnbtIntArray(nodes));
+            var nodes = FadeColors.Select(ISnbtNode (c) => new SnbtInt(c)).ToList();
+            builder.Put("fade_colors", new SnbtList(nodes));
         }
 
         return builder.Build();
@@ -56,13 +56,6 @@ public record FireworkExplosion(
     {
         switch (node)
         {
-            case SnbtIntArray intArray:
-            {
-                var list = new List<int>(intArray.Items.Count);
-                foreach (var item in intArray.Items)
-                    if (item is SnbtInt i) list.Add(i.Value);
-                return list;
-            }
             case SnbtList listNode:
             {
                 var list = new List<int>(listNode.Items.Count);
