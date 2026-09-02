@@ -1,4 +1,5 @@
-﻿using System.Text.Json;
+﻿using System.Text.Encodings.Web;
+using System.Text.Json;
 using System.Text.Json.Serialization;
 
 namespace Core.Serialization;
@@ -16,7 +17,10 @@ public static class MinecraftDatapackJsonOptions
         PropertyNamingPolicy = JsonNamingPolicy.SnakeCaseLower,
         DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
         WriteIndented = true,
-        IndentSize = 4,
+        IndentSize = 2,
         MaxDepth = 256,
+
+        // Disables aggressive HTML-escaping, keeping characters like ' and & as they are
+        Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping
     };
 }
