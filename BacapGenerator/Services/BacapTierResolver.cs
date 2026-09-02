@@ -42,7 +42,7 @@ public static class BacapTierResolver
         switch (filename, tab, actualFrame, color: descriptionColor)
         {
             // Root advancement
-            case ("root", _, _, _):
+            case ("root", _, _, "#CCCCCC"):
                 advancementTier = BacapAdvancementTier.Root;
                 return true;
 
@@ -56,12 +56,11 @@ public static class BacapTierResolver
                 return true;
 
             // Challenges tab
-            case (_, var t, _, "yellow") when t == BacapAdvancementTab.Challenges:
+            case var (_, t, _, _) when t == BacapAdvancementTab.Challenges:
                 advancementTier = BacapAdvancementTier.SuperChallenge;
                 return true;
 
-            // Standard frame mappings
-            case (_, var t, AdvancementFrame.Challenge, _):
+            case (_, _, AdvancementFrame.Challenge, _):
                 advancementTier = BacapAdvancementTier.Challenge;
                 return true;
 
