@@ -1,55 +1,90 @@
-﻿
-using BacapGenerator.Models;
-using BacapGenerator.Models.Advancements;
-using BacapGenerator.Models.Datapacks;
+﻿using BacapGenerator.Models.Advancements;
+using BacapGenerator.Models.Advancements.Functions;
+using BacapGenerator.Models.Advancements.Functions.Trophy;
+using BacapGenerator.Models.Interfaces;
 using BacapGenerator.Utils;
 using Core.Advancements.Models;
+using Core.McFunctions.Models;
 
 namespace BacapGenerator.Factories;
 
 /// <summary>
-/// Factory responsible for parsing JSON files and instantiating the correct ManagedAdvancement subtype.
+/// Factory responsible for reading files, parsing JSON/McFunction ASTs,
+/// and instantiating the correct <see cref="ManagedAdvancement"/> subtype.
 /// </summary>
 public static class AdvancementFactory
 {
     /// <summary>
-    /// Parses an advancement JSON file and creates the appropriate <see cref="ManagedAdvancement"/> instance.
+    /// Creates a ManagedAdvancement from a raw JSON string.
     /// </summary>
-    /// <param name="file">The physical file information.</param>
-    /// <param name="jsonContent">The raw JSON string content of the file.</param>
-    /// <returns>A <see cref="BacapAdvancement"/>, <see cref="TechnicalAdvancement"/>, or <see cref="InvalidAdvancement"/>.</returns>
-    /// <example>
-    /// <code>
-    /// var adv = AdvancementFactory.Create(new FileInfo("path/to/adv.json"), "{...}");
-    /// </code>
-    /// </example>
-    public static ManagedAdvancement Create(FileInfo file, string jsonContent, Datapack datapack)
+    public static ManagedAdvancement Create(FileInfo file, string jsonContent, IReadOnlyDatapack datapack)
     {
-        Advancement? parsedData;
+        try
+        {
+            var parsedData = Advancement.Parse(jsonContent);
+            if (parsedData == null)
+                return new InvalidAdvancement(file, null, datapack, AdvancementValidationError.MalformedJson);
+
+            return Create(file, parsedData, datapack);
+        }
+        catch
+        {
+            return new InvalidAdvancement(file, null, datapack, AdvancementValidationError.MalformedJson);
+        }
+    }
+
+    /// <summary>
+    /// Creates a ManagedAdvancement from an already parsed or modified Advancement model.
+    /// </summary>
+    public static ManagedAdvancement Create(FileInfo file, Advancement parsedData, IReadOnlyDatapack datapack)
+    {
+        if (parsedData.Display == null)
+            return new TechnicalAdvancement(file, parsedData, datapack);
+
+        if (!BacapAdvancement.TryCreate(file, parsedData, datapack, out var bacapAdv, out var error))
+            return new InvalidAdvancement(file, parsedData, datapack, error);
 
         try
         {
-            // Try to parse JSON using the Core model
-            parsedData = Advancement.Parse(jsonContent);
-
-            if (parsedData == null)
-                return new InvalidAdvancement(file, null, "JSON parsed to null.");
-        }
-        catch (Exception ex)
-        {
-            return new InvalidAdvancement(file, null, $"JSON Parsing error: {ex.Message}");
-        }
-
-
-        // Check if it lacks Display completely (common for technical advancements/triggers)
-        if (parsedData.Display == null)
-            return new TechnicalAdvancement(file, parsedData);
-
-        // Ask BacapAdvancement if it can be created
-        if (BacapAdvancement.TryCreate(file, parsedData, datapack,  out var bacapAdv, out var errorMessage))
+            LoadFunctions(bacapAdv!);
             return bacapAdv!;
+        }
+        catch
+        {
+            return new InvalidAdvancement(file, parsedData, datapack, AdvancementValidationError.FailedToLoadAssociatedFunctions);
+        }
+    }
 
-        // If not, return invalid
-        return new InvalidAdvancement(file, parsedData, errorMessage!);
+    /// <summary>
+    /// Locates, reads, and parses the five function files associated with a BACAP advancement,
+    /// injecting them directly into the model.
+    /// </summary>
+    private static void LoadFunctions(BacapAdvancement adv)
+    {
+        var relativePath = $"{MinecraftUtils.StripNamespace(adv.Advancement.Rewards!.Function!)}.mcfunction";
+        var basePath = Path.Combine(adv.Datapack.DatapackDataPath.FullName, adv.Datapack.Settings.RewardNamespace, "function");
+
+        var macroFile = new FileInfo(Path.Combine(basePath, relativePath));
+        var msgFile = new FileInfo(Path.Combine(basePath, "msg", relativePath));
+        var expFile = new FileInfo(Path.Combine(basePath, "exp", relativePath));
+        var itemFile = new FileInfo(Path.Combine(basePath, "reward", relativePath));
+        var trophyFile = new FileInfo(Path.Combine(basePath, "trophy", relativePath));
+
+        adv.MacroFunction = new MacroFunction(macroFile, ParseMcFunction(macroFile), adv);
+        adv.MsgFunction = new MsgFunction(msgFile, ParseMcFunction(msgFile), adv);
+        adv.ExpRewardFunction = new ExpRewardFunction(expFile, ParseMcFunction(expFile), adv);
+        adv.ItemRewardFunction = new ItemRewardFunction(itemFile, ParseMcFunction(itemFile), adv);
+        adv.TrophyRewardFunction = new TrophyRewardFunction(trophyFile, ParseMcFunction(trophyFile), adv);
+    }
+
+    /// <summary>
+    /// Reads the physical file if it exists and parses it into an AST.
+    /// Returns an empty AST if the file is missing.
+    /// </summary>
+    private static McFunction ParseMcFunction(FileInfo file)
+    {
+        var content = file.Exists ? File.ReadAllText(file.FullName) : string.Empty;
+
+        return McFunction.Parse(content);
     }
 }
