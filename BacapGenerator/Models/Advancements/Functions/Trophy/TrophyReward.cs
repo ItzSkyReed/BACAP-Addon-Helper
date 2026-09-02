@@ -126,4 +126,54 @@ public record TrophyReward(ItemStack Item)
 
         return new TrophyReward(item);
     }
+
+    private static bool IsGeneratedLine(string line)
+    {
+        return line.Trim().Equals(
+            "Awarded for achieving",
+            StringComparison.OrdinalIgnoreCase);
+    }
+
+    /// <summary>
+    /// Updates the trophy item components to match the current datapack standards.
+    /// Injects missing components like custom_model_data or base tags.
+    /// </summary>
+    /// <param name="datapack">The datapack context for configuration.</param>
+    [PublicAPI]
+    public void Standardize(IReadOnlyDatapack datapack)
+    {
+        ArgumentNullException.ThrowIfNull(datapack);
+
+        // Standardize Custom Model Data
+        var titleKey = Title;
+        if (!string.IsNullOrWhiteSpace(titleKey))
+        {
+            var expectedModelId = $"{datapack.Settings.MainNamespace}:{BacapUtils.ToSnakeCaseSlug(titleKey)}";
+
+            // Overwrite or add the custom_model_data component to ensure it matches the title
+            Item.Components.Set(new CustomModelDataComponent(Strings: [expectedModelId]));
+        }
+
+        // Ensure Trophy marker tag is intact (safeguard for manually edited items)
+        if (Item.Components.TryGet<CustomDataComponent>(out var customData))
+        {
+            if (customData.Tag is not { } compound || compound.Tags.ContainsKey("Trophy"))
+                return;
+
+            // Rebuild the compound with the missing Trophy tag
+            var newTags = new Dictionary<string, ISnbtNode>(compound.Tags)
+            {
+                ["Trophy"] = new SnbtBool(true)
+            };
+            Item.Components.Set(new CustomDataComponent(new SnbtCompound(newTags)));
+        }
+        else
+        {
+            var customDataTags = new Dictionary<string, ISnbtNode> { ["Trophy"] = new SnbtBool(true) };
+            Item.Components.Set(new CustomDataComponent(new SnbtCompound(customDataTags)));
+        }
+
+        // TODO: In the future, add lore standardization here
+        // ( automatically appending the "Awarded for achieving" line if missing).
+    }
 }
