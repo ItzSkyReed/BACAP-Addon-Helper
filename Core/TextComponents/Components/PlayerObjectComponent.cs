@@ -1,4 +1,5 @@
 ﻿using Core.DataComponents.Models;
+using Core.SNBT;
 using Core.SNBT.Interfaces;
 using Core.TextComponents.Models;
 using JetBrains.Annotations;
@@ -24,7 +25,7 @@ public record PlayerObjectComponent(
 {
     public override ISnbtNode ToSnbt()
     {
-        var builder = CreateBaseBuilder()
+        var builder = Snbt.Compound()
             .Put("type", "object")
             .Put("object", "player");
 
@@ -33,7 +34,7 @@ public record PlayerObjectComponent(
             Cape == null && Elytra == null && Model == null && Hat == null)
         {
             builder.Put("player", Name);
-            return builder.Build();
+            return ApplyBaseProperties(builder).Build();
         }
 
         // Otherwise, construct the full player compound
@@ -57,6 +58,6 @@ public record PlayerObjectComponent(
             if (Hat.HasValue) p.Put("hat", Hat.Value);
         });
 
-        return builder.Build();
+        return ApplyBaseProperties(builder).Build();
     }
 }

@@ -1,4 +1,5 @@
-﻿using Core.SNBT.Interfaces;
+﻿using Core.SNBT;
+using Core.SNBT.Interfaces;
 using Core.TextComponents.Models;
 using JetBrains.Annotations;
 
@@ -13,9 +14,13 @@ public record TranslatableComponent(
     List<TextComponent>? Extra = null
 ) : TextComponent(Style, Extra)
 {
+    /// <summary>
+    /// Serializes this component into an SNBT node representation.
+    /// </summary>
+    /// <returns>The constructed SNBT node.</returns>
     public override ISnbtNode ToSnbt()
     {
-        var builder = CreateBaseBuilder().Put("translate", Translate);
+        var builder = Snbt.Compound().Put("translate", Translate);
 
         if (Fallback != null)
             builder.Put("fallback", Fallback);
@@ -29,6 +34,6 @@ public record TranslatableComponent(
             });
         }
 
-        return builder.Build();
+        return ApplyBaseProperties(builder).Build();
     }
 }

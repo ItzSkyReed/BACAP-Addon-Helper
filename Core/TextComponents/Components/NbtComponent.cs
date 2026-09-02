@@ -1,4 +1,5 @@
-﻿using Core.SNBT.Interfaces;
+﻿using Core.SNBT;
+using Core.SNBT.Interfaces;
 using Core.TextComponents.Models;
 using JetBrains.Annotations;
 
@@ -19,8 +20,7 @@ public record NbtComponent(
 {
     public override ISnbtNode ToSnbt()
     {
-        var builder = CreateBaseBuilder()
-            .Put("nbt", NbtPath);
+        var builder = Snbt.Compound().Put("nbt", NbtPath);
 
         var sourceKey = SourceType switch
         {
@@ -34,6 +34,6 @@ public record NbtComponent(
         if (Interpret) builder.Put("interpret", true);
         if (Separator != null) builder.Put("separator", Separator.ToSnbt());
 
-        return builder.Build();
+        return ApplyBaseProperties(builder).Build();
     }
 }

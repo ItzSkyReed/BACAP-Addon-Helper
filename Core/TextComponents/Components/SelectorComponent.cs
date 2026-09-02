@@ -1,4 +1,5 @@
 ﻿using Core.Commands.Models;
+using Core.SNBT;
 using Core.SNBT.Interfaces;
 using Core.TextComponents.Models;
 using JetBrains.Annotations;
@@ -15,8 +16,11 @@ public record SelectorComponent(
 {
     public override ISnbtNode ToSnbt()
     {
-        var builder = CreateBaseBuilder().Put("selector", Selector.Value);
-        if (Separator != null) builder.Put("separator", Separator.ToSnbt());
-        return builder.Build();
+        var builder = Snbt.Compound().Put("selector", Selector.Value);
+
+        if (Separator != null)
+            builder.Put("separator", Separator.ToSnbt());
+
+        return ApplyBaseProperties(builder).Build();
     }
 }

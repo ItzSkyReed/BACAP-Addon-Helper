@@ -1,4 +1,5 @@
-﻿using Core.SNBT.Interfaces;
+﻿using Core.SNBT;
+using Core.SNBT.Interfaces;
 using Core.TextComponents.Models;
 using JetBrains.Annotations;
 
@@ -11,8 +12,9 @@ public record KeybindComponent(
     List<TextComponent>? Extra = null
 ) : TextComponent(Style, Extra)
 {
-    public override ISnbtNode ToSnbt() =>
-        CreateBaseBuilder()
-            .Put("keybind", Keybind)
-            .Build();
+    public override ISnbtNode ToSnbt()
+    {
+        var builder = Snbt.Compound().Put("keybind", Keybind);
+        return ApplyBaseProperties(builder).Build();
+    }
 }

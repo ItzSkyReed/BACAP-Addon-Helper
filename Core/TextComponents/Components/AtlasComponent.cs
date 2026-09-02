@@ -1,4 +1,5 @@
-﻿using Core.SNBT.Interfaces;
+﻿using Core.SNBT;
+using Core.SNBT.Interfaces;
 using Core.TextComponents.Models;
 using JetBrains.Annotations;
 
@@ -17,7 +18,7 @@ public record AtlasComponent(
 {
     public override ISnbtNode ToSnbt()
     {
-        var builder = CreateBaseBuilder()
+        var builder = Snbt.Compound()
             .Put("type", "object")
             .Put("object", "atlas")
             .Put("sprite", Sprite);
@@ -26,6 +27,6 @@ public record AtlasComponent(
         if (Atlas != null)
             builder.Put("atlas", Atlas);
 
-        return builder.Build();
+        return ApplyBaseProperties(builder).Build();
     }
 }

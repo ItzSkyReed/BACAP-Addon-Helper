@@ -1,4 +1,5 @@
-﻿using Core.SNBT.Interfaces;
+﻿using Core.SNBT;
+using Core.SNBT.Interfaces;
 using Core.TextComponents.Models;
 using JetBrains.Annotations;
 
@@ -12,11 +13,14 @@ public record ScoreComponent(
     List<TextComponent>? Extra = null
 ) : TextComponent(Style, Extra)
 {
-    public override ISnbtNode ToSnbt() =>
-        CreateBaseBuilder()
+    public override ISnbtNode ToSnbt()
+    {
+        var builder = Snbt.Compound()
             .PutCompound("score", s => s
                 .Put("name", Name)
                 .Put("objective", Objective)
-            )
-            .Build();
+            );
+
+        return ApplyBaseProperties(builder).Build();
+    }
 }

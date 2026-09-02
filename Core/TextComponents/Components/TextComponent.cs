@@ -1,6 +1,5 @@
 ﻿using System.Runtime.InteropServices;
 using System.Text.Json;
-using System.Text.Json.Serialization;
 using Core.DataComponents.Models.Interfaces;
 using Core.Serialization;
 using Core.SNBT;
@@ -38,13 +37,13 @@ public abstract record TextComponent(
     public abstract ISnbtNode ToSnbt();
 
     /// <summary>
-    /// Helper factory that initializes an <see cref="SnbtCompoundBuilder"/> pre-populated with common <see cref="Style"/> and <see cref="Extra"/> entries.
+    /// Appends common <see cref="Style"/> and <see cref="Extra"/> entries to the provided builder.
+    /// Call this at the end of your derived ToSnbt() methods to ensure proper property ordering (core properties first, then styles).
     /// </summary>
-    /// <returns>A new instance of <see cref="SnbtCompoundBuilder"/>.</returns>
-    protected SnbtCompoundBuilder CreateBaseBuilder()
+    /// <param name="builder">The builder to append base properties to.</param>
+    /// <returns>The modified <see cref="SnbtCompoundBuilder"/>.</returns>
+    protected SnbtCompoundBuilder ApplyBaseProperties(SnbtCompoundBuilder builder)
     {
-        var builder = Snbt.Compound();
-
         Style?.ApplyTo(builder);
 
         if (Extra is { Count: > 0 })
