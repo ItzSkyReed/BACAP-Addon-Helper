@@ -1,10 +1,13 @@
-﻿using Core.DataComponents.Components;
+﻿using BacapGenerator.Models.Interfaces;
+using BacapGenerator.Utils;
+using Core.DataComponents.Components;
 using Core.DataComponents.Interfaces;
 using Core.Items;
 using Core.SNBT.Interfaces;
 using Core.SNBT.Nodes;
 using Core.TextComponents.Components;
 using Core.TextComponents.Models;
+using JetBrains.Annotations;
 
 namespace BacapGenerator.Models.Advancements.Functions.Trophy;
 
@@ -18,7 +21,7 @@ public record TrophyReward(ItemStack Item)
     /// <summary>
     /// Gets the translation key directly from the item's CustomName component.
     /// </summary>
-    public string? TitleTranslationKey
+    public string? Title
     {
         get
         {
@@ -79,6 +82,7 @@ public record TrophyReward(ItemStack Item)
     /// <summary>
     /// Factory method to easily construct a brand new trophy item with all necessary NBT components correctly configured.
     /// </summary>
+    /// <param name="datapack">Datapack of the trophy</param>
     /// <param name="itemId">The base Minecraft item id (e.g., "minecraft:cobblestone_stairs").</param>
     /// <param name="titleKey">The translation key for the trophy title.</param>
     /// <param name="titleColor">The hex color string for the title.</param>
@@ -87,9 +91,10 @@ public record TrophyReward(ItemStack Item)
     /// <param name="extraRemoveComponents">Component IDs (e.g., "minecraft:enchantments") to explicitly remove (!component).</param>
     /// <returns>A new <see cref="TrophyReward"/> wrapper with the fully configured item stack.</returns>
     public static TrophyReward CreateNew(
+        IReadOnlyDatapack datapack,
         string itemId,
         string titleKey,
-        string titleColor = "#B0CCD8",
+        string titleColor,
         int count = 1,
         IEnumerable<IDataComponent>? extraSetComponents = null,
         IEnumerable<string>? extraRemoveComponents = null)
@@ -107,6 +112,10 @@ public record TrophyReward(ItemStack Item)
         var style = new TextStyle(Color: titleColor, Bold: true, Italic: false);
         var customNameTags = new TranslatableComponent(titleKey, Style: style);
         item.Components.Set(new CustomNameComponent(customNameTags));
+
+        // Set custom_model_data
+        var customModelData = new CustomModelDataComponent(Strings: [$"{datapack.Settings.MainNamespace}:{BacapUtils.ToSnakeCaseSlug(titleKey)}"]);
+        item.Components.Set(customModelData);
 
         // Add extra components
         if (extraSetComponents is not null)
