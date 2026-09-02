@@ -18,10 +18,10 @@ namespace BacapGenerator.Models.Advancements.Functions;
 public sealed class ItemRewardFunction : BaseFunction
 {
     /// <summary>
-    /// Gets or sets the list of items to reward the player.
+    /// Gets the list of items to reward the player.
     /// Setting this property automatically updates the underlying function file lines.
-    /// <exception cref="KeyNotFoundException">When item id is not found in registry to get its translation key</exception>
     /// </summary>
+    /// <exception cref="KeyNotFoundException">Thrown when an item id is not found in the registry to get its translation key.</exception>
     [PublicAPI]
     public IReadOnlyList<ItemStack> RewardItems { get; private set; } = [];
 
@@ -29,9 +29,10 @@ public sealed class ItemRewardFunction : BaseFunction
     /// Initializes a new instance of the <see cref="ItemRewardFunction"/> class.
     /// </summary>
     /// <param name="file">The physical file information.</param>
+    /// <param name="parsedFunction">The parsed McFunction AST data.</param>
     /// <param name="bacapAdvancement">The BACAP advancement model associated with this function.</param>
-    public ItemRewardFunction(FileInfo file, BacapAdvancement bacapAdvancement)
-        : base(file, bacapAdvancement)
+    internal ItemRewardFunction(FileInfo file, McFunction parsedFunction, BacapAdvancement bacapAdvancement)
+        : base(file, parsedFunction, bacapAdvancement)
     {
         ParseExistingItems();
     }
@@ -39,8 +40,8 @@ public sealed class ItemRewardFunction : BaseFunction
     /// <summary>
     /// Generates or updates the item reward commands (/give @s) and local announcements (/tellraw @s).
     /// Preserves any unrelated custom commands (like comments or particles) in the file.
-    /// <exception cref="KeyNotFoundException">When item id is not found in registry to get its translation key</exception>
     /// </summary>
+    /// <exception cref="KeyNotFoundException">Thrown when an item id is not found in the registry to get its translation key.</exception>
     [PublicAPI]
     public override void Update()
     {
@@ -137,9 +138,13 @@ public sealed class ItemRewardFunction : BaseFunction
 
     /// <summary>
     /// Creates the tellraw command for a specific item reward.
-    /// Example: tellraw @s {"color":"green","text":" +16 ","extra":[{"translate":"item.minecraft.egg"}]}
-    /// <exception cref="KeyNotFoundException">When item id is not found in registry to get its translation key</exception>
     /// </summary>
+    /// <param name="item">The item stack to create the message for.</param>
+    /// <returns>A tellraw command announcing the item reward.</returns>
+    /// <exception cref="KeyNotFoundException">Thrown when the item id is not found in the registry.</exception>
+    /// <example>
+    /// tellraw @s {"color":"green","text":" +16 ","extra":[{"translate":"item.minecraft.egg"}]}
+    /// </example>
     private TellrawCommand CreateItemMessage(ItemStack item)
     {
         var itemIdWithoutNamespace = MinecraftUtils.StripNamespace(item.Id);
