@@ -1,7 +1,4 @@
-﻿using System;
-using System.Diagnostics;
-using System.IO;
-using Xunit;
+﻿using System.Diagnostics;
 using Xunit.Abstractions;
 using Core.Advancements.Models;
 

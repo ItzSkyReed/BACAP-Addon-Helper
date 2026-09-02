@@ -4,8 +4,6 @@ using Core.McFunctions.Models.Interfaces;
 using JetBrains.Annotations;
 using Pidgin;
 using static Pidgin.Parser;
-// Allows using Return() directly for char parsers
-using static Pidgin.Parser<char>;
 
 namespace Core.McFunctions;
 

@@ -1,5 +1,4 @@
 ﻿using Core.Commands.Models;
-using Core.Commands.Models.Interfaces;
 using Core.SNBT.Nodes;
 
 namespace Core.Commands.Impl;
