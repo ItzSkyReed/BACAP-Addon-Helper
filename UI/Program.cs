@@ -1,4 +1,5 @@
 ﻿using BacapGenerator.Factories;
+using BacapGenerator.Models.Datapacks;
 using BacapGenerator.Models.Datapacks.Settings;
 using BacapGenerator.Services;
 using Core.DataComponents;
@@ -6,7 +7,11 @@ using Core.Registries;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using UI.Actions.Advancements;
+using UI.Actions.Advancements.Debug;
 using UI.Configuration;
+using UI.Interfaces;
+using UI.Menus;
 
 const string configFileName = "config.yaml";
 
@@ -26,19 +31,39 @@ var host = Host.CreateDefaultBuilder(args)
     {
         ComponentRegistry.RegisterAll();
 
-        services.Configure<List<DatapackSettings>>(
+        services.Configure<Dictionary<string, DatapackSettings>>(
             context.Configuration.GetSection("Datapacks"));
 
         var registryPath = context.Configuration.GetValue<string>("RegistryBasePath");
 
-        services.AddSingleton<RegistryLoader>(_ => new RegistryLoader(registryPath!));
+        services.AddSingleton<McRegistryLoader>(_ => new McRegistryLoader(registryPath!));
+        services.AddSingleton<DatapackRegistry>();
         services.AddSingleton<MinecraftData>();
+        services.AddSingleton<AdvancementIoManager>();
 
         services.AddTransient<IDatapackFactory, DatapackFactory>();
-        services.AddTransient<GeneratorAppService>();
+        services.AddTransient<DatapackLoaderService>();
+
+        services.AddTransient<MainMenuAction>();
+        services.AddTransient<IMainMenuAction, ManageAdvancementsMenu>();
+        services.AddTransient<IManageAdvancementsAction, AdvancementStatsAction>();
+        services.AddTransient<IManageAdvancementsAction, AdvancementInfoAction>();
+        services.AddTransient<IManageAdvancementsAction, AdvancementDeleteAction>();
+        services.AddTransient<IManageAdvancementsAction, AdvancementsFormatAction>();
+        services.AddTransient<IManageAdvancementsAction, AdvancementsRecoverAction>();
+        services.AddTransient<IManageAdvancementsAction, DebugAdvancementsMenuAction>();
+        services.AddTransient<IManageAdvancementsAction, GenerateMilestonesAction>();
+
+
+        services.AddTransient<IDebugAdvancementsAction, ShowTechnicalInvalidAction>();
+        services.AddTransient<IDebugAdvancementsAction, ShowBacapAdvancementsByTierAction>();
+
     })
     .Build();
 
 // Resolve the main service and run the application
-var app = host.Services.GetRequiredService<GeneratorAppService>();
-app.Run();
+var loader = host.Services.GetRequiredService<DatapackLoaderService>();
+loader.LoadAll();
+
+var mainMenu = host.Services.GetRequiredService<MainMenuAction>();
+await mainMenu.ExecuteAsync();

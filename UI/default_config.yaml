@@ -1,17 +1,126 @@
 ﻿RegistryBasePath: "./registries"
 
 Datapacks:
-  - DatapackPath: "./datapacks/my_datapack"
+  bacap:
+
+    DatapackPath: "./datapacks/bacap_datapack"
+    # Namespace with rewards/msgs
     RewardNamespace: "bacap_rewards"
-    LanguagePackPath: "./resourcepacks/lang_pack"
+    # Namespace with advancements
+    MainNamespace: "blazeandcave"
 
     # Access mode for the datapack.
     # Possible values: ReadOnly, ReadWrite
     Access: ReadOnly
 
+  bacaped:
+    # Path to the datapack folder
+    DatapackPath: "./datapacks/bacaped_datapack"
+    # Namespace with rewards/msgs
+    RewardNamespace: "bacaped_rewards"
+    # Namespace with advancements
+    MainNamespace: "bacaped"
+    # Path to the language pack folder
+    LanguagePackPath: "./resourcepacks/lang_pack"
+
+    # Access mode for the datapack.
+    # Possible values: ReadOnly, ReadWrite
+    Access: ReadWrite
+
     AdvancementMessageSettings:
       Entries:
         # A mapping of advancement tiers to their specific configurations.
-        # Possible keys: Challenge, Goal, Task, etc.
+        # Necessary keys: AdvancementLegend, Milestone, SuperChallenge, Challenge, Goal, Task, Hidden.
+        AdvancementLegend:
+          TranslationKey: "%1$s has completed every advancement in the %2$s tab, earning them the advancement %3$s%4$s%5$s"
+          TitleColor: "gold"
+          DescriptionColor: "gold"
+        Milestone:
+          TranslationKey: "%1$s has completed every advancement in the %2$s tab, earning them the advancement %3$s%4$s%5$s"
+          TitleColor: "yellow"
+          DescriptionColor: "#E5E74F"
+        SuperChallenge:
+          TranslationKey: "%1$s has completed the super challenge %2$s%3$s%4$s"
+          TitleColor: "#FF2A2A"
+          DescriptionColor: "#DC2727"
+        Hidden:
+          TranslationKey: "%1$s has found the hidden advancement %2$s%3$s%4$s"
+          TitleColor: "light_purple"
+          DescriptionColor: "#DE4ADC"
         Challenge:
-          MessagePrefix: "Awesome!"
+          TranslationKey: "%1$s has completed the challenge %2$s%3$s%4$s"
+          TitleColor: "dark_purple"
+          DescriptionColor: "#C900C7"
+        Goal:
+          TranslationKey: "%1$s has reached the goal %2$s%3$s%4$s"
+          TitleColor: "#75E1FF"
+          DescriptionColor: "#63BDD7"
+        Task:
+          TranslationKey: "%1$s has made the advancement %2$s%3$s%4$s"
+          TitleColor: "green"
+          DescriptionColor: "#49DB49"
+    # McPaths to the milestones, if specified will be used to generate milestones
+    MilestoneMcPaths:
+      adventure: "bacaped:bacap/enhanced_adventure_milestone"
+      "animal": "bacaped:bacap/enhanced_animal_milestone"
+      "biomes": "bacaped:bacap/enhanced_biomes_milestone"
+      "building": "bacaped:bacap/enhanced_building_milestone"
+      "challenges": "bacaped:bacap/enhanced_challenges_milestone"
+      "enchanting": "bacaped:bacap/enhanced_enchanting_milestone"
+      "end": "bacaped:bacap/enhanced_end_milestone"
+      "farming": "bacaped:bacap/enhanced_farming_milestone"
+      "mining": "bacaped:bacap/enhanced_mining_milestone"
+      "monsters": "bacaped:bacap/enhanced_monsters_milestone"
+      "nether": "bacaped:bacap/enhanced_nether_milestone"
+      "potion": "bacaped:bacap/enhanced_potion_milestone"
+      "redstone": "bacaped:bacap/enhanced_redstone_milestone"
+      "statistics": "bacaped:bacap/enhanced_statistics_milestone"
+      "weaponry": "bacaped:bacap/enhanced_weaponry_milestone"
+    # McPath to the advancement legend, if specified will be used to generate "Advancement Legend"
+    AdvancementLegendMcPath: "bacaped:bacap/enhanced_legend"
+
+  bacaped_hardcore:
+    DatapackPath: "./datapacks/bacaped_datapack"
+    RewardNamespace: "bacaped_rewards"
+    MainNamespace: "bacaped"
+    LanguagePackPath: "./resourcepacks/lang_pack"
+
+    # Identifier of the parent datapack, 'bacaped' for 'bacaped_hardcore"
+    ParentDatapackId: "bacaped"
+
+    # Access mode for the datapack.
+    # Possible values: ReadOnly, ReadWrite
+    Access: ReadWrite
+
+    AdvancementMessageSettings:
+      Entries:
+        # A mapping of advancement tiers to their specific configurations.
+        # Necessary keys: AdvancementLegend, Milestone, SuperChallenge, Challenge, Goal, Task, Hidden.
+        AdvancementLegend:
+          TranslationKey: "%1$s has completed every advancement in the %2$s tab, earning them the advancement %3$s%4$s%5$s"
+          TitleColor: "gold"
+          DescriptionColor: "gold"
+        Milestone:
+          TranslationKey: "%1$s has completed every advancement in the %2$s tab, earning them the advancement %3$s%4$s%5$s"
+          TitleColor: "yellow"
+          DescriptionColor: "#E5E74F"
+        SuperChallenge:
+          TranslationKey: "%1$s has completed the super challenge %2$s%3$s%4$s"
+          TitleColor: "#FF2A2A"
+          DescriptionColor: "#DC2727"
+        Hidden:
+          TranslationKey: "%1$s has found the hidden advancement %2$s%3$s%4$s"
+          TitleColor: "light_purple"
+          DescriptionColor: "#DE4ADC"
+        Challenge:
+          TranslationKey: "%1$s has completed the challenge %2$s%3$s%4$s"
+          TitleColor: "dark_purple"
+          DescriptionColor: "#C900C7"
+        Goal:
+          TranslationKey: "%1$s has reached the goal %2$s%3$s%4$s"
+          TitleColor: "#75E1FF"
+          DescriptionColor: "#63BDD7"
+        Task:
+          TranslationKey: "%1$s has made the advancement %2$s%3$s%4$s"
+          TitleColor: "green"
+          DescriptionColor: "#49DB49"
