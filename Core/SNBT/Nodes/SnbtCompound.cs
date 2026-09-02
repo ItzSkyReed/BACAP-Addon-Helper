@@ -25,7 +25,7 @@ public record SnbtCompound(Dictionary<string, ISnbtNode> Tags) : ISnbtNode
 
         if (!pretty)
         {
-            var pairs = Tags.Select(kv => $"{FormatKey(kv.Key)}:{kv.Value.ToSnbtString(false)}");
+            var pairs = Tags.Select(kv => $"{FormatKey(kv.Key)}:{kv.Value.ToSnbtString()}");
             return "{" + string.Join(",", pairs) + "}";
         }
 
@@ -37,7 +37,8 @@ public record SnbtCompound(Dictionary<string, ISnbtNode> Tags) : ISnbtNode
         foreach (var kvp in Tags)
         {
             sb.Append($"{nextIndent}{FormatKey(kvp.Key)}: {kvp.Value.ToSnbtString(true, nextIndent)}");
-            if (++count < Tags.Count) sb.AppendLine(","); else sb.AppendLine();
+            if (++count < Tags.Count) sb.AppendLine(",");
+            else sb.AppendLine();
         }
 
         sb.Append(indent + "}");
@@ -158,32 +159,90 @@ public record SnbtCompound(Dictionary<string, ISnbtNode> Tags) : ISnbtNode
     /// <summary>
     /// Gets a boolean value if present and valid; otherwise returns <see langword="null"/>.
     /// </summary>
-    public bool? GetOptionalBool(string key) => GetOptional<bool>(key);
+    public bool? GetOptionalBool(string key)
+    {
+        var node = GetNode(key);
+
+        if (node is SnbtBool snbtBool)
+            return snbtBool.Value;
+
+        return null;
+    }
 
     /// <summary>
     /// Gets a float value if present and numeric; otherwise returns <see langword="null"/>.
     /// </summary>
-    public float? GetOptionalFloat(string key) => GetOptional<float>(key);
+    public float? GetOptionalFloat(string key)
+    {
+        return GetNode(key) switch
+        {
+            SnbtFloat f => f.Value,
+            SnbtDouble d => (float)d.Value,
+            SnbtInt i => i.Value,
+            SnbtByte b => b.Value,
+            SnbtShort s => s.Value,
+            _ => null
+        };
+    }
 
     /// <summary>
     /// Gets an integer value if present and compatible; otherwise returns <see langword="null"/>.
     /// </summary>
-    public int? GetOptionalInt(string key) => GetOptional<int>(key);
+    public int? GetOptionalInt(string key)
+    {
+        return GetNode(key) switch
+        {
+            SnbtInt i => i.Value,
+            SnbtByte b => b.Value,
+            SnbtShort s => s.Value,
+            SnbtLong l => (int)l.Value,
+            SnbtFloat f => (int)f.Value,
+            SnbtDouble d => (int)d.Value,
+            _ => null
+        };
+    }
 
     /// <summary>
     /// Gets a long value if present and compatible; otherwise returns <see langword="null"/>.
     /// </summary>
-    public long? GetOptionalLong(string key) => GetOptional<long>(key);
+    public long? GetOptionalLong(string key)
+    {
+        return GetNode(key) switch
+        {
+            SnbtLong l => l.Value,
+            SnbtInt i => i.Value,
+            SnbtByte b => b.Value,
+            SnbtShort s => s.Value,
+            SnbtFloat f => (long)f.Value,
+            SnbtDouble d => (long)d.Value,
+            _ => null
+        };
+    }
 
     /// <summary>
     /// Gets a double value if present and numeric; otherwise returns <see langword="null"/>.
     /// </summary>
-    public double? GetOptionalDouble(string key) => GetOptional<double>(key);
+    public double? GetOptionalDouble(string key)
+    {
+        return GetNode(key) switch
+        {
+            SnbtDouble d => d.Value,
+            SnbtFloat f => f.Value,
+            SnbtLong l => l.Value,
+            SnbtInt i => i.Value,
+            SnbtByte b => b.Value,
+            SnbtShort s => s.Value,
+            _ => null
+        };
+    }
 
     /// <summary>
     /// Gets a string value if present; otherwise returns <see langword="null"/>.
     /// </summary>
-    public string? GetOptionalString(string key) => GetOptional<string>(key);
+    public string? GetOptionalString(string key)
+    {
+        return GetNode(key) is SnbtString str ? str.Value : null;
+    }
 
     #endregion
 
