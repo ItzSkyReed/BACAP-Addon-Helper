@@ -3,7 +3,7 @@ using System.Text.Json;
 using BacapGenerator.Models.Advancements;
 using Core.Advancements.Models;
 
-namespace BacapGenerator.Services;
+namespace BacapGenerator.Services.Generators;
 
 public static class MilestoneGenerator
 {
