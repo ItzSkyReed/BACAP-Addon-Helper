@@ -10,7 +10,7 @@
 ### High Priority (can be used but with big limitations)
 - Proper "Missing Translations Finder" inside all datapack tellraw, advancements
 - Proper "base_translation.json" generator 
-- Add 26.3 components
+~~- Add 26.3 components~~ **- Done**
 - Advancement validator:
   - Wrong reward functions McPaths
   - Invalid parents (circular, malformed.)
