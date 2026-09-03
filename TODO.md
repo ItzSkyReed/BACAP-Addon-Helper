@@ -6,6 +6,7 @@
   - Item Reward
   - Trophy Reward
 - Release generator
+- Summon trophy parser/Generator
 ### High Priority (can be used but with big limitations)
 - Proper "Missing Translations Finder" inside all datapack tellraw, advancements
 - Proper "base_translation.json" generator 
