@@ -28,7 +28,7 @@ public static class TextComponentParser
         return node switch
         {
             // Shorthand 1: A raw string "Hello" is equivalent to {text: "Hello"}
-            SnbtString str => new PlainTextComponent(str.Value ?? ""),
+            SnbtString str => new PlainTextComponent(str.Value),
 
             // Shorthand 2: A list ["A", "B"] is equivalent to {text: "A", extra: ["B"]}
             SnbtList list => ParseListShorthand(list),
