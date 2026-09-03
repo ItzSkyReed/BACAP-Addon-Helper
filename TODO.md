@@ -1,6 +1,6 @@
 ﻿### Highest priority (cant be used without this):
 - ~~Milestone (advancement legend) generator~~ **- Done**
-- Update Score/Points/Coop Update/Team Coop Update/Grant Trophies generator
+- ~~Update Score/Points/Coop Update/Team Coop Update/Grant Trophies generator~~ **- Done**
 - Functions step by step generator
   - Exp Reward
   - Item Reward

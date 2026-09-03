@@ -2,6 +2,7 @@
 using BacapGenerator.Models.Datapacks;
 using BacapGenerator.Models.Datapacks.Settings;
 using BacapGenerator.Services;
+using BacapGenerator.Services.IO;
 using Core.DataComponents;
 using Core.Registries;
 using Microsoft.Extensions.Configuration;
@@ -53,6 +54,7 @@ var host = Host.CreateDefaultBuilder(args)
         services.AddTransient<IManageAdvancementsAction, AdvancementsRecoverAction>();
         services.AddTransient<IManageAdvancementsAction, DebugAdvancementsMenuAction>();
         services.AddTransient<IManageAdvancementsAction, GenerateMilestonesAction>();
+        services.AddTransient<IManageAdvancementsAction, GenerateDatapackFunctionsAction>();
 
 
         services.AddTransient<IDebugAdvancementsAction, ShowTechnicalInvalidAction>();
