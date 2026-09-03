@@ -74,6 +74,9 @@
 
             // /function
             Register("function", FunctionCommandParser.Parser);
+
+            // /scoreboard parser
+            Register("scoreboard", ScoreboardCommandParser.Parser);
         }
 
         /// <summary>
