@@ -1,7 +1,7 @@
 ﻿using BacapGenerator.Models.Advancements;
 using BacapGenerator.Models.Advancements.Functions;
 
-namespace BacapGenerator.Services;
+namespace BacapGenerator.Services.IO;
 
 /// <summary>
 /// Service responsible for handling all file system operations related to advancements.
