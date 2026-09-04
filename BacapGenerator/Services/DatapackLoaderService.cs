@@ -2,14 +2,16 @@
 using BacapGenerator.Factories;
 using BacapGenerator.Models.Datapacks;
 using BacapGenerator.Models.Datapacks.Settings;
-
 using Microsoft.Extensions.Options;
 
 namespace BacapGenerator.Services;
 
 /// <summary>
-/// The main application service that drives the datapack generation process.
+/// The main application service that drives the datapack loading and generation process.
 /// </summary>
+/// <param name="options">Bound datapack settings mapped by configuration key.</param>
+/// <param name="datapackFactory">Factory responsible for constructing populated datapack models.</param>
+/// <param name="datapackRegistry">Central registry storing loaded datapack instances.</param>
 public class DatapackLoaderService(
     IOptions<Dictionary<string, DatapackSettings>> options,
     IDatapackFactory datapackFactory,
@@ -18,25 +20,27 @@ public class DatapackLoaderService(
     private readonly Dictionary<string, DatapackSettings> _datapackConfigs = options.Value;
 
     /// <summary>
-    /// Executes the main logic for loading and processing datapacks.
+    /// Executes the main logic for loading, validating, and resolving all configured datapacks.
     /// </summary>
     public void LoadAll()
     {
         Console.WriteLine($"Found {_datapackConfigs.Count} datapacks to process.");
 
-        // Load everything into memory
-        foreach (var (id, config) in _datapackConfigs)
+        foreach (var (rawKey, settings) in _datapackConfigs)
         {
+            var id = ParseDatapackId(rawKey);
+
             try
             {
-                Console.WriteLine($"\nProcessing datapack '{id}' at: {config.DatapackPath} (Mode: {config.Access})");
+                settings.ApplyPreset(id);
+                settings.Validate();
+
+                Console.WriteLine($"\nProcessing datapack '{id}' at: {settings.Path} (Mode: {settings.Access})");
 
                 var sw = Stopwatch.StartNew();
 
-                var datapack = datapackFactory.Create(id, config);
-
-                // Store the loaded datapack in the global registry
-                datapackRegistry.Register(id, datapack);
+                var datapack = datapackFactory.Create(id, settings);
+                datapackRegistry.Register(datapack);
 
                 sw.Stop();
 
@@ -48,18 +52,26 @@ public class DatapackLoaderService(
                 Console.ForegroundColor = ConsoleColor.Red;
                 Console.WriteLine($"Error processing datapack '{id}':\n{ex}");
                 Console.ResetColor();
+                throw;
             }
         }
 
-        // Resolve cross-datapack dependencies (overrides)
+        ResolveOverrides();
+    }
+
+    /// <summary>
+    /// Resolves cross-datapack parent-child links for addon overrides.
+    /// </summary>
+    private void ResolveOverrides()
+    {
         Console.WriteLine("\nResolving datapack overrides...");
 
-        foreach (var childPack in datapackRegistry.All.Values)
+        foreach (var childPack in datapackRegistry.Values)
         {
-            if (string.IsNullOrEmpty(childPack.Settings.ParentDatapackId))
+            if (childPack.Settings.ParentDatapackId is not { } parentId)
                 continue;
 
-            if (datapackRegistry.All.TryGetValue(childPack.Settings.ParentDatapackId, out var parentPack))
+            if (datapackRegistry.TryGet(parentId, out var parentPack))
             {
                 DatapackResolver.ResolveOverrides(childPack, parentPack);
                 Console.WriteLine($"Successfully linked '{childPack.Id}' as an addon to '{parentPack.Id}'.");
@@ -67,9 +79,23 @@ public class DatapackLoaderService(
             else
             {
                 Console.ForegroundColor = ConsoleColor.Yellow;
-                Console.WriteLine($"Warning: Parent datapack '{childPack.Settings.ParentDatapackId}' for addon '{childPack.Id}' was not found in the registry.");
+                Console.WriteLine($"Warning: Parent datapack '{parentId}' for addon '{childPack.Id}' was not found in the registry.");
                 Console.ResetColor();
             }
         }
     }
+
+    /// <summary>
+    /// Parses a string configuration key into its corresponding <see cref="DatapackId"/>.
+    /// </summary>
+    /// <param name="key">The configuration key name.</param>
+    /// <returns>The resolved <see cref="DatapackId"/>.</returns>
+    /// <exception cref="ArgumentException">Thrown when the key does not match any known datapack.</exception>
+    private static DatapackId ParseDatapackId(string key) => key.ToLowerInvariant() switch
+    {
+        "bacap" => DatapackId.Bacap,
+        "bacaped" => DatapackId.Bacaped,
+        "bacaped_hardcore" or "bacapedhardcore" => DatapackId.BacapedHardcore,
+        _ => throw new ArgumentException($"Unknown datapack key '{key}' in configuration.", nameof(key))
+    };
 }

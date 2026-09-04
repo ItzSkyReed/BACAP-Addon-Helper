@@ -6,36 +6,34 @@ namespace BacapGenerator.Factories;
 
 public interface IDatapackFactory
 {
-    Datapack Create(string id, DatapackSettings settings);
+    /// <summary>
+    /// Validates settings, loads advancement files from disk, and constructs a populated <see cref="Datapack"/>.
+    /// </summary>
+    /// <param name="id">The strongly-typed datapack identifier.</param>
+    /// <param name="settings">The preconfigured datapack settings.</param>
+    /// <returns>A fully initialized <see cref="Datapack"/> instance containing parsed advancements.</returns>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="settings"/> is null.</exception>
+    /// <exception cref="DirectoryNotFoundException">Thrown if the data directory does not exist on disk.</exception>
+    Datapack Create(DatapackId id, DatapackSettings settings);
 }
 
 /// <summary>
-/// Factory responsible for validating settings, reading file system data,
-/// and assembling fully initialized Datapacks.
+/// Factory responsible for reading advancement JSON files from disk and assembling fully initialized <see cref="Datapack"/> instances.
 /// </summary>
+/// <param name="minecraftData">Global Minecraft registry data.</param>
 public class DatapackFactory(MinecraftData minecraftData) : IDatapackFactory
 {
-    /// <summary>
-    /// Validates the provided settings, reads advancement files from disk,
-    /// and returns a fully constructed Datapack.
-    /// </summary>
-    /// <param name="id">The unique identifier of the datapack.</param>
-    /// <param name="settings">The settings parsed from configuration.</param>
-    /// <returns>A fully initialized Datapack.</returns>
-    /// <exception cref="DirectoryNotFoundException">Thrown if the data folder does not exist.</exception>
-    public Datapack Create(string id, DatapackSettings settings)
+    /// <inheritdoc/>
+    public Datapack Create(DatapackId id, DatapackSettings settings)
     {
-        // Validate inputs
+        ArgumentNullException.ThrowIfNull(settings);
+
         settings.Validate();
 
-        // Create the empty model, now including the ID
         var datapack = new Datapack(id, settings, minecraftData);
 
-        // Perform I/O and orchestration
         if (!datapack.DatapackDataPath.Exists)
-        {
-            throw new DirectoryNotFoundException($"Directory {datapack.DatapackDataPath.FullName} does not exist.");
-        }
+            throw new DirectoryNotFoundException($"Directory '{datapack.DatapackDataPath.FullName}' does not exist.");
 
         var jsonFiles = datapack.DatapackDataPath.EnumerateDirectories()
             .Select(namespaceDir => Path.Combine(namespaceDir.FullName, "advancement"))
@@ -48,11 +46,9 @@ public class DatapackFactory(MinecraftData minecraftData) : IDatapackFactory
             {
                 var fileInfo = new FileInfo(filePath);
                 var jsonContent = File.ReadAllText(filePath);
-
                 return AdvancementFactory.Create(fileInfo, jsonContent, datapack);
             });
 
-        // Inject the parsed data back into the model
         datapack.InitializeAdvancements(parsedAdvancements);
 
         return datapack;

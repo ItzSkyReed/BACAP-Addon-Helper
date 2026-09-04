@@ -19,7 +19,7 @@ public class AdvancementDeleteAction(DatapackRegistry registry) : IManageAdvance
 
     public Task ExecuteAsync()
     {
-        var allAdvancements = registry.All.Values
+        var allAdvancements = registry.Values
             .Where(dp => dp.Settings.Access == DatapackAccess.ReadWrite)
             .SelectMany(dp => dp.Advancements.OfType<BacapAdvancement>())
             .ToList();

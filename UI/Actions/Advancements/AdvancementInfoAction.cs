@@ -19,7 +19,7 @@ public class AdvancementInfoAction(DatapackRegistry registry, MinecraftData mine
 
     public Task ExecuteAsync()
     {
-        var allAdvancements = registry.All.Values
+        var allAdvancements = registry.Values
             .SelectMany(dp => dp.Advancements.OfType<BacapAdvancement>())
             .ToList();
 

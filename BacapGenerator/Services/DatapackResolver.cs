@@ -1,35 +1,47 @@
-﻿using BacapGenerator.Models.Datapacks;
+﻿using BacapGenerator.Models.Advancements;
+using BacapGenerator.Models.Datapacks;
 using JetBrains.Annotations;
 
 namespace BacapGenerator.Services;
 
 /// <summary>
-/// Resolves override flags for advancements across loaded datapacks.
+/// Service responsible for resolving inheritance and marking override advancements across related datapacks.
 /// </summary>
 public static class DatapackResolver
 {
     /// <summary>
-    /// Cross-references a child datapack with its parent to mark overriding advancements.
-    /// New advancements unique to the child pack will remain marked as standard.
+    /// Compares a child datapack with its parent and marks advancements that override existing parent advancements.
+    /// Overridden advancements will have their <see cref="BacapAdvancement.IsOverride"/> flag set to <see langword="true"/>.
     /// </summary>
-    /// <param name="childPack">The addon datapack (e.g., Bacaped Hardcore).</param>
-    /// <param name="parentPack">The base datapack (e.g., Bacaped).</param>
-    /// <exception cref="ArgumentNullException">Thrown when either pack is null.</exception>
+    /// <param name="childPack">The child/addon datapack instance (e.g., BacapedHardcore).</param>
+    /// <param name="parentPack">The base datapack instance (e.g., Bacaped).</param>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="childPack"/> or <paramref name="parentPack"/> is null.</exception>
+    /// <example>
+    /// <code>
+    /// DatapackResolver.ResolveOverrides(registry.BacapedHardcore, registry.Bacaped);
+    /// </code>
+    /// </example>
     [PublicAPI]
     public static void ResolveOverrides(Datapack childPack, Datapack parentPack)
     {
         ArgumentNullException.ThrowIfNull(childPack);
         ArgumentNullException.ThrowIfNull(parentPack);
 
-        var parentAdvancementIds = parentPack.Advancements
+        var parentAdvancementPaths = parentPack.Advancements
             .Select(a => a.McPath)
             .ToHashSet(StringComparer.OrdinalIgnoreCase);
 
-        // Mark advancements that already exist in the parent
+        var overrideCount = 0;
+
         foreach (var adv in childPack.Advancements)
         {
-            if (parentAdvancementIds.Contains(adv.McPath))
-                adv.IsOverride = true;
+            if (!parentAdvancementPaths.Contains(adv.McPath))
+                continue;
+
+            adv.IsOverride = true;
+            overrideCount++;
         }
+
+        Console.WriteLine($"Marked {overrideCount} advancement(s) in '{childPack.Id}' as overrides of '{parentPack.Id}'.");
     }
 }

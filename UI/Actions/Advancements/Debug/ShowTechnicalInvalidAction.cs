@@ -20,7 +20,7 @@ public class ShowTechnicalInvalidAction(DatapackRegistry registry) : IDebugAdvan
         var summaryTable = TuiTheme.CreateTable("Datapack", "Category", "Count");
         var foundAny = false;
 
-        foreach (var (id, datapack) in registry.All)
+        foreach (var (id, datapack) in registry)
         {
             var nonBacap = datapack.Advancements
                 .Where(adv => adv is not BacapAdvancement)
@@ -55,7 +55,7 @@ public class ShowTechnicalInvalidAction(DatapackRegistry registry) : IDebugAdvan
         TuiTheme.RenderElement(summaryTable);
         TuiTheme.Space();
 
-        foreach (var (id, datapack) in registry.All)
+        foreach (var (id, datapack) in registry)
         {
             var nonBacap = datapack.Advancements
                 .Where(adv => adv is not BacapAdvancement)

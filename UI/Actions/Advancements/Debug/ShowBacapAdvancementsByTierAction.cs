@@ -26,7 +26,7 @@ public class ShowBacapAdvancementsByTierAction(DatapackRegistry registry) : IDeb
         {
             TuiTheme.RenderHeader("Advancements by Tier");
 
-            var allBacapAdvancements = registry.All.Values
+            var allBacapAdvancements = registry.Values
                 .SelectMany(dp => dp.Advancements.OfType<BacapAdvancement>())
                 .ToList();
 

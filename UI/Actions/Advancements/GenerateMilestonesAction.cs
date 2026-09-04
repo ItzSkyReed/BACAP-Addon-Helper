@@ -1,5 +1,4 @@
 ﻿using BacapGenerator.Models.Datapacks;
-using BacapGenerator.Models.Datapacks.Settings;
 using BacapGenerator.Services.Global;
 using Spectre.Console;
 using UI.Interfaces;
@@ -8,45 +7,40 @@ using UI.Styling;
 namespace UI.Actions.Advancements;
 
 /// <summary>
-/// Action that triggers the generation of milestones and advancement legends across eligible datapacks.
+/// Action that triggers the generation and persistence of milestone and advancement legend files for the BACAP Enhanced addon.
 /// </summary>
+/// <param name="registry">The central registry providing access to loaded datapacks.</param>
 public class GenerateMilestonesAction(DatapackRegistry registry) : IManageAdvancementsAction
 {
+    /// <inheritdoc/>
     public string Title => "Generate Milestones & Advancement Legend";
 
+    /// <summary>
+    /// Prompts the user for confirmation and generates milestone and legend advancement files for the BACAP Enhanced datapack.
+    /// </summary>
+    /// <returns>A completed task representing the asynchronous operation.</returns>
+    /// <exception cref="InvalidOperationException">Thrown if the BACAP Enhanced datapack has not been loaded into the registry.</exception>
+    /// <example>
+    /// <code>
+    /// var action = new GenerateMilestonesAction(registry);
+    /// await action.ExecuteAsync();
+    /// </code>
+    /// </example>
     public Task ExecuteAsync()
     {
-        var targetDatapacks = registry.All.Values
-            .Where(dp => dp.Settings is { Access: DatapackAccess.ReadWrite, MilestoneMcPaths.Count: > 0 } &&
-                         !string.IsNullOrWhiteSpace(dp.Settings.AdvancementLegendMcPath))
-            .ToList();
-
-        if (targetDatapacks.Count == 0)
-        {
-            TuiTheme.ShowWarning("No datapacks found with ReadWrite access, MilestoneMcPaths, and AdvancementLegendMcPath configured.");
-            TuiTheme.WaitForKey();
-            return Task.CompletedTask;
-        }
-
         TuiTheme.RenderHeader(Title);
 
-        var confirm = AnsiConsole.Confirm(
-            $"Found [green]{targetDatapacks.Count}[/] eligible datapack(s). Ready to generate and overwrite milestone/legend files?");
+        var bacaped = registry.Bacaped;
 
+        var confirm = AnsiConsole.Confirm(
+            $"Generate and overwrite milestone/legend files for [green]{bacaped.Id}[/]?");
         if (!confirm)
             return Task.CompletedTask;
 
-        TuiTheme.Space();
-
-        // The progress bar now iterates over datapacks, delegating work to the service
-        TuiTheme.RunProgress(
-            "Generating milestones and legends...",
-            targetDatapacks,
-            GlobalAdvancementsService.GenerateAndSaveAll
-        );
+        GlobalAdvancementsService.GenerateAndSaveAll(bacaped);
 
         TuiTheme.Space();
-        TuiTheme.ShowSuccess("Successfully generated and saved milestone and legend files!");
+        TuiTheme.ShowSuccess($"Successfully generated and saved milestone and legend files for {bacaped.Id}!");
         TuiTheme.WaitForKey();
 
         return Task.CompletedTask;

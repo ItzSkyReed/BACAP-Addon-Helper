@@ -19,7 +19,7 @@ public class AdvancementsRecoverAction(
 
     public Task ExecuteAsync()
     {
-        var readWriteDatapacks = registry.All.Values
+        var readWriteDatapacks = registry.Values
             .Where(dp => dp.Settings.Access == DatapackAccess.ReadWrite)
             .ToList();
 

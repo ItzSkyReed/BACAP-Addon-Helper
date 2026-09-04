@@ -1,4 +1,5 @@
 ﻿using BacapGenerator.Models.Advancements;
+using BacapGenerator.Models.Datapacks.Settings;
 using Spectre.Console;
 using UI.Styling;
 
@@ -78,7 +79,7 @@ public static class AdvancementSearcher
                         {
                             var escapedTitle = Markup.Escape(adv.TitleText);
 
-                            var datapack = Markup.Escape(adv.Datapack.Id);
+                            var datapack = Markup.Escape(adv.Datapack.Id.ToDisplayName());
 
 
                             var path = Markup.Escape(adv.McPath);

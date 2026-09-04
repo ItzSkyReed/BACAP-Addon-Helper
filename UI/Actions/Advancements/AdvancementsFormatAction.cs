@@ -19,7 +19,7 @@ public class AdvancementsFormatAction(
 
     public Task ExecuteAsync()
     {
-        var advancements = registry.All.Values
+        var advancements = registry.Values
             .Where(dp => dp.Settings.Access == DatapackAccess.ReadWrite)
             .SelectMany(dp => dp.Advancements.OfType<BacapAdvancement>())
             .ToList();

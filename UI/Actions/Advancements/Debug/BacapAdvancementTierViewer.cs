@@ -15,8 +15,16 @@ public static class BacapAdvancementTierViewer
     /// </summary>
     /// <param name="registry">The datapack registry containing all loaded advancements.</param>
     /// <param name="selectedTier">The specific tier to filter by, or <see langword="null"/> to render all tiers.</param>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="registry"/> is null.</exception>
+    /// <example>
+    /// <code>
+    /// BacapAdvancementTierViewer.RenderTree(registry, BacapAdvancementTier.Challenge);
+    /// </code>
+    /// </example>
     public static void RenderTree(DatapackRegistry registry, BacapAdvancementTier? selectedTier)
     {
+        ArgumentNullException.ThrowIfNull(registry);
+
         var filterTitle = selectedTier.HasValue
             ? $"Tier: {selectedTier.Value}"
             : "All Tiers";
@@ -25,7 +33,8 @@ public static class BacapAdvancementTierViewer
 
         var foundAny = false;
 
-        foreach (var (id, datapack) in registry.All)
+        // Iterate directly over registry key-value pairs (DatapackId, Datapack)
+        foreach (var (id, datapack) in registry)
         {
             var advancements = datapack.Advancements
                 .OfType<BacapAdvancement>()
@@ -48,12 +57,12 @@ public static class BacapAdvancementTierViewer
                 var tierNode = rootTree.AddNode($"[bold yellow]{tierGroup.Key}[/] [grey]({tierGroup.Count()})[/]");
 
                 var tabGroups = tierGroup
-                    .GroupBy(adv => adv.Tab.DisplayName)
-                    .OrderBy(g => g.Key);
+                    .GroupBy(adv => adv.Tab)
+                    .OrderBy(g => g.Key.DisplayName);
 
                 foreach (var tabGroup in tabGroups)
                 {
-                    var tabNode = tierNode.AddNode($"[blue]{tabGroup.Key}[/] [grey]({tabGroup.Count()})[/]");
+                    var tabNode = tierNode.AddNode($"[blue]{tabGroup.Key.DisplayName}[/] [grey]({tabGroup.Count()})[/]");
 
                     foreach (var adv in tabGroup.OrderBy(a => a.File.Name))
                     {

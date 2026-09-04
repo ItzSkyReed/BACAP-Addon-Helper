@@ -26,7 +26,7 @@ public class AdvancementStatsAction(DatapackRegistry registry) : IManageAdvancem
 
         var table = TuiTheme.CreateTable([.. columns]);
 
-        foreach (var (id, datapack) in registry.All)
+        foreach (var (id, datapack) in registry)
         {
             var tierCounts = datapack.Advancements
                 .OfType<BacapAdvancement>()

@@ -18,10 +18,12 @@ public static class GlobalAdvancementsService
     /// <param name="datapack">The target datapack to process.</param>
     public static void GenerateAndSaveAll(Datapack datapack)
     {
+        ArgumentNullException.ThrowIfNull(datapack);
+
         var settings = datapack.Settings;
 
         // Ensure there is anything to do
-        if (settings.MilestoneMcPaths == null || settings.MilestoneMcPaths.Count == 0)
+        if (settings.MilestoneMcPaths is not { Count: > 0 })
             return;
 
         var bacapAdvancements = datapack.Advancements.OfType<BacapAdvancement>().ToList();
@@ -30,17 +32,18 @@ public static class GlobalAdvancementsService
         // Filter using our extension method
         var validAdvancements = bacapAdvancements.GetValidPlayable(settings.AdvancementLegendMcPath).ToList();
 
+        // Group directly by BacapAdvancementTab record instead of string FolderName
         var advancementsByTab = validAdvancements
-            .GroupBy(a => a.Tab.FolderName)
+            .GroupBy(a => a.Tab)
             .ToDictionary(g => g.Key, g => g.ToList());
 
         // Generate and save Milestones
-        foreach (var (tabFolder, milestonePath) in settings.MilestoneMcPaths)
+        foreach (var (tab, milestonePath) in settings.MilestoneMcPaths)
         {
             if (!advByPath.TryGetValue(milestonePath, out var milestoneAdv))
                 continue;
 
-            var tabAdvancements = advancementsByTab.GetValueOrDefault(tabFolder, []);
+            var tabAdvancements = advancementsByTab.GetValueOrDefault(tab, []);
             milestoneAdv.Advancement = MilestoneGenerator.GenerateMilestone(milestoneAdv, tabAdvancements);
 
             AdvancementIoManager.SaveAdvancement(milestoneAdv);

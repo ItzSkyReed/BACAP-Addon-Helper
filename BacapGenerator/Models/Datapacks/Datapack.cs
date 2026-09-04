@@ -1,5 +1,4 @@
-﻿
-using BacapGenerator.Models.Advancements;
+﻿using BacapGenerator.Models.Advancements;
 using BacapGenerator.Models.Datapacks.Settings;
 using BacapGenerator.Models.Interfaces;
 using Core.Registries;
@@ -16,34 +15,45 @@ public class Datapack : IReadOnlyDatapack
     private readonly List<ManagedAdvancement> _advancements = [];
 
     /// <summary>
-    /// Gets the unique identifier of the datapack as defined in the configuration.
+    /// Gets the strongly-typed identifier of the datapack.
     /// </summary>
-    public string Id { get; }
+    public DatapackId Id { get; }
 
+    /// <summary>
+    /// Gets the settings and configuration associated with this datapack.
+    /// </summary>
     public DatapackSettings Settings { get; }
 
+    /// <summary>
+    /// Gets the <see cref="DirectoryInfo"/> representing the data folder of the datapack.
+    /// </summary>
     public DirectoryInfo DatapackDataPath { get; }
 
+    /// <summary>
+    /// Gets the global Minecraft registry data.
+    /// </summary>
     public MinecraftData MinecraftData { get; }
 
+    /// <inheritdoc/>
     public IReadOnlyList<ManagedAdvancement> Advancements => _advancements;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="Datapack"/> model.
-    /// Does not perform any file I/O.
+    /// Does not perform file I/O operations.
     /// </summary>
-    /// <param name="id">The unique identifier from the configuration.</param>
+    /// <param name="id">The strongly-typed identifier of the datapack.</param>
     /// <param name="settings">The datapack configuration.</param>
     /// <param name="minecraftData">The global Minecraft registry data.</param>
-    /// <exception cref="ArgumentException">Thrown when the id is null or empty.</exception>
-    public Datapack(string id, DatapackSettings settings, MinecraftData minecraftData)
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="settings"/> or <paramref name="minecraftData"/> is null.</exception>
+    public Datapack(DatapackId id, DatapackSettings settings, MinecraftData minecraftData)
     {
-        ArgumentException.ThrowIfNullOrEmpty(id);
+        ArgumentNullException.ThrowIfNull(settings);
+        ArgumentNullException.ThrowIfNull(minecraftData);
 
         Id = id;
         Settings = settings;
         MinecraftData = minecraftData;
-        DatapackDataPath = new DirectoryInfo(Path.Combine(Settings.DatapackPath, "data"));
+        DatapackDataPath = new DirectoryInfo(Path.Combine(Settings.Path, "data"));
     }
 
     /// <summary>
@@ -52,6 +62,7 @@ public class Datapack : IReadOnlyDatapack
     /// <param name="oldAdvancement">The current advancement instance to be replaced.</param>
     /// <param name="newAdvancement">The new advancement instance.</param>
     /// <returns><see langword="true"/> if the item was found and replaced; otherwise, <see langword="false"/>.</returns>
+    /// <exception cref="ArgumentNullException">Thrown when any argument is null.</exception>
     [PublicAPI]
     public bool ReplaceAdvancement(ManagedAdvancement oldAdvancement, ManagedAdvancement newAdvancement)
     {
@@ -68,11 +79,12 @@ public class Datapack : IReadOnlyDatapack
 
     /// <summary>
     /// Populates the datapack with loaded advancements.
-    /// Marked as internal so only the Factory within the same assembly can populate it.
     /// </summary>
     /// <param name="parsedAdvancements">The collection of advancements to add.</param>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="parsedAdvancements"/> is null.</exception>
     internal void InitializeAdvancements(IEnumerable<ManagedAdvancement> parsedAdvancements)
     {
+        ArgumentNullException.ThrowIfNull(parsedAdvancements);
         _advancements.AddRange(parsedAdvancements);
     }
 }
