@@ -38,6 +38,25 @@ public sealed class ItemRewardFunction : BaseFunction
     }
 
     /// <summary>
+    /// Sets the reward items and updates the underlying function commands.
+    /// </summary>
+    /// <param name="items">The new collection of reward items.</param>
+    public void SetRewardItems(IEnumerable<ItemStack> items)
+    {
+        RewardItems = items.ToList();
+        Update();
+    }
+
+    /// <summary>
+    /// Clears all reward items, effectively removing give and tellraw commands.
+    /// </summary>
+    public void ClearRewardItems()
+    {
+        RewardItems = [];
+        Update();
+    }
+
+    /// <summary>
     /// Generates or updates the item reward commands (/give @s) and local announcements (/tellraw @s).
     /// Preserves any unrelated custom commands (like comments or particles) in the file.
     /// </summary>
