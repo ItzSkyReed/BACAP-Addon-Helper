@@ -32,10 +32,6 @@ public class GenerateDatapackFunctionsAction(DatapackRegistry registry) : IManag
 
         var bacaped = registry.Bacaped;
 
-        var confirm = AnsiConsole.Confirm($"Generate global functions for [green]{bacaped.Id}[/]?");
-        if (!confirm)
-            return Task.CompletedTask;
-
         GlobalFunctionsService.GenerateAndSaveAll(bacaped);
 
         TuiTheme.Space();

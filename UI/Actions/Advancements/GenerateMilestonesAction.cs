@@ -32,11 +32,6 @@ public class GenerateMilestonesAction(DatapackRegistry registry) : IManageAdvanc
 
         var bacaped = registry.Bacaped;
 
-        var confirm = AnsiConsole.Confirm(
-            $"Generate and overwrite milestone/legend files for [green]{bacaped.Id}[/]?");
-        if (!confirm)
-            return Task.CompletedTask;
-
         GlobalAdvancementsService.GenerateAndSaveAll(bacaped);
 
         TuiTheme.Space();
