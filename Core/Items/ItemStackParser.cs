@@ -1,9 +1,9 @@
-﻿using Core.DataComponents;
+﻿using Core.Common;
+using Core.DataComponents;
+using Core.DataComponents.Interfaces;
 using Core.SNBT;
 using JetBrains.Annotations;
 using Pidgin;
-using Core.Common;
-using Core.DataComponents.Interfaces;
 
 namespace Core.Items;
 
@@ -47,18 +47,42 @@ public static class ItemStackParser
         Parser.OneOf(ComponentRemoval, ComponentAddition);
 
     /// <summary>
+    /// Parses a comma-separated sequence of component operations.
+    /// </summary>
+    private static readonly Parser<char, IEnumerable<Action<DataComponentMap>>> ComponentOperations =
+        ComponentOperation.Separated(Parser.Char(',').Between(Whitespace));
+
+    /// <summary>
     /// Parses a comma-separated block of component operations enclosed in square brackets (e.g., "[damage=10, !custom_name]").
     /// </summary>
-    private static readonly Parser<char, Action<DataComponentMap>> ComponentsBlock =
-        ComponentOperation
-            .Separated(Parser.Char(',').Between(Whitespace))
+    [PublicAPI]
+    public static readonly Parser<char, Action<DataComponentMap>> ComponentsBlock =
+        ComponentOperations
             .Between(Parser.Char('[').Between(Whitespace), Parser.Char(']').Between(Whitespace))
             .Select<Action<DataComponentMap>>(operations => map =>
             {
-                // Sequentially apply all parsed operations to the item's component map
                 foreach (var op in operations)
+                {
                     op(map);
+                }
             });
+
+    /// <summary>
+    /// Parses component operations in either bracketed format (<c>[id=val, ...]</c>)
+    /// or as a bare comma-separated list (<c>id=val, !removed_id</c>).
+    /// </summary>
+    [PublicAPI]
+    public static readonly Parser<char, Action<DataComponentMap>> StandaloneComponents =
+        Parser.OneOf(
+            ComponentsBlock,
+            ComponentOperations.Select<Action<DataComponentMap>>(operations => map =>
+            {
+                foreach (var op in operations)
+                {
+                    op(map);
+                }
+            })
+        );
 
     /// <summary>
     /// The root parser combinator for an item stack: parses the item ID and an optional component block.
@@ -69,9 +93,10 @@ public static class ItemStackParser
             (id, opsOpt) =>
             {
                 var item = new ItemStack(id);
-                // Apply component modifications if the bracketed block was provided
                 if (opsOpt.HasValue)
+                {
                     opsOpt.Value(item.Components);
+                }
                 return item;
             },
             ParserParts.IdentifierParser,
@@ -83,17 +108,44 @@ public static class ItemStackParser
     /// </summary>
     /// <param name="input">The item string to parse (e.g., "minecraft:diamond_sword[damage=15, !enchantments]").</param>
     /// <returns>A fully configured <see cref="ItemStack"/> instance with applied component modifications.</returns>
-    /// <exception cref="Pidgin.ParseException">Thrown when the input string contains invalid syntax or unknown component tokens.</exception>
-    /// <exception cref="System.ArgumentNullException">Thrown when the <paramref name="input"/> string is null.</exception>
+    /// <exception cref="ParseException">Thrown when the input string contains invalid syntax or unknown component tokens.</exception>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="input"/> is null.</exception>
+    [PublicAPI]
+    public static ItemStack Parse(string input)
+    {
+        ArgumentNullException.ThrowIfNull(input);
+        return Item.Before(Whitespace).Before(Parser<char>.End).ParseOrThrow(input.Trim());
+    }
+
+    /// <summary>
+    /// Parses a standalone component string (with or without brackets) and applies modifications directly into the target map.
+    /// </summary>
+    /// <param name="input">The component operations string, e.g. "[unbreakable={}, !custom_name]" or "damage=10".</param>
+    /// <param name="target">The component map to update.</param>
+    /// <exception cref="ParseException">Thrown when parsing encounters a syntax error.</exception>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="input"/> or <paramref name="target"/> is null.</exception>
     /// <example>
     /// <code>
-    /// // Parsing an item with no components
-    /// ItemStack item1 = ItemStackParser.Parse("minecraft:apple");
-    ///
-    /// // Parsing an item with custom components and removals
-    /// ItemStack item2 = ItemStackParser.Parse("minecraft:stick[damage=5, !custom_name]");
+    /// ItemStackParser.ApplyComponents("[enchantment_glint_override=true, custom_data={Trophy:1}]", stack.Components);
     /// </code>
     /// </example>
     [PublicAPI]
-    public static ItemStack Parse(string input) => Item.ParseOrThrow(input);
+    public static void ApplyComponents(string input, DataComponentMap target)
+    {
+        ArgumentNullException.ThrowIfNull(input);
+        ArgumentNullException.ThrowIfNull(target);
+
+        var trimmed = input.Trim();
+        if (string.IsNullOrWhiteSpace(trimmed))
+        {
+            return;
+        }
+
+        var applyAction = StandaloneComponents
+            .Between(Whitespace, Whitespace)
+            .Before(Parser<char>.End)
+            .ParseOrThrow(trimmed);
+
+        applyAction(target);
+    }
 }
