@@ -43,6 +43,31 @@ public class DataComponentMap : ISnbtSerializable
         Added[id] = component;
     }
 
+
+    /// <summary>
+    /// Updates an existing component using a transform function, or initializes it if it does not exist.
+    /// </summary>
+    /// <typeparam name="T">The strongly-typed component class.</typeparam>
+    /// <param name="updater">Function that accepts the existing component (or <see langword="null"/>) and returns the updated component.</param>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="updater"/> is null.</exception>
+    /// <example>
+    /// <code>
+    /// item.Components.Update&lt;CustomModelDataComponent&gt;(existing => (existing ?? new CustomModelDataComponent()) with
+    /// {
+    ///     Strings = [..existing?.Strings ?? [], "bacap:slug"]
+    /// });
+    /// </code>
+    /// </example>
+    [PublicAPI]
+    public void Update<T>(Func<T?, T> updater) where T : class, ITypedComponent<T>
+    {
+        ArgumentNullException.ThrowIfNull(updater);
+
+        var existing = Get<T>();
+        var updated = updater(existing);
+        Set(updated);
+    }
+
     /// <summary>
     /// Removes a component from the map by its string identifier.
     /// </summary>
