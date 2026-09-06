@@ -2,6 +2,7 @@
 using System.Runtime.CompilerServices;
 using System.Text;
 using Core.SNBT.Interfaces;
+using JetBrains.Annotations;
 
 namespace Core.SNBT.Nodes;
 
@@ -11,6 +12,14 @@ namespace Core.SNBT.Nodes;
 /// <param name="Tags">The underlying dictionary containing key-node pairs.</param>
 public record SnbtCompound(Dictionary<string, ISnbtNode> Tags) : ISnbtNode
 {
+    /// <summary>
+    /// Initializes a new empty instance of the <see cref="SnbtCompound"/> record.
+    /// </summary>
+    [PublicAPI]
+    public SnbtCompound() : this(new Dictionary<string, ISnbtNode>())
+    {
+    }
+
     #region Serialization
 
     /// <summary>
