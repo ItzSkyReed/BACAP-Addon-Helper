@@ -52,38 +52,41 @@ public sealed class ExpRewardFunction : BaseFunction
     /// Identifies the existing commands by looking for standard heuristics
     /// to preserve other custom commands in the file.
     /// </summary>
+    /// <summary>
+    /// Updates or removes the experience reward and tellraw commands depending on whether the amount is greater than zero.
+    /// </summary>
     [PublicAPI]
     public override void Update()
     {
-        var xpCommand = new ExperienceCommand(ExperienceAction.Add, Selector.SelectedPlayer, _experienceAmount);
-        var tellrawCommand = CreateExperienceMessage(_experienceAmount);
-
-        var xpLine = new ExecutableLine(xpCommand);
-        var tellrawLine = new ExecutableLine(tellrawCommand);
-
         var xpIndex = Function.Lines.FindIndex(line =>
-        {
-            if (line is ExecutableLine { Command: ExperienceCommand { Action: ExperienceAction.Add } expCmd })
-                return expCmd.Target == Selector.SelectedPlayer;
-
-            return false;
-        });
+            line is ExecutableLine { Command: ExperienceCommand { Action: ExperienceAction.Add } expCmd } &&
+            expCmd.Target == Selector.SelectedPlayer);
 
         var tellrawIndex = Function.Lines.FindIndex(line =>
+            line is ExecutableLine { Command: TellrawCommand tellCmd } &&
+            tellCmd.Target == Selector.SelectedPlayer &&
+            (tellCmd.Message.Extra?.Any(extraComp =>
+                extraComp is TranslatableComponent { Translate: "Experience" }) ?? false));
+
+        // If no experience reward is granted, remove any previously generated reward lines.
+        if (_experienceAmount <= 0)
         {
-            if (line is not ExecutableLine { Command: TellrawCommand tellCmd })
-                return false;
+            // Remove the higher index first to prevent index shifting issues.
+            var indicesToRemove = new[] { xpIndex, tellrawIndex }
+                .Where(i => i >= 0)
+                .OrderByDescending(i => i);
 
-            if (tellCmd.Target != Selector.SelectedPlayer) return false;
+            foreach (var index in indicesToRemove)
+                Function.Lines.RemoveAt(index);
 
-            var hasExperienceTag = tellCmd.Message.Extra?.Any(extraComp =>
-                extraComp is TranslatableComponent { Translate: "Experience" }
-            ) ?? false;
+            return;
+        }
 
-            return hasExperienceTag;
-        });
+        // Otherwise, generate the reward commands.
+        var xpLine = new ExecutableLine(new ExperienceCommand(ExperienceAction.Add, Selector.SelectedPlayer, _experienceAmount));
+        var tellrawLine = new ExecutableLine(CreateExperienceMessage(_experienceAmount));
 
-        // Replace or Insert XP Command
+        // Replace or insert the experience command.
         if (xpIndex >= 0)
             Function.Lines[xpIndex] = xpLine;
         else
@@ -92,11 +95,22 @@ public sealed class ExpRewardFunction : BaseFunction
             xpIndex = 0;
         }
 
-        // Replace or Insert Tellraw Command
+        // Re-evaluate tellraw index if the XP line insertion shifted elements.
+        tellrawIndex = Function.Lines.FindIndex(line =>
+            line is ExecutableLine { Command: TellrawCommand tellCmd } &&
+            tellCmd.Target == Selector.SelectedPlayer &&
+            (tellCmd.Message.Extra?.Any(extraComp =>
+                extraComp is TranslatableComponent { Translate: "Experience" }) ?? false));
+
+        // Replace or insert the tellraw command.
         if (tellrawIndex >= 0)
+        {
             Function.Lines[tellrawIndex] = tellrawLine;
+        }
         else
+        {
             Function.Lines.Insert(xpIndex + 1, tellrawLine);
+        }
     }
 
     /// <summary>
