@@ -98,7 +98,7 @@ public sealed class DatapackSettings
                     Entries = DatapackDefaults.DefaultTierMessages
                 };
                 ParentDatapackId = null;
-                MilestoneMcPaths = DatapackDefaults.CreateDefaultTypedMilestones("bacaped");
+                MilestoneMcPaths = DatapackDefaults.CreateDefaultTypedMilestones();
                 AdvancementLegendMcPath = "bacaped:bacap/enhanced_legend";
                 break;
 
@@ -111,7 +111,7 @@ public sealed class DatapackSettings
                     Entries = DatapackDefaults.DefaultTierMessages
                 };
                 ParentDatapackId = DatapackId.Bacaped;
-                MilestoneMcPaths = DatapackDefaults.CreateDefaultTypedMilestones("bacaped");
+                MilestoneMcPaths = DatapackDefaults.CreateDefaultTypedMilestones();
                 AdvancementLegendMcPath = "bacaped:bacap/enhanced_legend";
                 break;
 
