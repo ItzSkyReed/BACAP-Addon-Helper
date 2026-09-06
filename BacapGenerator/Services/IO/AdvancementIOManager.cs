@@ -6,7 +6,7 @@ namespace BacapGenerator.Services.IO;
 /// <summary>
 /// Service responsible for handling all file system operations related to advancements.
 /// </summary>
-public class AdvancementIoManager
+public static class AdvancementIoManager
 {
     public static void SaveAdvancement(BacapAdvancement advancement)
     {

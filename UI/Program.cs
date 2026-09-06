@@ -2,7 +2,6 @@
 using BacapGenerator.Models.Datapacks;
 using BacapGenerator.Models.Datapacks.Settings;
 using BacapGenerator.Services;
-using BacapGenerator.Services.IO;
 using Core.DataComponents;
 using Core.Registries;
 using Microsoft.Extensions.Configuration;
@@ -40,7 +39,6 @@ var host = Host.CreateDefaultBuilder(args)
         services.AddSingleton<McRegistryLoader>(_ => new McRegistryLoader(registryPath!));
         services.AddSingleton<DatapackRegistry>();
         services.AddSingleton<MinecraftData>();
-        services.AddSingleton<AdvancementIoManager>();
 
         services.AddTransient<IDatapackFactory, DatapackFactory>();
         services.AddTransient<DatapackLoaderService>();
