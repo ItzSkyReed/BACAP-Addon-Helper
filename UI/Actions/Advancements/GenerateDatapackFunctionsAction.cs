@@ -1,6 +1,5 @@
 ﻿using BacapGenerator.Models.Datapacks;
 using BacapGenerator.Services.Global;
-using Spectre.Console;
 using UI.Interfaces;
 using UI.Styling;
 
