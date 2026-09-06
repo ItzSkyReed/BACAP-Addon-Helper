@@ -1,4 +1,5 @@
-﻿using System.Diagnostics.CodeAnalysis;
+﻿using System.Collections;
+using System.Diagnostics.CodeAnalysis;
 using Core.DataComponents.Interfaces;
 using Core.SNBT;
 using Core.SNBT.Interfaces;
@@ -11,7 +12,7 @@ namespace Core.DataComponents;
 /// Represents a map of Minecraft item data components, handling both added components
 /// and explicit removals (e.g., starting with '!').
 /// </summary>
-public class DataComponentMap : ISnbtSerializable
+public class DataComponentMap : ISnbtSerializable, IEnumerable<IDataComponent>
 {
     /// <summary>
     /// Gets the dictionary of currently active data components mapped by their string identifier.
@@ -42,7 +43,6 @@ public class DataComponentMap : ISnbtSerializable
         Removed.Remove(id);
         Added[id] = component;
     }
-
 
     /// <summary>
     /// Updates an existing component using a transform function, or initializes it if it does not exist.
@@ -93,7 +93,7 @@ public class DataComponentMap : ISnbtSerializable
     /// Determines whether a component with the specified string identifier exists in the map.
     /// </summary>
     /// <param name="componentId">The string identifier of the component.</param>
-    /// <returns><c>true</c> if the component is active; otherwise, <c>false</c>.</returns>
+    /// <returns><see langword="true"/> if the component is active; otherwise, <see langword="false"/>.</returns>
     [PublicAPI]
     public bool Has(string componentId)
     {
@@ -101,10 +101,19 @@ public class DataComponentMap : ISnbtSerializable
     }
 
     /// <summary>
+    /// Determines whether a component with the specified string identifier exists in the map.
+    /// Provides an alias for <see cref="Has(string)"/>.
+    /// </summary>
+    /// <param name="componentId">The string identifier of the component.</param>
+    /// <returns><see langword="true"/> if the component is active; otherwise, <see langword="false"/>.</returns>
+    [PublicAPI]
+    public bool Contains(string componentId) => Has(componentId);
+
+    /// <summary>
     /// Determines whether a strongly-typed component exists in the map.
     /// </summary>
     /// <typeparam name="T">The type of the component to check.</typeparam>
-    /// <returns><c>true</c> if the component is active; otherwise, <c>false</c>.</returns>
+    /// <returns><see langword="true"/> if the component is active; otherwise, <see langword="false"/>.</returns>
     [PublicAPI]
     public bool Has<T>() where T : ITypedComponent<T>
     {
@@ -112,10 +121,19 @@ public class DataComponentMap : ISnbtSerializable
     }
 
     /// <summary>
+    /// Determines whether a strongly-typed component exists in the map.
+    /// Provides an alias for <see cref="Has{T}()"/>.
+    /// </summary>
+    /// <typeparam name="T">The type of the component to check.</typeparam>
+    /// <returns><see langword="true"/> if the component is active; otherwise, <see langword="false"/>.</returns>
+    [PublicAPI]
+    public bool Contains<T>() where T : ITypedComponent<T> => Has<T>();
+
+    /// <summary>
     /// Retrieves a component by its string identifier.
     /// </summary>
     /// <param name="componentId">The string identifier of the component.</param>
-    /// <returns>The <see cref="IDataComponent"/> if found; otherwise, <c>null</c>.</returns>
+    /// <returns>The <see cref="IDataComponent"/> if found; otherwise, <see langword="null"/>.</returns>
     [PublicAPI]
     public IDataComponent? Get(string componentId)
     {
@@ -126,7 +144,7 @@ public class DataComponentMap : ISnbtSerializable
     /// Retrieves a strongly-typed component by its class.
     /// </summary>
     /// <typeparam name="T">The type of the component to retrieve.</typeparam>
-    /// <returns>The strongly-typed component if found; otherwise, <c>null</c>.</returns>
+    /// <returns>The strongly-typed component if found; otherwise, <see langword="null"/>.</returns>
     [PublicAPI]
     public T? Get<T>() where T : class, ITypedComponent<T>
     {
@@ -137,8 +155,8 @@ public class DataComponentMap : ISnbtSerializable
     /// Attempts to retrieve a component by its string identifier safely.
     /// </summary>
     /// <param name="componentId">The string identifier of the component.</param>
-    /// <param name="component">When this method returns, contains the component if found; otherwise, <c>null</c>.</param>
-    /// <returns><c>true</c> if the component was found; otherwise, <c>false</c>.</returns>
+    /// <param name="component">When this method returns, contains the component if found; otherwise, <see langword="null"/>.</param>
+    /// <returns><see langword="true"/> if the component was found; otherwise, <see langword="false"/>.</returns>
     [PublicAPI]
     public bool TryGet(string componentId, [NotNullWhen(true)] out IDataComponent? component)
     {
@@ -149,8 +167,8 @@ public class DataComponentMap : ISnbtSerializable
     /// Attempts to retrieve a strongly-typed component by its class safely.
     /// </summary>
     /// <typeparam name="T">The type of the component to retrieve.</typeparam>
-    /// <param name="component">When this method returns, contains the casted component if found; otherwise, <c>null</c>.</param>
-    /// <returns><c>true</c> if the component was found; otherwise, <c>false</c>.</returns>
+    /// <param name="component">When this method returns, contains the casted component if found; otherwise, <see langword="null"/>.</param>
+    /// <returns><see langword="true"/> if the component was found; otherwise, <see langword="false"/>.</returns>
     [PublicAPI]
     public bool TryGet<T>([NotNullWhen(true)] out T? component) where T : class, ITypedComponent<T>
     {
@@ -162,6 +180,29 @@ public class DataComponentMap : ISnbtSerializable
 
         component = null;
         return false;
+    }
+
+    /// <summary>
+    /// Returns an enumerator that iterates through the active data components in the map.
+    /// </summary>
+    /// <returns>An enumerator for active <see cref="IDataComponent"/> instances.</returns>
+    /// <example>
+    /// <code>
+    /// foreach (var component in componentMap)
+    /// {
+    ///     Console.WriteLine(component.Id);
+    /// }
+    /// </code>
+    /// </example>
+    public IEnumerator<IDataComponent> GetEnumerator()
+    {
+        return Added.Values.GetEnumerator();
+    }
+
+    /// <inheritdoc/>
+    IEnumerator IEnumerable.GetEnumerator()
+    {
+        return GetEnumerator();
     }
 
     /// <summary>
@@ -204,7 +245,6 @@ public class DataComponentMap : ISnbtSerializable
     /// <returns>An SNBT string representing the serialized components.</returns>
     public string ToSnbtString()
     {
-        // Reuse the logic from ToSnbt() to prevent code duplication
         return ToSnbt().ToSnbtString();
     }
 }
