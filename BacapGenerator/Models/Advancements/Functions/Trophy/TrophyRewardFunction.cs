@@ -1,24 +1,30 @@
-﻿using JetBrains.Annotations;
+﻿using System.Diagnostics.CodeAnalysis;
 using Core.Commands.Impl;
 using Core.Commands.Models;
 using Core.DataComponents.Components;
 using Core.Items;
 using Core.McFunctions.Models;
 using Core.McFunctions.Models.Interfaces;
+using Core.SNBT;
+using Core.SNBT.Nodes;
 using Core.TextComponents.Components;
 using Core.TextComponents.Models;
+using JetBrains.Annotations;
 
 namespace BacapGenerator.Models.Advancements.Functions.Trophy;
 
 /// <summary>
 /// Represents the trophy reward function file.
-/// Manages trophy item rewards and their golden local announcements (tellraw @s).
+/// Manages trophy item rewards and their announcements (tellraw @s).
 /// </summary>
 public sealed class TrophyRewardFunction : BaseFunction
 {
+    private const string DeathLocationMessageText = " The trophy appeared at the place of your death";
+
     private readonly List<TrophyReward> _trophies = [];
 
-    [PublicAPI] public IReadOnlyList<TrophyReward> Trophies => _trophies;
+    [PublicAPI]
+    public IReadOnlyList<TrophyReward> Trophies => _trophies;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="TrophyRewardFunction"/> class.
@@ -34,21 +40,16 @@ public sealed class TrophyRewardFunction : BaseFunction
 
     /// <summary>
     /// Adds a new trophy reward to the function if it doesn't already exist.
-    /// Duplicates (matching ID and components) are silently ignored.
+    /// Duplicates (matching delivery type, item ID, count, and components) are silently ignored.
     /// </summary>
     /// <param name="trophy">The trophy reward to add.</param>
-    /// <exception cref="ArgumentNullException">Thrown when the provided trophy is null.</exception>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="trophy"/> is null.</exception>
     [PublicAPI]
     public void AddTrophy(TrophyReward trophy)
     {
         ArgumentNullException.ThrowIfNull(trophy);
 
-        // Check if an identical trophy already exists
-        var isDuplicate = _trophies.Any(t =>
-            t.Item.Id == trophy.Item.Id &&
-            t.Item.Components.ToSnbtString() == trophy.Item.Components.ToSnbtString());
-
-        if (isDuplicate)
+        if (_trophies.Any(t => IsDuplicate(t, trophy)))
             return;
 
         _trophies.Add(trophy);
@@ -56,11 +57,10 @@ public sealed class TrophyRewardFunction : BaseFunction
     }
 
     /// <summary>
-    /// Adds a collection of trophy rewards to the function, ignoring any duplicates.
-    /// This is more efficient than calling <see cref="AddTrophy"/> multiple times.
+    /// Adds a collection of trophy rewards to the function, ignoring duplicates.
     /// </summary>
     /// <param name="trophies">The collection of trophies to add.</param>
-    /// <exception cref="ArgumentNullException">Thrown when the provided collection is null.</exception>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="trophies"/> is null.</exception>
     [PublicAPI]
     public void AddTrophies(IEnumerable<TrophyReward> trophies)
     {
@@ -70,11 +70,7 @@ public sealed class TrophyRewardFunction : BaseFunction
 
         foreach (var trophy in trophies)
         {
-            var isDuplicate = _trophies.Any(t =>
-                t.Item.Id == trophy.Item.Id &&
-                t.Item.Components.ToSnbtString() == trophy.Item.Components.ToSnbtString());
-
-            if (isDuplicate)
+            if (_trophies.Any(t => IsDuplicate(t, trophy)))
                 continue;
 
             _trophies.Add(trophy);
@@ -103,12 +99,20 @@ public sealed class TrophyRewardFunction : BaseFunction
                         isTrophyBlockLine = true;
                     break;
 
+                case ExecutableLine { Command: SummonCommand summonCmd }:
+                    if (TryExtractTrophyFromSummon(summonCmd, out _))
+                        isTrophyBlockLine = true;
+                    break;
+
                 case ExecutableLine { Command: TellrawCommand tellCmd } when tellCmd.Target == Selector.SelectedPlayer:
                 {
-                    if (tellCmd.Message is PlainTextComponent { Style.Color: "gold" } ptc &&
-                        ptc.Text.Contains(" +"))
+                    if (tellCmd.Message is PlainTextComponent ptc)
                     {
-                        isTrophyBlockLine = true;
+                        if (ptc.Style?.Color == "gold" && ptc.Text.Contains(" +") || ptc.Style?.Color == "gray" &&
+                            ptc.Text.Contains("The trophy appeared at the place of your death", StringComparison.OrdinalIgnoreCase))
+                        {
+                            isTrophyBlockLine = true;
+                        }
                     }
 
                     break;
@@ -135,11 +139,32 @@ public sealed class TrophyRewardFunction : BaseFunction
         var newLines = new List<IMcFunctionLine>();
         foreach (var trophy in _trophies)
         {
-            var giveCmd = new GiveCommand(Selector.SelectedPlayer, trophy.Item);
             var tellrawCmd = CreateTrophyMessage(trophy);
 
-            newLines.Add(new ExecutableLine(giveCmd));
-            newLines.Add(new ExecutableLine(tellrawCmd));
+            switch (trophy.DeliveryType)
+            {
+                case TrophyDeliveryType.Inventory:
+                {
+                    var giveCmd = new GiveCommand(Selector.SelectedPlayer, trophy.Item);
+                    newLines.Add(new ExecutableLine(giveCmd));
+                    newLines.Add(new ExecutableLine(tellrawCmd));
+                    break;
+                }
+
+                case TrophyDeliveryType.DeathLocation:
+                {
+                    var summonCmd = CreateSummonItemCommand(trophy.Item);
+                    var deathMessageCmd = CreateDeathLocationMessage();
+
+                    newLines.Add(new ExecutableLine(summonCmd));
+                    newLines.Add(new ExecutableLine(tellrawCmd));
+                    newLines.Add(new ExecutableLine(deathMessageCmd));
+                    break;
+                }
+
+                default:
+                    throw new ArgumentOutOfRangeException(nameof(trophy.DeliveryType), trophy.DeliveryType, null);
+            }
         }
 
         if (insertIndex == -1)
@@ -154,21 +179,40 @@ public sealed class TrophyRewardFunction : BaseFunction
 
         foreach (var line in Function.Lines)
         {
-            if (line is not ExecutableLine { Command: GiveCommand giveCmd } ||
-                giveCmd.Target != Selector.SelectedPlayer ||
-                !IsTrophyItem(giveCmd.Item))
-            {
+            if (line is not ExecutableLine execLine)
                 continue;
+
+            switch (execLine.Command)
+            {
+                case GiveCommand giveCmd when
+                    giveCmd.Target == Selector.SelectedPlayer &&
+                    IsTrophyItem(giveCmd.Item):
+                {
+                    var amount = giveCmd.Count ?? giveCmd.Item.Count;
+                    var itemStack = giveCmd.Item with { Count = amount };
+                    parsedTrophies.Add(new TrophyReward(itemStack));
+                    break;
+                }
+                case SummonCommand summonCmd when
+                    TryExtractTrophyFromSummon(summonCmd, out var itemStack):
+                    parsedTrophies.Add(new TrophyReward(itemStack, TrophyDeliveryType.DeathLocation));
+                    break;
             }
-
-            var amount = giveCmd.Count ?? giveCmd.Item.Count;
-            var itemStack = giveCmd.Item with { Count = amount };
-
-            parsedTrophies.Add(new TrophyReward(itemStack));
         }
 
         _trophies.Clear();
         _trophies.AddRange(parsedTrophies);
+    }
+
+    /// <summary>
+    /// Checks whether two trophy rewards represent the same reward.
+    /// </summary>
+    private static bool IsDuplicate(TrophyReward existing, TrophyReward candidate)
+    {
+        return existing.DeliveryType == candidate.DeliveryType &&
+               existing.Item.Id == candidate.Item.Id &&
+               existing.Item.Count == candidate.Item.Count &&
+               existing.Item.Components.ToSnbtString() == candidate.Item.Components.ToSnbtString();
     }
 
     /// <summary>
@@ -181,15 +225,62 @@ public sealed class TrophyRewardFunction : BaseFunction
     }
 
     /// <summary>
-    /// Creates the tellraw command for a trophy.
+    /// Attempts to extract a trophy item stack from a summon command.
     /// </summary>
-    /// <exception cref="InvalidOperationException">Thrown when the trophy item does not contain a valid title.</exception>
+    /// <param name="summonCmd">The summon command AST model.</param>
+    /// <param name="trophyItem">The extracted trophy item stack if successful.</param>
+    /// <returns><see langword="true"/> if the summon command spawned a trophy item; otherwise, <see langword="false"/>.</returns>
+    private static bool TryExtractTrophyFromSummon(
+        SummonCommand summonCmd,
+        [NotNullWhen(true)] out ItemStack? trophyItem)
+    {
+        trophyItem = null;
+
+        if (summonCmd.EntityId is not ("minecraft:item" or "item") || summonCmd.Nbt is null)
+            return false;
+
+        if (summonCmd.Nbt.GetNode("Item") is not SnbtCompound itemCompound)
+            return false;
+
+        var item = ItemStack.Parse(itemCompound);
+        if (!IsTrophyItem(item))
+            return false;
+
+        trophyItem = item;
+        return true;
+    }
+
+    /// <summary>
+    /// Builds the <see cref="SummonCommand"/> to spawn the trophy item at the current location.
+    /// </summary>
+    /// <param name="item">The trophy item stack to spawn.</param>
+    /// <returns>A configured <see cref="SummonCommand"/> instance.</returns>
+    private static SummonCommand CreateSummonItemCommand(ItemStack item)
+    {
+        var itemBuilder = Snbt.Compound()
+            .Put("id", item.Id)
+            .Put("count", item.Count);
+
+        if (!item.Components.IsEmpty)
+            itemBuilder.Put("components", item.Components.ToSnbt());
+
+        var entityNbt = Snbt.Compound()
+            .Put("Invulnerable", new SnbtBool(true))
+            .Put("Item", itemBuilder.Build())
+            .Build();
+
+        return new SummonCommand("minecraft:item", new Position("~", "~", "~"), entityNbt);
+    }
+
+    /// <summary>
+    /// Creates the tellraw message notifying the player of the trophy reward.
+    /// </summary>
+    /// <exception cref="InvalidOperationException">Thrown when the trophy item lacks a custom name or translation key.</exception>
     private static TellrawCommand CreateTrophyMessage(TrophyReward trophy)
     {
         var title = trophy.Title
-                    ?? throw new InvalidOperationException($"Cannot create tellraw message: " +
-                                                           $"Trophy item '{trophy.Item.Id}' is missing a custom name or translation key.");
-
+                    ?? throw new InvalidOperationException(
+                        $"Cannot create tellraw message: Trophy item '{trophy.Item.Id}' is missing a custom name or translation key.");
 
         var rootMessage = new PlainTextComponent(
             Text: $" +{trophy.Item.Count} ",
@@ -201,5 +292,19 @@ public sealed class TrophyRewardFunction : BaseFunction
         );
 
         return new TellrawCommand(Target: Selector.SelectedPlayer, Message: rootMessage);
+    }
+
+    /// <summary>
+    /// Creates the tellraw message informing the player that the trophy appeared at their death location.
+    /// </summary>
+    /// <returns>A configured <see cref="TellrawCommand"/> instance.</returns>
+    private static TellrawCommand CreateDeathLocationMessage()
+    {
+        var message = new PlainTextComponent(
+            Text: DeathLocationMessageText,
+            Style: new TextStyle(Color: "gray")
+        );
+
+        return new TellrawCommand(Target: Selector.SelectedPlayer, Message: message);
     }
 }

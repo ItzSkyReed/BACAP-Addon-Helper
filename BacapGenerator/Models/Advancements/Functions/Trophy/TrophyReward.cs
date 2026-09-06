@@ -16,7 +16,9 @@ namespace BacapGenerator.Models.Advancements.Functions.Trophy;
 /// Dynamically reads and writes its properties directly from the underlying <see cref="ItemStack"/> components
 /// to prevent any data desynchronization.
 /// </summary>
-public record TrophyReward(ItemStack Item)
+/// <param name="Item">The underlying item stack containing components and metadata.</param>
+/// <param name="DeliveryType">The delivery mechanism used to grant the trophy.</param>
+public record TrophyReward(ItemStack Item, TrophyDeliveryType DeliveryType = TrophyDeliveryType.Inventory)
 {
     /// <summary>
     /// Gets the translation key directly from the item's CustomName component.
@@ -30,9 +32,7 @@ public record TrophyReward(ItemStack Item)
                 return customName.Value switch
                 {
                     TranslatableComponent tc => tc.Translate,
-
                     PlainTextComponent ptc => ptc.Text,
-
                     _ => null
                 };
             }
@@ -41,6 +41,9 @@ public record TrophyReward(ItemStack Item)
         }
     }
 
+    /// <summary>
+    /// Gets the sanitized description lines from the item's Lore component.
+    /// </summary>
     public IReadOnlyList<string> DescriptionLines
     {
         get
@@ -80,15 +83,16 @@ public record TrophyReward(ItemStack Item)
     }
 
     /// <summary>
-    /// Factory method to easily construct a brand new trophy item with all necessary NBT components correctly configured.
+    /// Factory method to construct a brand new trophy item with all necessary NBT components correctly configured.
     /// </summary>
-    /// <param name="datapack">Datapack of the trophy</param>
-    /// <param name="itemId">The base Minecraft item id (e.g., "minecraft:cobblestone_stairs").</param>
+    /// <param name="datapack">The datapack context of the trophy.</param>
+    /// <param name="itemId">The base Minecraft item ID (e.g., "minecraft:cobblestone_stairs").</param>
     /// <param name="titleKey">The translation key for the trophy title.</param>
     /// <param name="titleColor">The hex color string for the title.</param>
     /// <param name="count">The item stack count.</param>
+    /// <param name="deliveryType">The delivery mechanism for granting the trophy.</param>
     /// <param name="extraSetComponents">Extra item components to add or overwrite.</param>
-    /// <param name="extraRemoveComponents">Component IDs (e.g., "minecraft:enchantments") to explicitly remove (!component).</param>
+    /// <param name="extraRemoveComponents">Component IDs (e.g., "minecraft:enchantments") to explicitly remove.</param>
     /// <returns>A new <see cref="TrophyReward"/> wrapper with the fully configured item stack.</returns>
     public static TrophyReward CreateNew(
         IReadOnlyDatapack datapack,
@@ -96,6 +100,7 @@ public record TrophyReward(ItemStack Item)
         string titleKey,
         string titleColor,
         int count = 1,
+        TrophyDeliveryType deliveryType = TrophyDeliveryType.Inventory,
         IEnumerable<IDataComponent>? extraSetComponents = null,
         IEnumerable<string>? extraRemoveComponents = null)
     {
@@ -121,19 +126,17 @@ public record TrophyReward(ItemStack Item)
         if (extraSetComponents is not null)
         {
             foreach (var setComponent in extraSetComponents)
-            {
                 item.Components.Set(setComponent);
-            }
         }
 
         // Process explicitly removed components
         if (extraRemoveComponents is null)
-            return new TrophyReward(item);
+            return new TrophyReward(item, deliveryType);
 
         foreach (var componentId in extraRemoveComponents)
             item.Components.Remove(componentId);
 
-        return new TrophyReward(item);
+        return new TrophyReward(item, deliveryType);
     }
 
     private static bool IsGeneratedLine(string line)
@@ -148,6 +151,7 @@ public record TrophyReward(ItemStack Item)
     /// Injects missing components like custom_model_data or base tags.
     /// </summary>
     /// <param name="datapack">The datapack context for configuration.</param>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="datapack"/> is null.</exception>
     [PublicAPI]
     public void Standardize(IReadOnlyDatapack datapack)
     {
@@ -158,8 +162,6 @@ public record TrophyReward(ItemStack Item)
         if (!string.IsNullOrWhiteSpace(titleKey))
         {
             var expectedModelId = $"{datapack.Settings.MainNamespace}:{BacapUtils.ToSnakeCaseSlug(titleKey)}";
-
-            // Overwrite or add the custom_model_data component to ensure it matches the title
             Item.Components.Set(new CustomModelDataComponent(Strings: [expectedModelId]));
         }
 
@@ -169,7 +171,6 @@ public record TrophyReward(ItemStack Item)
             if (customData.Tag is not { } compound || compound.Tags.ContainsKey("Trophy"))
                 return;
 
-            // Rebuild the compound with the missing Trophy tag
             var newTags = new Dictionary<string, ISnbtNode>(compound.Tags)
             {
                 ["Trophy"] = new SnbtBool(true)
