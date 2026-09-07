@@ -1,5 +1,6 @@
 ﻿using System.Collections.Frozen;
 using System.Diagnostics.CodeAnalysis;
+using BacapGenerator.Utils;
 
 namespace BacapGenerator.Models.Advancements;
 
@@ -36,7 +37,7 @@ public sealed record BacapAdvancementTab
     public static readonly BacapAdvancementTab Biomes = new("biomes", "Biomes", "#6AA84F");
     public static readonly BacapAdvancementTab Building = new("building", "Building", "#E69138");
     public static readonly BacapAdvancementTab Challenges = new("challenges", "Super Challenges", "#FF0003");
-    public static readonly BacapAdvancementTab Enchanting = new("enchanting", "Enchanting", "5B2AFF");
+    public static readonly BacapAdvancementTab Enchanting = new("enchanting", "Enchanting", "#5B2AFF");
     public static readonly BacapAdvancementTab End = new("end", "The End", "#FFF2CC");
     public static readonly BacapAdvancementTab Farming = new("farming", "Farming", "#CCAC66");
     public static readonly BacapAdvancementTab Mining = new("mining", "Mining", "#999999");
@@ -92,6 +93,28 @@ public sealed record BacapAdvancementTab
         return !TryFromFolderName(folderName, out var tab)
             ? throw new ArgumentException($"Unknown BACAP advancement tab: '{folderName}'", nameof(folderName))
             : tab;
+    }
+
+    /// <summary>
+    /// Extracts and resolves a <see cref="BacapAdvancementTab"/> from a parent McPath.
+    /// </summary>
+    /// <param name="parentPath">The parent McPath (e.g. <c>"minecraft:adventure/root"</c> or <c>"bacap:nether/explore"</c>).</param>
+    /// <param name="tab">When this method returns, contains the resolved <see cref="BacapAdvancementTab"/> if successful; otherwise, <see langword="null"/>.</param>
+    /// <returns><see langword="true"/> if a valid tab was resolved; otherwise, <see langword="false"/>.</returns>
+    public static bool TryExtractTabFromParent(string parentPath, [NotNullWhen(true)] out BacapAdvancementTab? tab)
+    {
+        tab = null;
+        if (string.IsNullOrWhiteSpace(parentPath))
+        {
+            return false;
+        }
+
+        var stripped = MinecraftUtils.StripNamespace(parentPath.Trim());
+        var slashIndex = stripped.IndexOf('/');
+        var folderName = slashIndex > 0 ? stripped[..slashIndex] : stripped;
+
+        return TryFromFolderName(folderName, out tab)
+               || (BacapUtils.TryExtractTab(parentPath, out var tabName) && TryFromFolderName(tabName, out tab));
     }
 
     public override string ToString() => DisplayName;
