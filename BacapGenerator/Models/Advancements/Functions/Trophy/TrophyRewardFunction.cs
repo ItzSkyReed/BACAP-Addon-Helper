@@ -27,6 +27,30 @@ public sealed class TrophyRewardFunction : BaseFunction
     public IReadOnlyList<TrophyReward> Trophies => _trophies;
 
     /// <summary>
+    /// Replaces the current collection of trophies and updates the function commands.
+    /// </summary>
+    /// <param name="trophies">The updated collection of trophies.</param>
+    [PublicAPI]
+    public void SetTrophies(IEnumerable<TrophyReward> trophies)
+    {
+        ArgumentNullException.ThrowIfNull(trophies);
+
+        _trophies.Clear();
+        _trophies.AddRange(trophies);
+        Update();
+    }
+
+    /// <summary>
+    /// Clears all trophy rewards, generating an empty function file.
+    /// </summary>
+    [PublicAPI]
+    public void ClearTrophies()
+    {
+        _trophies.Clear();
+        Update();
+    }
+
+    /// <summary>
     /// Initializes a new instance of the <see cref="TrophyRewardFunction"/> class.
     /// </summary>
     /// <param name="file">The physical file information.</param>
