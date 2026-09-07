@@ -45,14 +45,19 @@ var host = Host.CreateDefaultBuilder(args)
 
         services.AddTransient<MainMenuAction>();
         services.AddTransient<IMainMenuAction, ManageAdvancementsMenu>();
+
         services.AddTransient<IManageAdvancementsAction, AdvancementStatsAction>();
         services.AddTransient<IManageAdvancementsAction, AdvancementInfoAction>();
-        services.AddTransient<IManageAdvancementsAction, AdvancementDeleteAction>();
+        services.AddTransient<IManageAdvancementsAction, AdvancementEditorAction>();
+
         services.AddTransient<IManageAdvancementsAction, AdvancementsFormatAction>();
         services.AddTransient<IManageAdvancementsAction, AdvancementsRecoverAction>();
-        services.AddTransient<IManageAdvancementsAction, DebugAdvancementsMenuAction>();
+
         services.AddTransient<IManageAdvancementsAction, GenerateMilestonesAction>();
         services.AddTransient<IManageAdvancementsAction, GenerateDatapackFunctionsAction>();
+
+        services.AddTransient<IManageAdvancementsAction, DebugAdvancementsMenuAction>();
+
 
 
         services.AddTransient<IDebugAdvancementsAction, ShowTechnicalInvalidAction>();
