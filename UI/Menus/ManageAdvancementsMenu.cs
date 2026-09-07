@@ -29,12 +29,12 @@ public class ManageAdvancementsMenu(IEnumerable<IManageAdvancementsAction> actio
         {
             TuiTheme.RenderHeader("Manage Advancements");
 
-            var selected = TuiTheme.PromptSelection(
-                "Select an [green]operation[/]:",
+            var selected = await TuiTheme.PromptSelectionOrDefaultAsync(
+                "Select an [green]operation[/] (press [bold]Q[/] to return):",
                 choices,
                 action => action.Title);
 
-            if (selected is BackAction)
+            if (selected is null or BackAction)
                 break;
 
             await selected.ExecuteAsync();

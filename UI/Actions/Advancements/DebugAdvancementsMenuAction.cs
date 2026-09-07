@@ -31,12 +31,12 @@ public class DebugAdvancementsMenuAction(IEnumerable<IDebugAdvancementsAction> d
         {
             TuiTheme.RenderHeader("Manage Advancements -> Debug");
 
-            var selected = TuiTheme.PromptSelection(
-                "Select a [green]debug action[/]:",
+            var selected = await TuiTheme.PromptSelectionOrDefaultAsync(
+                "Select a [green]debug action[/] (press [bold]Q[/] to return):",
                 choices,
                 action => action.Title);
 
-            if (selected is BackAction)
+            if (selected is null or BackAction)
                 break;
 
             await selected.ExecuteAsync();

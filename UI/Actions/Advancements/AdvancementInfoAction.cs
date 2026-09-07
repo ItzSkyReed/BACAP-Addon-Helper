@@ -17,7 +17,7 @@ public class AdvancementInfoAction(DatapackRegistry registry, MinecraftData mine
 {
     public string Title => "Advancement Info";
 
-    public Task ExecuteAsync()
+    public async Task ExecuteAsync()
     {
         var allAdvancements = registry.Values
             .SelectMany(dp => dp.Advancements.OfType<BacapAdvancement>())
@@ -27,20 +27,18 @@ public class AdvancementInfoAction(DatapackRegistry registry, MinecraftData mine
         {
             TuiTheme.ShowWarning("No advancements found across loaded datapacks.");
             TuiTheme.WaitForKey();
-            return Task.CompletedTask;
+            return;
         }
 
         while (true)
         {
-            var selectedAdv = AdvancementSearcher.PromptSearch(allAdvancements);
+            var selectedAdv = await AdvancementSearcher.PromptSearch(allAdvancements);
 
             if (selectedAdv == null)
                 break;
 
             ShowAdvancementInfo(selectedAdv);
         }
-
-        return Task.CompletedTask;
     }
 
     /// <summary>

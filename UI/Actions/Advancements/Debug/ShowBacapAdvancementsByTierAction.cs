@@ -20,7 +20,7 @@ public class ShowBacapAdvancementsByTierAction(DatapackRegistry registry) : IDeb
     /// Executes the action, rendering a summary overview and prompting the user for tier selection.
     /// </summary>
     /// <returns>A completed task representing the asynchronous operation.</returns>
-    public Task ExecuteAsync()
+    public async Task ExecuteAsync()
     {
         while (true)
         {
@@ -34,7 +34,7 @@ public class ShowBacapAdvancementsByTierAction(DatapackRegistry registry) : IDeb
             {
                 TuiTheme.ShowWarning("No valid BACAP advancements found across all loaded datapacks.");
                 TuiTheme.WaitForKey();
-                return Task.CompletedTask;
+                return;
             }
 
             var tierCounts = allBacapAdvancements
@@ -64,9 +64,9 @@ public class ShowBacapAdvancementsByTierAction(DatapackRegistry registry) : IDeb
             }
             choices.Add(TuiTheme.BackOptionString);
 
-            var choice = TuiTheme.PromptSelection("Select a [green]tier[/] to inspect or view all:", choices);
+            var choice = await TuiTheme.PromptSelectionOrDefaultAsync("Select a [green]tier[/] to inspect or view all (press [bold]Q[/] to return):", choices);
 
-            if (choice == TuiTheme.BackOptionString)
+            if (choice is null or TuiTheme.BackOptionString)
                 break;
 
             if (choice == AllTiersOption)
@@ -83,7 +83,5 @@ public class ShowBacapAdvancementsByTierAction(DatapackRegistry registry) : IDeb
             BacapAdvancementTierViewer.RenderTree(registry, parsedTier);
             TuiTheme.WaitForKey();
         }
-
-        return Task.CompletedTask;
     }
 }

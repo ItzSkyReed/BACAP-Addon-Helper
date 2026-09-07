@@ -21,12 +21,12 @@ public class MainMenuAction(IEnumerable<IMainMenuAction> menuActions) : ITuiActi
         {
             TuiTheme.RenderHeader("BACAP Manager");
 
-            var selected = TuiTheme.PromptSelection(
-                "Choose actions",
+            var selected = await TuiTheme.PromptSelectionOrDefaultAsync(
+                "Choose actions (press [bold]Q[/] to return)",
                 choices,
                 action => action.Title);
 
-            if (selected is BackAction)
+            if (selected is null or BackAction)
                 break;
 
             await selected.ExecuteAsync();

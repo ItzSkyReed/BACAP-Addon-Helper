@@ -9,6 +9,42 @@ namespace UI.Styling;
 public static class TuiTheme
 {
     public const string TablePropertyColor = "Grey70";
+    private static readonly QKeyCancellableConsole CancellableConsole = new(AnsiConsole.Console);
+
+    /// <summary>
+    /// Renders a standardized selection prompt that returns <see langword="null"/> if aborted via the Escape key.
+    /// </summary>
+    /// <typeparam name="T">The type of selectable elements.</typeparam>
+    /// <param name="title">The title displayed above the options (supports Spectre.Console markup).</param>
+    /// <param name="choices">The list of available options.</param>
+    /// <param name="displaySelector">An optional projection function for custom item labels.</param>
+    /// <returns>
+    /// The chosen item of type <typeparamref name="T"/>, or <see langword="null"/> if the selection was aborted.
+    /// </returns>
+    public static async Task<T?> PromptSelectionOrDefaultAsync<T>(
+        string title,
+        IEnumerable<T> choices,
+        Func<T, string>? displaySelector = null) where T : class
+    {
+        var prompt = new SelectionPrompt<T>()
+            .Title($"[yellow]{title}[/]")
+            .PageSize(15)
+            .AddChoices(choices);
+
+        if (displaySelector != null)
+        {
+            prompt.UseConverter(displaySelector);
+        }
+
+        try
+        {
+            return await CancellableConsole.PromptAsync(prompt);
+        }
+        catch (OperationCanceledException)
+        {
+            return null;
+        }
+    }
 
 
     public static void RenderHeader(string title)

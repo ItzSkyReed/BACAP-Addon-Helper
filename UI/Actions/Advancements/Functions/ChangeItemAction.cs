@@ -1,6 +1,7 @@
 ﻿using BacapGenerator.Models.Advancements;
 using BacapGenerator.Services.IO;
 using Spectre.Console;
+using UI.Actions.Advancements.Functions.Menus;
 using UI.Interfaces;
 using UI.Styling;
 
@@ -17,15 +18,14 @@ public class ChangeItemAction(BacapAdvancement advancement) : IManageAdvancement
     /// Prompts the user whether to assign item rewards, routing to the item editor menu or clearing existing rewards.
     /// </summary>
     /// <returns>A completed <see cref="Task"/>.</returns>
-    public Task ExecuteAsync()
+    public async Task ExecuteAsync()
     {
         var hasExistingItems = advancement.ItemRewardFunction.RewardItems.Count > 0;
 
         var promptText = hasExistingItems
             ? $"Manage item rewards for [green]{Markup.Escape(advancement.TitleText)}[/]?"
             : $"Add an Item reward to [green]{Markup.Escape(advancement.TitleText)}[/]?";
-
-        var wantItem = AnsiConsole.Confirm(promptText, defaultValue: hasExistingItems);
+        var wantItem = await AnsiConsole.ConfirmAsync(promptText, defaultValue: hasExistingItems);
 
         if (!wantItem)
         {
@@ -35,12 +35,10 @@ public class ChangeItemAction(BacapAdvancement advancement) : IManageAdvancement
 
             TuiTheme.ShowSuccess("Item reward cleared. An empty function file has been generated.");
             TuiTheme.WaitForKey();
-            return Task.CompletedTask;
+            return;
         }
 
         // Open the dedicated interactive item management menu
-        ItemRewardMenu.Open(advancement);
-
-        return Task.CompletedTask;
+        await ItemRewardMenu.Open(advancement);
     }
 }

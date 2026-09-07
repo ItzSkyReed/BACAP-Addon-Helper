@@ -26,7 +26,7 @@ public static class ItemComponentsMenu
     /// <param name="stack">The item stack whose components are being modified.</param>
     /// <param name="mcData">The loaded Minecraft static registries.</param>
     /// <returns>The updated <see cref="ItemStack"/> instance.</returns>
-    public static ItemStack Open(ItemStack stack, MinecraftData mcData)
+    public static async Task<ItemStack> Open(ItemStack stack, MinecraftData mcData)
     {
         while (true)
         {
@@ -44,8 +44,8 @@ public static class ItemComponentsMenu
 
             choices.Add(new BackAction());
 
-            var selected = TuiTheme.PromptSelection(
-                "Select a component to remove/inspect or choose an action:",
+            var selected = await TuiTheme.PromptSelectionOrDefaultAsync(
+                "Select a component to remove/inspect (press [bold]Q[/] to return):",
                 choices,
                 item => item switch
                 {
@@ -59,11 +59,11 @@ public static class ItemComponentsMenu
 
             switch (selected)
             {
-                case BackAction:
+                case null or BackAction:
                     return stack;
 
                 case ClearAllAction:
-                    if (AnsiConsole.Confirm("Are you sure you want to remove all components from this item?", defaultValue: false))
+                    if (await AnsiConsole.ConfirmAsync("Are you sure you want to remove all components from this item?", defaultValue: false))
                     {
                         stack = stack with { Components = new DataComponentMap() };
                         TuiTheme.ShowSuccess("All components cleared.");
@@ -72,7 +72,7 @@ public static class ItemComponentsMenu
                     break;
 
                 case IDataComponent comp:
-                    if (AnsiConsole.Confirm($"Remove component [yellow]{comp.Id}[/]?", defaultValue: true))
+                    if (await AnsiConsole.ConfirmAsync($"Remove component [yellow]{comp.Id}[/]?", defaultValue: true))
                     {
                         stack.Components.Remove(comp.Id);
                         TuiTheme.ShowSuccess($"Removed {comp.Id}");

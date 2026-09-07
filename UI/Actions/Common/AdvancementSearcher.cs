@@ -1,6 +1,7 @@
 ﻿using BacapGenerator.Models.Advancements;
 using BacapGenerator.Models.Datapacks.Settings;
 using Spectre.Console;
+using UI.Interfaces;
 using UI.Styling;
 
 namespace UI.Actions.Common;
@@ -16,18 +17,29 @@ public static class AdvancementSearcher
     /// </summary>
     /// <param name="advancements">The collection of advancements to search through.</param>
     /// <returns>The selected <see cref="BacapAdvancement"/>, or <see langword="null"/> if the user exits.</returns>
-    public static BacapAdvancement? PromptSearch(IReadOnlyCollection<BacapAdvancement> advancements)
+    /// <example>
+    /// <code>
+    /// BacapAdvancement? selected = AdvancementSearcher.PromptSearch(allAdvancements);
+    /// if (selected != null)
+    /// {
+    ///     Console.WriteLine(selected.TitleText);
+    /// }
+    /// </code>
+    /// </example>
+    public static async Task<BacapAdvancement?> PromptSearch(IReadOnlyCollection<BacapAdvancement> advancements)
     {
         while (true)
         {
             TuiTheme.RenderHeader("Advancement Search");
 
             var query = AnsiConsole.Prompt(
-                new TextPrompt<string>("[yellow]Enter advancement Title or McPath (or leave empty to go back):[/]")
+                new TextPrompt<string>("[yellow]Enter advancement Title or minecraft Path (or leave empty to go back):[/]")
                     .AllowEmpty());
 
             if (string.IsNullOrWhiteSpace(query))
+            {
                 return null;
+            }
 
             // Search and rank results based on priorities
             var results = advancements
@@ -59,45 +71,45 @@ public static class AdvancementSearcher
                 continue; // Prompt again
             }
 
-            // Prepare choices combining search results and the Back button
-            var choices = results.Select(object (r) => r).ToList();
-            choices.Add(new BackAction());
+            // Map results to ITuiAction choices and append the back button
+            var backAction = new BackAction();
+            var choices = results
+                .Select(ITuiAction (adv) => new SelectAdvancementAction(adv))
+                .ToList();
+
+            choices.Add(backAction);
 
             TuiTheme.RenderHeader($"Search Results for '{query}'");
 
-            var selected = TuiTheme.PromptSelection(
-                $"Found [green]{results.Count}[/] match(es). Select one:",
+            var selected = await TuiTheme.PromptSelectionOrDefaultAsync(
+                $"Found [green]{results.Count}[/] match(es). Select one or press [bold]Q[/] to return:",
                 choices,
-                item =>
-                {
-                    switch (item)
-                    {
-                        case BackAction nav:
-                            return nav.Title;
+                action => action.Title);
 
-                        case BacapAdvancement adv:
-                        {
-                            var escapedTitle = Markup.Escape(adv.TitleText);
-
-                            var datapack = Markup.Escape(adv.Datapack.Id.ToDisplayName());
-
-
-                            var path = Markup.Escape(adv.McPath);
-
-                            // Renders as: Thorny Prices  bacaped:adventure/thorny_prices
-                            return $"[white]{escapedTitle}[/]  [cyan]{datapack}[/] | [grey]{path}[/]";
-                        }
-
-                        default:
-                            return item.ToString()!;
-                    }
-                });
-
-            // If the user clicks "Back" in the results list, return to the text prompt
-            if (selected is BackAction)
+            // User chose to return to the search prompt
+            if (selected is null || selected == backAction)
+            {
                 continue;
+            }
 
-            return selected as BacapAdvancement;
+            if (selected is SelectAdvancementAction selectAdvAction)
+            {
+                return selectAdvAction.Advancement;
+            }
         }
+    }
+
+    /// <summary>
+    /// Represents an actionable wrapper for selecting an advancement in the search results menu.
+    /// </summary>
+    /// <param name="advancement">The underlying advancement instance.</param>
+    private sealed class SelectAdvancementAction(BacapAdvancement advancement) : ITuiAction
+    {
+        public BacapAdvancement Advancement { get; } = advancement;
+
+        public string Title =>
+            $"[white]{Markup.Escape(Advancement.TitleText)}[/]  [cyan]{Markup.Escape(Advancement.Datapack.Id.ToDisplayName())}[/] | [grey]{Markup.Escape(Advancement.McPath)}[/]";
+
+        public Task ExecuteAsync() => Task.CompletedTask;
     }
 }
