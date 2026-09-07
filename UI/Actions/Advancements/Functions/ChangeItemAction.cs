@@ -33,8 +33,6 @@ public class ChangeItemAction(BacapAdvancement advancement) : IManageAdvancement
             advancement.ItemRewardFunction.ClearRewardItems();
             AdvancementIoManager.SaveAdvancement(advancement);
 
-            TuiTheme.ShowSuccess("Item reward cleared. An empty function file has been generated.");
-            TuiTheme.WaitForKey();
             return;
         }
 

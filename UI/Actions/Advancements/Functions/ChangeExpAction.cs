@@ -44,12 +44,6 @@ public class ChangeExpAction(BacapAdvancement advancement) : IManageAdvancements
         advancement.ExpRewardFunction.ExperienceAmount = amount;
 
         AdvancementIoManager.SaveAdvancement(advancement);
-
-        TuiTheme.ShowSuccess(amount == 0
-            ? "Experience reward cleared. An empty function file has been generated."
-            : $"Experience reward set to {amount} points and successfully saved.");
-
-        TuiTheme.WaitForKey();
         return Task.CompletedTask;
     }
 }

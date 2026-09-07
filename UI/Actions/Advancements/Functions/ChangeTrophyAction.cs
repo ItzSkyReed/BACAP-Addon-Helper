@@ -26,15 +26,13 @@ public class ChangeTrophyAction(BacapAdvancement advancement) : IManageAdvanceme
             ? $"Manage trophy rewards for [green]{Markup.Escape(advancement.TitleText)}[/]?"
             : $"Add a Trophy reward to [green]{Markup.Escape(advancement.TitleText)}[/]?";
 
-        var wantTrophy = AnsiConsole.Confirm(promptText, defaultValue: hasExistingTrophies);
+        var wantTrophy = await AnsiConsole.ConfirmAsync(promptText, defaultValue: hasExistingTrophies);
 
         if (!wantTrophy)
         {
             advancement.TrophyRewardFunction.ClearTrophies();
             AdvancementIoManager.SaveAdvancement(advancement);
 
-            TuiTheme.ShowSuccess("Trophy reward cleared. An empty function file has been generated.");
-            TuiTheme.WaitForKey();
             return;
         }
 
