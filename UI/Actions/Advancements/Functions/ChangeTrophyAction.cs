@@ -3,7 +3,6 @@ using BacapGenerator.Services.IO;
 using Spectre.Console;
 using UI.Actions.Advancements.Functions.Menus;
 using UI.Interfaces;
-using UI.Styling;
 
 namespace UI.Actions.Advancements.Functions;
 

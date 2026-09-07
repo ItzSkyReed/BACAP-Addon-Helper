@@ -9,7 +9,7 @@ using UI.Styling;
 namespace UI.Actions.Advancements;
 
 /// <summary>
-/// Action that formats and rewrites all advancements in ReadWrite datapacks.
+/// Action that formats and rewrites all advancements in Addon datapacks.
 /// Standardizes JSON indentation and function formatting on the disk.
 /// </summary>
 public class AdvancementsFormatAction(
@@ -20,13 +20,13 @@ public class AdvancementsFormatAction(
     public Task ExecuteAsync()
     {
         var advancements = registry.Values
-            .Where(dp => dp.Settings.Access == DatapackAccess.ReadWrite)
+            .Where(dp => dp.Settings.Type == DatapackType.Addon)
             .SelectMany(dp => dp.Advancements.OfType<BacapAdvancement>())
             .ToList();
 
         if (advancements.Count == 0)
         {
-            TuiTheme.ShowWarning("No advancements found across datapacks with ReadWrite access.");
+            TuiTheme.ShowWarning("No advancements found across datapacks with Addon access.");
             TuiTheme.WaitForKey();
             return Task.CompletedTask;
         }

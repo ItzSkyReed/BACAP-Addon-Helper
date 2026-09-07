@@ -1,5 +1,4 @@
 ﻿using BacapGenerator.Models.Advancements;
-using BacapGenerator.Models.Datapacks.Settings;
 using Spectre.Console;
 using UI.Interfaces;
 using UI.Styling;
@@ -108,7 +107,7 @@ public static class AdvancementSearcher
         public BacapAdvancement Advancement { get; } = advancement;
 
         public string Title =>
-            $"[white]{Markup.Escape(Advancement.TitleText)}[/]  [cyan]{Markup.Escape(Advancement.Datapack.Id.ToDisplayName())}[/] | [grey]{Markup.Escape(Advancement.McPath)}[/]";
+            $"[white]{Markup.Escape(Advancement.TitleText)}[/]  [cyan]{Markup.Escape(Advancement.Datapack.Id)}[/] | [grey]{Markup.Escape(Advancement.McPath)}[/]";
 
         public Task ExecuteAsync() => Task.CompletedTask;
     }

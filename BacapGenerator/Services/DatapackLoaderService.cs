@@ -26,16 +26,13 @@ public class DatapackLoaderService(
     {
         Console.WriteLine($"Found {_datapackConfigs.Count} datapacks to process.");
 
-        foreach (var (rawKey, settings) in _datapackConfigs)
+        foreach (var (id, settings) in _datapackConfigs)
         {
-            var id = ParseDatapackId(rawKey);
-
             try
             {
-                settings.ApplyPreset(id);
                 settings.Validate();
 
-                Console.WriteLine($"\nProcessing datapack '{id}' at: {settings.Path} (Mode: {settings.Access})");
+                Console.WriteLine($"\nProcessing datapack '{id}' at: {settings.Path} (Mode: {settings.Type})");
 
                 var sw = Stopwatch.StartNew();
 
@@ -84,18 +81,4 @@ public class DatapackLoaderService(
             }
         }
     }
-
-    /// <summary>
-    /// Parses a string configuration key into its corresponding <see cref="DatapackId"/>.
-    /// </summary>
-    /// <param name="key">The configuration key name.</param>
-    /// <returns>The resolved <see cref="DatapackId"/>.</returns>
-    /// <exception cref="ArgumentException">Thrown when the key does not match any known datapack.</exception>
-    private static DatapackId ParseDatapackId(string key) => key.ToLowerInvariant() switch
-    {
-        "bacap" => DatapackId.Bacap,
-        "bacaped" => DatapackId.Bacaped,
-        "bacaped_hardcore" or "bacapedhardcore" => DatapackId.BacapedHardcore,
-        _ => throw new ArgumentException($"Unknown datapack key '{key}' in configuration.", nameof(key))
-    };
 }

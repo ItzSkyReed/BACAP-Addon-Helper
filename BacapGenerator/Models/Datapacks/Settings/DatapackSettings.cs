@@ -1,45 +1,44 @@
 ﻿using BacapGenerator.Models.Advancements;
+using Microsoft.Extensions.Configuration;
 using JetBrains.Annotations;
 
 namespace BacapGenerator.Models.Datapacks.Settings;
 
 /// <summary>
 /// Represents the configuration, filesystem paths, and domain metadata for a datapack.
-/// Supports direct binding from configuration providers as well as manual factory instantiation.
+/// Supports direct binding from configuration providers.
 /// </summary>
 public sealed class DatapackSettings
 {
     /// <summary>
     /// Gets or sets the filesystem path to the root folder of the datapack.
-    /// Bound directly from the configuration file.
     /// </summary>
+    [ConfigurationKeyName("path")]
     public string Path { get; set; } = string.Empty;
 
     /// <summary>
     /// Gets or sets the optional filesystem path to the language resource pack folder.
-    /// Bound directly from the configuration file.
     /// </summary>
+    [ConfigurationKeyName("language_pack_path")]
     public string? LanguagePackPath { get; set; }
 
     /// <summary>
-    /// Gets the primary namespace containing the advancements.
+    /// Gets or sets the primary namespace containing the advancements.
     /// </summary>
-    public string MainNamespace { get; private set; } = string.Empty;
+    [ConfigurationKeyName("main_namespace")]
+    public string MainNamespace { get; set; } = string.Empty;
 
     /// <summary>
-    /// Gets the namespace used for custom rewards, functions, and internal macros.
+    /// Gets or sets the namespace used for custom rewards, functions, and internal macros.
     /// </summary>
-    public string RewardNamespace { get; private set; } = string.Empty;
+    [ConfigurationKeyName("reward_namespace")]
+    public string RewardNamespace { get; set; } = string.Empty;
 
     /// <summary>
-    /// Gets the access permission mode determining whether file modifications are permitted.
+    /// Gets or sets the access permission mode determining whether file modifications are permitted.
     /// </summary>
-    public DatapackAccess Access { get; private set; } = DatapackAccess.ReadOnly;
-
-    /// <summary>
-    /// Gets the message announcement visual configuration by advancement tier.
-    /// </summary>
-    public AdvancementMessageSettings? AdvancementMessageSettings { get; private set; }
+    [ConfigurationKeyName("type")]
+    public DatapackType Type { get; set; } = DatapackType.Reference;
 
     /// <summary>
     /// Gets the precalculated macro command identifier.
@@ -47,78 +46,25 @@ public sealed class DatapackSettings
     public string MacroCommandName => field ??= $"{RewardNamespace}:advancement_made_macro";
 
     /// <summary>
-    /// Gets the optional identifier of the parent datapack when acting as an override addon.
+    /// Gets or sets the optional identifier of the parent datapack when acting as an override addon.
     /// </summary>
     [PublicAPI]
-    public DatapackId? ParentDatapackId { get; private set; }
+    [ConfigurationKeyName("parent_datapack_id")]
+    public string? ParentDatapackId { get; set; }
 
     /// <summary>
-    /// Gets the mapping of advancement tabs to their milestone advancement Minecraft paths.
+    /// Gets or sets the mapping of advancement tabs to their milestone advancement Minecraft paths.
     /// </summary>
     [PublicAPI]
-    public IReadOnlyDictionary<BacapAdvancementTab, string>? MilestoneMcPaths { get; private set; }
+    [ConfigurationKeyName("milestone_mc_paths")]
+    public Dictionary<BacapAdvancementTab, string>? MilestoneMcPaths { get; set; }
 
     /// <summary>
-    /// Gets the Minecraft resource path for the advancement legend reward.
+    /// Gets or sets the Minecraft resource path for the advancement legend reward.
     /// </summary>
     [PublicAPI]
-    public string? AdvancementLegendMcPath { get; private set; }
-
-    /// <summary>
-    /// Applies domain-specific presets and hardcoded constants based on the datapack identifier.
-    /// </summary>
-    /// <param name="id">The strongly-typed datapack identifier.</param>
-    /// <exception cref="ArgumentOutOfRangeException">Thrown when an unsupported <see cref="DatapackId"/> is provided.</exception>
-    /// <example>
-    /// <code>
-    /// var settings = new DatapackSettings { Path = "./datapacks/bacaped_datapack" };
-    /// settings.ApplyPreset(DatapackId.Bacaped);
-    /// </code>
-    /// </example>
-    public void ApplyPreset(DatapackId id)
-    {
-        switch (id)
-        {
-            case DatapackId.Bacap:
-                MainNamespace = "blazeandcave";
-                RewardNamespace = "bacap_rewards";
-                Access = DatapackAccess.ReadOnly;
-                AdvancementMessageSettings = null;
-                ParentDatapackId = null;
-                MilestoneMcPaths = null;
-                AdvancementLegendMcPath = null;
-                break;
-
-            case DatapackId.Bacaped:
-                MainNamespace = "bacaped";
-                RewardNamespace = "bacaped_rewards";
-                Access = DatapackAccess.ReadWrite;
-                AdvancementMessageSettings = new AdvancementMessageSettings
-                {
-                    Entries = DatapackDefaults.DefaultTierMessages
-                };
-                ParentDatapackId = null;
-                MilestoneMcPaths = DatapackDefaults.CreateDefaultTypedMilestones();
-                AdvancementLegendMcPath = "bacaped:bacap/enhanced_legend";
-                break;
-
-            case DatapackId.BacapedHardcore:
-                MainNamespace = "bacaped";
-                RewardNamespace = "bacaped_rewards";
-                Access = DatapackAccess.ReadWrite;
-                AdvancementMessageSettings = new AdvancementMessageSettings
-                {
-                    Entries = DatapackDefaults.DefaultTierMessages
-                };
-                ParentDatapackId = DatapackId.Bacaped;
-                MilestoneMcPaths = DatapackDefaults.CreateDefaultTypedMilestones();
-                AdvancementLegendMcPath = "bacaped:bacap/enhanced_legend";
-                break;
-
-            default:
-                throw new ArgumentOutOfRangeException(nameof(id), id, "Unsupported datapack identifier.");
-        }
-    }
+    [ConfigurationKeyName("advancement_legend_mc_path")]
+    public string? AdvancementLegendMcPath { get; set; }
 
     /// <summary>
     /// Validates the current settings object based on the configured access mode and paths.
@@ -129,13 +75,23 @@ public sealed class DatapackSettings
         if (string.IsNullOrWhiteSpace(Path))
             throw new InvalidOperationException($"'{nameof(Path)}' must be provided for the datapack.");
 
-        if (Access != DatapackAccess.ReadWrite)
+        if (string.IsNullOrWhiteSpace(MainNamespace))
+            throw new InvalidOperationException($"'{nameof(MainNamespace)}' must be provided.");
+
+        if (string.IsNullOrWhiteSpace(RewardNamespace))
+            throw new InvalidOperationException($"'{nameof(RewardNamespace)}' must be provided.");
+
+        if (Type != DatapackType.Addon)
             return;
 
         if (string.IsNullOrWhiteSpace(LanguagePackPath))
-            throw new InvalidOperationException($"'{nameof(LanguagePackPath)}' must be provided when Access is set to ReadWrite.");
+            throw new InvalidOperationException($"'{nameof(LanguagePackPath)}' must be provided when Type is set to Addon.");
 
-        if (AdvancementMessageSettings is null)
-            throw new InvalidOperationException($"'{nameof(AdvancementMessageSettings)}' must be provided when Access is set to ReadWrite.");
+        if (Type == DatapackType.CompatibilityAddon && string.IsNullOrWhiteSpace(ParentDatapackId))
+        {
+            throw new InvalidOperationException($"'{nameof(ParentDatapackId)}' must be provided when Type is set to CompatibilityAddon.");
+        }
+
+
     }
 }

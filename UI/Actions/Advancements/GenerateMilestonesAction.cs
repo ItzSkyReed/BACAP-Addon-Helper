@@ -1,4 +1,5 @@
 ﻿using BacapGenerator.Models.Datapacks;
+using BacapGenerator.Models.Datapacks.Settings;
 using BacapGenerator.Services.Global;
 using UI.Interfaces;
 using UI.Styling;
@@ -29,12 +30,13 @@ public class GenerateMilestonesAction(DatapackRegistry registry) : IManageAdvanc
     {
         TuiTheme.RenderHeader(Title);
 
-        var bacaped = registry.Bacaped;
+        var addons = registry.Values.Where(d => d.Settings.Type == DatapackType.Addon).ToArray();
 
-        GlobalAdvancementsService.GenerateAndSaveAll(bacaped);
+        foreach (var addon in addons)
+            GlobalAdvancementsService.GenerateAndSaveAll(addon);
 
         TuiTheme.Space();
-        TuiTheme.ShowSuccess($"Successfully generated and saved milestone and legend files for {bacaped.Id}!");
+        TuiTheme.ShowSuccess($"Successfully generated and saved milestone and legend files for {string.Join(", ", addons.Select(d => d.Id))}!");
         TuiTheme.WaitForKey();
 
         return Task.CompletedTask;

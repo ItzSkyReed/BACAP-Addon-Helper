@@ -34,7 +34,7 @@ var host = Host.CreateDefaultBuilder(args)
         services.Configure<Dictionary<string, DatapackSettings>>(
             context.Configuration.GetSection("Datapacks"));
 
-        var registryPath = context.Configuration.GetValue<string>("RegistryBasePath");
+        var registryPath = context.Configuration.GetValue<string>("registry_base_path");
 
         services.AddSingleton<McRegistryLoader>(_ => new McRegistryLoader(registryPath!));
         services.AddSingleton<DatapackRegistry>();

@@ -1,19 +1,50 @@
 ﻿# Path to the directory containing extracted Minecraft registry JSON files
-RegistryBasePath: "./registries"
+registry_base_path: "./registries"
 
-# Filesystem paths for each target datapack.
-# Namespaces, rewards, milestone paths, and tier message formatting are built directly into the generator.
-Datapacks:
-  # Base BlazeandCave's Advancements Pack (ReadOnly source)
+# Filesystem paths and settings for each target datapack.
+datapacks:
+  # Base BlazeandCave's Advancements Pack (Read only source)
   bacap:
-    Path: "./datapacks/bacap_datapack"
+    path: "./datapacks/bacap_datapack"
+    main_namespace: "blazeandcave"
+    reward_namespace: "bacap_rewards"
+    type: "reference"
 
   # BACAP Enhanced addon (ReadWrite target)
   bacaped:
-    Path: "./datapacks/bacaped_datapack"
-    LanguagePackPath: "./resourcepacks/lang_pack"
+    path: "./datapacks/bacaped_datapack"
+    language_pack_path: "./resourcepacks/lang_pack"
+    main_namespace: "bacaped"
+    reward_namespace: "bacaped_rewards"
+    type: "addon"
+    advancement_legend_mc_path: "bacaped:bacap/enhanced_legend"
+    milestone_mc_paths:
+      adventure: "bacaped:bacap/enhanced_adventure_milestone"
+      animal: "bacaped:bacap/enhanced_animal_milestone"
+      biomes: "bacaped:bacap/enhanced_biomes_milestone"
+      building: "bacaped:bacap/enhanced_building_milestone"
+      challenges: "bacaped:bacap/enhanced_challenges_milestone"
+      enchanting: "bacaped:bacap/enhanced_enchanting_milestone"
+      end: "bacaped:bacap/enhanced_end_milestone"
+      farming: "bacaped:bacap/enhanced_farming_milestone"
+      mining: "bacaped:bacap/enhanced_mining_milestone"
+      monsters: "bacaped:bacap/enhanced_monsters_milestone"
+      nether: "bacaped:bacap/enhanced_nether_milestone"
+      potion: "bacaped:bacap/enhanced_potion_milestone"
+      redstone: "bacaped:bacap/enhanced_redstone_milestone"
+      statistics: "bacaped:bacap/enhanced_statistics_milestone"
+      weaponry: "bacaped:bacap/enhanced_weaponry_milestone"
 
   # BACAP Enhanced Hardcore variant (ReadWrite target)
   bacaped_hardcore:
-    Path: "./datapacks/bacaped_datapack"
-    LanguagePackPath: "./resourcepacks/lang_pack"
+    path: "./datapacks/bacaped_datapack"
+    language_pack_path: "./resourcepacks/lang_pack"
+    main_namespace: "bacaped"
+    reward_namespace: "bacaped_rewards"
+    type: "compatibility_addon"
+    parent_datapack_id: "bacaped"
+    compatibility_addon_settings:
+      override_msg: true
+      override_exp_rewards: false
+      override_item_rewards: false
+      override_trophy_rewards: false

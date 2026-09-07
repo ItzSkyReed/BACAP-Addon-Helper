@@ -9,7 +9,7 @@ public interface IReadOnlyDatapack
     /// <summary>
     /// Gets the unique identifier of the datapack as defined in the configuration.
     /// </summary>
-    public DatapackId Id { get; }
+    public string Id { get; }
 
     public IReadOnlyList<ManagedAdvancement> Advancements { get; }
 

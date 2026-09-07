@@ -14,7 +14,7 @@ public interface IDatapackFactory
     /// <returns>A fully initialized <see cref="Datapack"/> instance containing parsed advancements.</returns>
     /// <exception cref="ArgumentNullException">Thrown when <paramref name="settings"/> is null.</exception>
     /// <exception cref="DirectoryNotFoundException">Thrown if the data directory does not exist on disk.</exception>
-    Datapack Create(DatapackId id, DatapackSettings settings);
+    Datapack Create(string id, DatapackSettings settings);
 }
 
 /// <summary>
@@ -24,7 +24,7 @@ public interface IDatapackFactory
 public class DatapackFactory(MinecraftData minecraftData) : IDatapackFactory
 {
     /// <inheritdoc/>
-    public Datapack Create(DatapackId id, DatapackSettings settings)
+    public Datapack Create(string id, DatapackSettings settings)
     {
         ArgumentNullException.ThrowIfNull(settings);
 

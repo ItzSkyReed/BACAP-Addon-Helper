@@ -25,7 +25,7 @@ public class AdvancementFunctionsSetupAction(DatapackRegistry registry) : IManag
     public async Task ExecuteAsync()
     {
         var targetAdvancements = registry.Values
-            .Where(dp => dp.Settings.Access == DatapackAccess.ReadWrite)
+            .Where(dp => dp.Settings.Type == DatapackType.Addon)
             .SelectMany(dp => dp.Advancements.OfType<BacapAdvancement>())
             .Where(IsMissingRewards)
             .ToList();

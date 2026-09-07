@@ -46,13 +46,13 @@ public class AdvancementEditorAction(DatapackRegistry registry) : IManageAdvance
     public async Task ExecuteAsync()
     {
         var editableAdvancements = registry.Values
-            .Where(dp => dp.Settings.Access == DatapackAccess.ReadWrite)
+            .Where(dp => dp.Settings.Type == DatapackType.Addon)
             .SelectMany(dp => dp.Advancements.OfType<BacapAdvancement>())
             .ToList();
 
         if (editableAdvancements.Count == 0)
         {
-            TuiTheme.ShowWarning("No advancements found across datapacks with ReadWrite access.");
+            TuiTheme.ShowWarning("No advancements found across datapacks with Addon access.");
             TuiTheme.WaitForKey();
             return;
         }

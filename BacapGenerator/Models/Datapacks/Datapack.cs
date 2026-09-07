@@ -17,7 +17,10 @@ public class Datapack : IReadOnlyDatapack
     /// <summary>
     /// Gets the strongly-typed identifier of the datapack.
     /// </summary>
-    public DatapackId Id { get; }
+    /// <summary>
+    /// Gets the string identifier of the datapack, loaded from the configuration.
+    /// </summary>
+    public string Id { get; }
 
     /// <summary>
     /// Gets the settings and configuration associated with this datapack.
@@ -45,7 +48,7 @@ public class Datapack : IReadOnlyDatapack
     /// <param name="settings">The datapack configuration.</param>
     /// <param name="minecraftData">The global Minecraft registry data.</param>
     /// <exception cref="ArgumentNullException">Thrown when <paramref name="settings"/> or <paramref name="minecraftData"/> is null.</exception>
-    public Datapack(DatapackId id, DatapackSettings settings, MinecraftData minecraftData)
+    public Datapack(string id, DatapackSettings settings, MinecraftData minecraftData)
     {
         ArgumentNullException.ThrowIfNull(settings);
         ArgumentNullException.ThrowIfNull(minecraftData);

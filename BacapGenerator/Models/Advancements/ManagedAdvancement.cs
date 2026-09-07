@@ -53,9 +53,9 @@ public abstract class ManagedAdvancement
         }
     }
     /// <summary>
-    /// Indicates whether the advancement is read-only (e.g., loaded from a ReadOnly datapack).
+    /// Indicates whether the advancement is read-only (e.g., loaded from a Reference datapack).
     /// </summary>
-    public bool IsReadOnly => Datapack.Settings.Access == DatapackAccess.ReadOnly;
+    public bool IsReadOnly => Datapack.Settings.Type == DatapackType.Reference;
 
     /// <summary>
     /// Gets or sets a value indicating whether this advancement overrides an existing one
@@ -122,8 +122,8 @@ public abstract class ManagedAdvancement
     /// <exception cref="InvalidOperationException">Thrown when attempting to modify a read-only instance.</exception>
     public void EnsureMutable()
     {
-        if (Datapack.Settings.Access == DatapackAccess.ReadOnly)
-            throw new InvalidOperationException($"Cannot modify {GetType().Name} because its parent datapack is in {DatapackAccess.ReadOnly} mode.");
+        if (Datapack.Settings.Type == DatapackType.Reference)
+            throw new InvalidOperationException($"Cannot modify {GetType().Name} because its parent datapack is in {DatapackType.Reference} mode.");
     }
 
     public override string ToString() => $"{GetType().Name}({File.Name})";

@@ -1,5 +1,7 @@
 ﻿using System.Collections.Frozen;
+using System.ComponentModel;
 using System.Diagnostics.CodeAnalysis;
+using BacapGenerator.Converters;
 using BacapGenerator.Utils;
 
 namespace BacapGenerator.Models.Advancements;
@@ -7,6 +9,7 @@ namespace BacapGenerator.Models.Advancements;
 /// <summary>
 /// Represents a predefined BACAP advancement tab containing its folder identifier and display name.
 /// </summary>
+[TypeConverter(typeof(BacapAdvancementTabConverter))]
 public sealed record BacapAdvancementTab
 {
     /// <summary>

@@ -20,12 +20,12 @@ public class AdvancementsRecoverAction(
     public Task ExecuteAsync()
     {
         var readWriteDatapacks = registry.Values
-            .Where(dp => dp.Settings.Access == DatapackAccess.ReadWrite)
+            .Where(dp => dp.Settings.Type == DatapackType.Addon)
             .ToList();
 
         if (readWriteDatapacks.Count == 0)
         {
-            TuiTheme.ShowWarning("No ReadWrite datapacks found.");
+            TuiTheme.ShowWarning("No Addon datapacks found.");
             TuiTheme.WaitForKey();
             return Task.CompletedTask;
         }

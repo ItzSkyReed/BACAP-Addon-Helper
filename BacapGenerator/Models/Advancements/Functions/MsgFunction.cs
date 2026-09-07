@@ -1,4 +1,5 @@
-﻿using JetBrains.Annotations;
+﻿using BacapGenerator.Models.Datapacks;
+using JetBrains.Annotations;
 using Core.Commands.Impl;
 using Core.Commands.Models;
 using Core.McFunctions.Models;
@@ -35,17 +36,8 @@ public sealed class MsgFunction : BaseFunction
     [PublicAPI]
     public override void Update()
     {
-        var settings = BacapAdvancement.Datapack.Settings.AdvancementMessageSettings;
 
-        ArgumentNullException.ThrowIfNull(settings);
-        ArgumentNullException.ThrowIfNull(settings.Entries);
-
-        if (!settings.Entries.TryGetValue(BacapAdvancement.Tier, out var entry))
-        {
-            throw new ArgumentException(
-                $"Tier '{BacapAdvancement.Tier}' not found in the configuration file to generate advancement messages.",
-                nameof(settings));
-        }
+        var entry = BacapAdvancement.Tier.GetDefaultMessage();
 
         var newCommand = CreateMessage(
             rootTranslationKey: entry.TranslationKey,

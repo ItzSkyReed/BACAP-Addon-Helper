@@ -16,6 +16,7 @@ public static class GlobalAdvancementsService
     /// Generates and saves all milestones and the legend advancement for the datapack.
     /// </summary>
     /// <param name="datapack">The target datapack to process.</param>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="datapack"/> is null.</exception>
     public static void GenerateAndSaveAll(Datapack datapack)
     {
         ArgumentNullException.ThrowIfNull(datapack);
@@ -27,12 +28,12 @@ public static class GlobalAdvancementsService
             return;
 
         var bacapAdvancements = datapack.Advancements.OfType<BacapAdvancement>().ToList();
-        var advByPath = bacapAdvancements.ToDictionary(a => a.McPath);
+        var advByPath = bacapAdvancements.ToDictionary(a => a.McPath, StringComparer.OrdinalIgnoreCase);
 
         // Filter using our extension method
         var validAdvancements = bacapAdvancements.GetValidPlayable(settings.AdvancementLegendMcPath).ToList();
 
-        // Group directly by BacapAdvancementTab record instead of string FolderName
+        // Group directly by BacapAdvancementTab
         var advancementsByTab = validAdvancements
             .GroupBy(a => a.Tab)
             .ToDictionary(g => g.Key, g => g.ToList());
@@ -49,7 +50,7 @@ public static class GlobalAdvancementsService
             AdvancementIoManager.SaveAdvancement(milestoneAdv);
         }
 
-        //  Generate and save Legend
+        // Generate and save Legend
         if (string.IsNullOrWhiteSpace(settings.AdvancementLegendMcPath) ||
             !advByPath.TryGetValue(settings.AdvancementLegendMcPath, out var legendAdv))
             return;

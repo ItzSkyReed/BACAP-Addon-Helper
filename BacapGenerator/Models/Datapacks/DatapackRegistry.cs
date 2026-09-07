@@ -1,33 +1,14 @@
 ﻿using System.Collections;
 using System.Diagnostics.CodeAnalysis;
-using BacapGenerator.Models.Datapacks.Settings;
 
 namespace BacapGenerator.Models.Datapacks;
 
 /// <summary>
 /// Central registry providing compile-time verified access to loaded datapack instances.
 /// </summary>
-public class DatapackRegistry : IReadOnlyDictionary<DatapackId, Datapack>
+public class DatapackRegistry : IReadOnlyDictionary<string, Datapack>
 {
-    private readonly Dictionary<DatapackId, Datapack> _datapacks = new(3);
-
-    /// <summary>
-    /// Gets the base BACAP datapack instance.
-    /// </summary>
-    /// <exception cref="InvalidOperationException">Thrown if the datapack has not been loaded.</exception>
-    public Datapack Bacap => Get(DatapackId.Bacap);
-
-    /// <summary>
-    /// Gets the BACAP Enhanced addon datapack instance.
-    /// </summary>
-    /// <exception cref="InvalidOperationException">Thrown if the datapack has not been loaded.</exception>
-    public Datapack Bacaped => Get(DatapackId.Bacaped);
-
-    /// <summary>
-    /// Gets the Hardcore BACAP Enhanced addon datapack instance.
-    /// </summary>
-    /// <exception cref="InvalidOperationException">Thrown if the datapack has not been loaded.</exception>
-    public Datapack BacapedHardcore => Get(DatapackId.BacapedHardcore);
+    private readonly Dictionary<string, Datapack> _datapacks = new();
 
     /// <summary>
     /// Registers a newly loaded datapack into the registry.
@@ -49,7 +30,7 @@ public class DatapackRegistry : IReadOnlyDictionary<DatapackId, Datapack>
     /// <param name="id">The datapack identifier to retrieve.</param>
     /// <returns>The registered datapack instance.</returns>
     /// <exception cref="InvalidOperationException">Thrown if the requested datapack is not loaded.</exception>
-    public Datapack Get(DatapackId id)
+    public Datapack Get(string id)
     {
         return _datapacks.TryGetValue(id, out var datapack)
             ? datapack
@@ -62,16 +43,16 @@ public class DatapackRegistry : IReadOnlyDictionary<DatapackId, Datapack>
     /// <param name="id">The datapack identifier to search for.</param>
     /// <param name="datapack">When this method returns, contains the datapack if found; otherwise, null.</param>
     /// <returns><see langword="true"/> if found; otherwise, <see langword="false"/>.</returns>
-    public bool TryGet(DatapackId id, [NotNullWhen(true)] out Datapack? datapack)
+    public bool TryGet(string id, [NotNullWhen(true)] out Datapack? datapack)
     {
         return _datapacks.TryGetValue(id, out datapack);
     }
 
     /// <inheritdoc/>
-    public Datapack this[DatapackId key] => Get(key);
+    public Datapack this[string key] => Get(key);
 
     /// <inheritdoc/>
-    public IEnumerable<DatapackId> Keys => _datapacks.Keys;
+    public IEnumerable<string> Keys => _datapacks.Keys;
 
     /// <inheritdoc/>
     public IEnumerable<Datapack> Values => _datapacks.Values;
@@ -80,13 +61,13 @@ public class DatapackRegistry : IReadOnlyDictionary<DatapackId, Datapack>
     public int Count => _datapacks.Count;
 
     /// <inheritdoc/>
-    public bool ContainsKey(DatapackId key) => _datapacks.ContainsKey(key);
+    public bool ContainsKey(string key) => _datapacks.ContainsKey(key);
 
     /// <inheritdoc/>
-    public bool TryGetValue(DatapackId key, [NotNullWhen(true)] out Datapack? value) => _datapacks.TryGetValue(key, out value);
+    public bool TryGetValue(string key, [NotNullWhen(true)] out Datapack? value) => _datapacks.TryGetValue(key, out value);
 
     /// <inheritdoc/>
-    public IEnumerator<KeyValuePair<DatapackId, Datapack>> GetEnumerator() => _datapacks.GetEnumerator();
+    public IEnumerator<KeyValuePair<string, Datapack>> GetEnumerator() => _datapacks.GetEnumerator();
 
     IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
 }
