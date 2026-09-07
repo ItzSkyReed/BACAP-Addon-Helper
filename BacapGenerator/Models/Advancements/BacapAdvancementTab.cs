@@ -98,23 +98,23 @@ public sealed record BacapAdvancementTab
     /// <summary>
     /// Extracts and resolves a <see cref="BacapAdvancementTab"/> from a parent McPath.
     /// </summary>
-    /// <param name="parentPath">The parent McPath (e.g. <c>"minecraft:adventure/root"</c> or <c>"bacap:nether/explore"</c>).</param>
+    /// <param name="mcPath">The parent McPath (e.g. <c>"minecraft:adventure/root"</c> or <c>"bacap:nether/explore"</c>).</param>
     /// <param name="tab">When this method returns, contains the resolved <see cref="BacapAdvancementTab"/> if successful; otherwise, <see langword="null"/>.</param>
     /// <returns><see langword="true"/> if a valid tab was resolved; otherwise, <see langword="false"/>.</returns>
-    public static bool TryExtractTabFromParent(string parentPath, [NotNullWhen(true)] out BacapAdvancementTab? tab)
+    public static bool TryExtractTabFromMcPath(string mcPath, [NotNullWhen(true)] out BacapAdvancementTab? tab)
     {
         tab = null;
-        if (string.IsNullOrWhiteSpace(parentPath))
+        if (string.IsNullOrWhiteSpace(mcPath))
         {
             return false;
         }
 
-        var stripped = MinecraftUtils.StripNamespace(parentPath.Trim());
+        var stripped = MinecraftUtils.StripNamespace(mcPath.Trim());
         var slashIndex = stripped.IndexOf('/');
         var folderName = slashIndex > 0 ? stripped[..slashIndex] : stripped;
 
         return TryFromFolderName(folderName, out tab)
-               || (BacapUtils.TryExtractTab(parentPath, out var tabName) && TryFromFolderName(tabName, out tab));
+               || (BacapUtils.TryExtractTab(mcPath, out var tabName) && TryFromFolderName(tabName, out tab));
     }
 
     public override string ToString() => DisplayName;
