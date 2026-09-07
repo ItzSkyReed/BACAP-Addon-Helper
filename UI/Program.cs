@@ -49,6 +49,7 @@ var host = Host.CreateDefaultBuilder(args)
         services.AddTransient<IManageAdvancementsAction, AdvancementStatsAction>();
         services.AddTransient<IManageAdvancementsAction, AdvancementInfoAction>();
         services.AddTransient<IManageAdvancementsAction, AdvancementEditorAction>();
+        services.AddTransient<IManageAdvancementsAction, AdvancementFunctionsSetupAction>();
 
         services.AddTransient<IManageAdvancementsAction, AdvancementsFormatAction>();
         services.AddTransient<IManageAdvancementsAction, AdvancementsRecoverAction>();
