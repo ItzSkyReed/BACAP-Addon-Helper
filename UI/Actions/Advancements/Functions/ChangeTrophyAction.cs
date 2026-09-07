@@ -31,8 +31,7 @@ public class ChangeTrophyAction(BacapAdvancement advancement) : IManageAdvanceme
         if (!wantTrophy)
         {
             advancement.TrophyRewardFunction.ClearTrophies();
-            AdvancementIoManager.SaveAdvancement(advancement);
-
+            AdvancementIoManager.SaveRewardFunction(advancement, advancement.TrophyRewardFunction);
             return;
         }
 

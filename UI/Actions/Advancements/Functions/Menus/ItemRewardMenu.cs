@@ -63,7 +63,7 @@ public static class ItemRewardMenu
             if (selected is null || selected == backAction)
             {
                 advancement.ItemRewardFunction.SetRewardItems(items);
-                AdvancementIoManager.SaveAdvancement(advancement);
+                AdvancementIoManager.SaveRewardFunction(advancement, advancement.ItemRewardFunction);
                 return;
             }
 
@@ -183,6 +183,6 @@ public static class ItemRewardMenu
     private static void SaveIntermediate(BacapAdvancement advancement, List<ItemStack> items)
     {
         advancement.ItemRewardFunction.SetRewardItems(items);
-        AdvancementIoManager.SaveAdvancement(advancement);
+        AdvancementIoManager.SaveRewardFunction(advancement, advancement.ItemRewardFunction);
     }
 }

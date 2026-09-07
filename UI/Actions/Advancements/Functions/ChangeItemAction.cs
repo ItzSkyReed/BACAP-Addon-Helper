@@ -31,7 +31,7 @@ public class ChangeItemAction(BacapAdvancement advancement) : IManageAdvancement
         {
             // Clear existing rewards and save an empty function file
             advancement.ItemRewardFunction.ClearRewardItems();
-            AdvancementIoManager.SaveAdvancement(advancement);
+            AdvancementIoManager.SaveRewardFunction(advancement, advancement.ItemRewardFunction);
 
             return;
         }

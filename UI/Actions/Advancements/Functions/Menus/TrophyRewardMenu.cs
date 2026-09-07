@@ -61,7 +61,7 @@ public static partial class TrophyRewardMenu
             if (selected is null || selected == backAction)
             {
                 advancement.TrophyRewardFunction.SetTrophies(trophies);
-                AdvancementIoManager.SaveAdvancement(advancement);
+                AdvancementIoManager.SaveRewardFunction(advancement, advancement.TrophyRewardFunction);
                 return;
             }
 
@@ -425,7 +425,7 @@ public static partial class TrophyRewardMenu
     private static void SaveIntermediate(BacapAdvancement advancement, List<TrophyReward> trophies)
     {
         advancement.TrophyRewardFunction.SetTrophies(trophies);
-        AdvancementIoManager.SaveAdvancement(advancement);
+        AdvancementIoManager.SaveRewardFunction(advancement, advancement.TrophyRewardFunction);
     }
 
     /// <summary>

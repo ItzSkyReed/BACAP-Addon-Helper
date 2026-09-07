@@ -43,7 +43,7 @@ public class ChangeExpAction(BacapAdvancement advancement) : IManageAdvancements
 
         advancement.ExpRewardFunction.ExperienceAmount = amount;
 
-        AdvancementIoManager.SaveAdvancement(advancement);
+        AdvancementIoManager.SaveRewardFunction(advancement, advancement.ExpRewardFunction);
         return Task.CompletedTask;
     }
 }
