@@ -100,7 +100,6 @@ public class BacapAdvancement : ManagedAdvancement
             return true;
         errorMessage = AdvancementValidationError.NotParsableTier;
         return false;
-
     }
 
     public override string ToString() => $"{GetType().Name}({File}): {McPath} {Tier}";
@@ -271,6 +270,23 @@ public class BacapAdvancement : ManagedAdvancement
         }
     }
 
+    /// <summary>
+    /// Gets or sets the parent advancement identifier (McPath).
+    /// Mutating this property automatically extracts the tab from the parent path,
+    /// synchronizes the rewards function path segment, and recalculates both <see cref="Tab"/> and <see cref="Tier"/>
+    /// using <see cref="BacapTierResolver"/>.
+    /// </summary>
+    /// <exception cref="InvalidOperationException">
+    /// Thrown when attempting to modify a read-only instance or when <see cref="BacapTierResolver"/> fails to resolve a tier.
+    /// </exception>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="value"/> is <see langword="null"/> for non-root advancements.</exception>
+    /// <exception cref="ArgumentException">Thrown when the parent McPath contains an unknown or invalid BACAP tab folder.</exception>
+    /// <example>
+    /// <code>
+    /// // Sets parent, updating Tab to Adventure and Tier via BacapTierResolver
+    /// advancement.Parent = "minecraft:adventure/root";
+    /// </code>
+    /// </example>
     [PublicAPI]
     public string? Parent
     {
@@ -278,10 +294,63 @@ public class BacapAdvancement : ManagedAdvancement
         set
         {
             EnsureMutable();
+
             if (Tier != BacapAdvancementTier.Root)
                 ArgumentNullException.ThrowIfNull(value);
 
-            Advancement = Advancement with { Parent = value };
+            if (Advancement.Parent == value)
+                return;
+
+            if (value is null)
+            {
+                base.Advancement = Advancement with { Parent = null };
+                Sync();
+                return;
+            }
+
+            // Extract the tab folder identifier from parent McPath (<namespace>:<tab>/<adv_name>)
+            if (!BacapAdvancementTab.TryExtractTabFromMcPath(value, out var newTab))
+            {
+                throw new ArgumentException(
+                    $"Cannot determine a valid BACAP tab from parent McPath '{value}'. Expected format: '<namespace>:<tab>/<advancement_name>'.",
+                    nameof(value));
+            }
+
+            // Synchronize Rewards.Function path segment to match the new tab
+            var currentFunc = Advancement.Rewards?.Function;
+            var updatedRewards = Advancement.Rewards;
+            if (!string.IsNullOrWhiteSpace(currentFunc))
+            {
+                var updatedFunction = MinecraftUtils.ReplaceFirstPathSegment(currentFunc, newTab.FolderName);
+                updatedRewards = Advancement.Rewards! with { Function = updatedFunction };
+            }
+
+            // Resolve new Tier using BacapTierResolver with the updated tab and display properties
+            var descriptionColor = Advancement.Display?.Description?.GetTag<string>("color")
+                                   ?? Advancement.Display?.Description?.Style?.Color;
+
+            var filename = Path.GetFileNameWithoutExtension(File.Name);
+            var hidden = Advancement.Display?.Hidden ?? false;
+            var frame = Advancement.Display?.Frame;
+
+            if (!BacapTierResolver.TryResolve(filename, newTab, hidden, frame, descriptionColor, out var newTier))
+            {
+                throw new InvalidOperationException(
+                    $"Cannot resolve tier for advancement '{filename}' in tab '{newTab.DisplayName}'.");
+            }
+
+            // Apply synchronized tab and tier
+            _tab = newTab;
+            _tier = newTier;
+
+            base.Advancement = Advancement with
+            {
+                Parent = value,
+                Rewards = updatedRewards
+            };
+
+            Sync();
+            UpdateFunctionFilePaths();
         }
     }
 
