@@ -139,7 +139,7 @@ public static partial class TrophyRewardMenu
         }
 
         return TrophyReward.CreateNew(
-            datapack: advancement.Datapack,
+            advancement: advancement,
             itemId: itemId,
             titleKey: title,
             titleColor: color,
@@ -240,7 +240,7 @@ public static partial class TrophyRewardMenu
                     );
                     var style = new TextStyle(Color: current.TitleColor ?? "#B0CCD8", Bold: true, Italic: false);
                     current.Item.Components.Set(new CustomNameComponent(new TranslatableComponent(newTitle, Style: style)));
-                    current.Standardize(advancement.Datapack);
+                    current.Standardize(advancement);
                     SaveIntermediate(advancement, trophies);
                     break;
 
