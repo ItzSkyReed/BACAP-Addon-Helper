@@ -1,4 +1,5 @@
-﻿using BacapGenerator.Factories;
+﻿using System.Diagnostics;
+using BacapGenerator.Factories;
 using BacapGenerator.Models.Datapacks;
 using BacapGenerator.Models.Datapacks.Settings;
 using BacapGenerator.Services;
@@ -7,8 +8,11 @@ using Core.Registries;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
+using NReco.Logging.File;
 using UI.Actions.Advancements;
 using UI.Actions.Advancements.Debug;
+using UI.Actions.Datapacks;
 using UI.Configuration;
 using UI.Interfaces;
 using UI.Menus;
@@ -26,6 +30,20 @@ var host = Host.CreateDefaultBuilder(args)
     {
         config.Sources.Clear();
         config.AddYamlFile(configFileName, optional: false, reloadOnChange: true);
+    })
+    .ConfigureLogging((context, logging) =>
+    {
+        logging.ClearProviders();
+
+        // Registers provider at runtime only when a debugger is actively attached
+        if (Debugger.IsAttached)
+            logging.AddDebug();
+
+        var filePath = context.Configuration.GetValue<string>("logging:file_path");
+        if (!string.IsNullOrWhiteSpace(filePath))
+            logging.AddFile(filePath);
+
+        logging.AddConfiguration(context.Configuration.GetSection("logging"));
     })
     .ConfigureServices((context, services) =>
     {
