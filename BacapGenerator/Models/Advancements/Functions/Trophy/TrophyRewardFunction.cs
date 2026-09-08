@@ -157,7 +157,7 @@ public sealed class TrophyRewardFunction : BaseFunction
 
         foreach (var trophy in _trophies)
         {
-            trophy.Standardize(BacapAdvancement.Datapack);
+            trophy.Standardize(BacapAdvancement);
         }
 
         var newLines = new List<IMcFunctionLine>();
