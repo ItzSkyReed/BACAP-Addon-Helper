@@ -5,9 +5,6 @@ namespace BacapGenerator.Utils;
 
 public static class BacapUtils
 {
-    public const string AdvancementsScoreboard = "bac_advancements";
-    public const string PointsScoreboard = "bac_advancements_points";
-    public const string CoopBaseScoreboard = "bac_obtained";
 
     /// <summary>
     /// Extracts the tab segment (first path component) from a resource location string.

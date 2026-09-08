@@ -1,5 +1,6 @@
 ﻿using BacapGenerator.Models;
 using BacapGenerator.Models.Advancements;
+using BacapGenerator.Models.Datapacks;
 using BacapGenerator.Utils;
 using Core.Commands.Impl;
 using Core.Commands.Models;
@@ -11,7 +12,6 @@ namespace BacapGenerator.Services.Generators;
 
 public static class DatapackFunctionsGenerator
 {
-
     /// <summary>
     /// Generates a function that increments the player's advancement score counter for each completed advancement.
     /// </summary>
@@ -25,7 +25,7 @@ public static class DatapackFunctionsGenerator
         var scoreboardCommand = new ScoreboardPlayersMathCommand(
             ScoreboardMathOperation.Add,
             Selector.SelectedPlayer,
-            BacapUtils.AdvancementsScoreboard,
+            DatapackDefaults.AdvancementsScoreboard,
             1);
 
         return BuildFunction(advancements, advancement =>
@@ -46,7 +46,7 @@ public static class DatapackFunctionsGenerator
         {
             var scoreboardCommand = new ScoreboardPlayersOperationCommand(
                 Selector.SelectedPlayer,
-                BacapUtils.PointsScoreboard,
+                DatapackDefaults.PointsScoreboard,
                 "+=",
                 Selector.Custom(advancement.Tier.TechnicalName()),
                 "bac_points");
@@ -62,7 +62,7 @@ public static class DatapackFunctionsGenerator
     /// <returns>A configured <see cref="McFunction"/> containing coop grant commands.</returns>
     /// <exception cref="ArgumentNullException">Thrown when <paramref name="advancements"/> is <see langword="null"/>.</exception>
     public static McFunction GenerateUpdateCoop(IReadOnlyList<BacapAdvancement> advancements) =>
-        GenerateCoopInternal(advancements, Selector.AllPlayers, BacapUtils.CoopBaseScoreboard);
+        GenerateCoopInternal(advancements, Selector.AllPlayers, DatapackDefaults.CoopBaseScoreboard);
 
     /// <summary>
     /// Generates a function that grants coop advancements specifically to members of the given team.
@@ -74,7 +74,7 @@ public static class DatapackFunctionsGenerator
     public static McFunction GenerateUpdateCoopTeam(IReadOnlyList<BacapAdvancement> advancements, BacapTeam team)
     {
         ArgumentNullException.ThrowIfNull(team);
-        return GenerateCoopInternal(advancements, Selector.Custom($"@a[team=bac_team{team.Color}]"), $"{BacapUtils.CoopBaseScoreboard}_{team.Color}");
+        return GenerateCoopInternal(advancements, Selector.Custom($"@a[team=bac_team{team.Color}]"), $"{DatapackDefaults.CoopBaseScoreboard}_{team.Color}");
     }
 
     /// <summary>
@@ -145,11 +145,7 @@ public static class DatapackFunctionsGenerator
         Func<BacapAdvancement, ICommand> commandFactory)
     {
         var lines = new List<IMcFunctionLine>(advancements.Count);
-
-        foreach (var advancement in advancements)
-        {
-            lines.Add(new ExecutableLine(commandFactory(advancement)));
-        }
+        lines.AddRange(advancements.Select(advancement => new ExecutableLine(commandFactory(advancement))));
 
         return new McFunction(lines);
     }
