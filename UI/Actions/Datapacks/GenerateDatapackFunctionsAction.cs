@@ -4,13 +4,13 @@ using BacapGenerator.Services.Global;
 using UI.Interfaces;
 using UI.Styling;
 
-namespace UI.Actions.Advancements;
+namespace UI.Actions.Datapacks;
 
 /// <summary>
 /// Action that generates global datapack functions (update_score, update_points, etc.) for the BACAP Enhanced addon.
 /// </summary>
 /// <param name="registry">The central registry providing access to loaded datapacks.</param>
-public class GenerateDatapackFunctionsAction(DatapackRegistry registry) : IManageAdvancementsAction
+public class GenerateDatapackFunctionsAction(DatapackRegistry registry) : IManageDatapacksAction
 {
     /// <inheritdoc/>
     public string Title => "Generate Global Datapack Functions";

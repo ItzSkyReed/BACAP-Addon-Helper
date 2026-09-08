@@ -20,7 +20,7 @@ public class AdvancementsRecoverAction(
     public Task ExecuteAsync()
     {
         var readWriteDatapacks = registry.Values
-            .Where(dp => dp.Settings.Type == DatapackType.Addon)
+            .Where(dp => dp.Settings.Type != DatapackType.Reference)
             .ToList();
 
         if (readWriteDatapacks.Count == 0)
@@ -35,9 +35,7 @@ public class AdvancementsRecoverAction(
 
         var recoveredAdvancements = new List<BacapAdvancement>();
         foreach (var dp in readWriteDatapacks)
-        {
             recoveredAdvancements.AddRange(AdvancementRecoveryService.RecoverAdvancements(dp));
-        }
 
         if (recoveredAdvancements.Count == 0)
         {

@@ -12,7 +12,8 @@ namespace UI.Actions.Advancements;
 
 /// <summary>
 /// Provides an interactive management hub for BACAP advancements, allowing modification
-/// of core properties (Title, Description, Tab, Parent, Tier) as well as attached reward functions.
+/// of core properties (Title, Description, Tab, Parent, Tier) as well as attached reward functions,
+/// dynamically adapting options based on datapack capabilities and override settings.
 /// </summary>
 /// <param name="registry">The registry containing loaded datapacks.</param>
 public class AdvancementEditorAction(DatapackRegistry registry) : IManageAdvancementsAction
@@ -45,17 +46,20 @@ public class AdvancementEditorAction(DatapackRegistry registry) : IManageAdvance
     /// <returns>A completed <see cref="Task"/> representing the asynchronous operation.</returns>
     public async Task ExecuteAsync()
     {
-        var editableAdvancements = registry.Values
-            .Where(dp => dp.Settings.Type == DatapackType.Addon)
-            .SelectMany(dp => dp.Advancements.OfType<BacapAdvancement>())
+        var editablePairs = registry.Values
+            .Where(dp => dp.Settings.Type != DatapackType.Reference)
+            .SelectMany(dp => dp.Advancements.OfType<BacapAdvancement>().Select(adv => (Datapack: dp, Advancement: adv)))
             .ToList();
 
-        if (editableAdvancements.Count == 0)
+        if (editablePairs.Count == 0)
         {
-            TuiTheme.ShowWarning("No advancements found across datapacks with Addon access.");
+            TuiTheme.ShowWarning("No advancements found across editable addon datapacks.");
             TuiTheme.WaitForKey();
             return;
         }
+
+        var editableAdvancements = editablePairs.Select(p => p.Advancement).ToList();
+        var datapackLookup = editablePairs.ToDictionary(p => p.Advancement, p => p.Datapack);
 
         var allKnownAdvancements = registry.Values
             .SelectMany(dp => dp.Advancements)
@@ -67,11 +71,13 @@ public class AdvancementEditorAction(DatapackRegistry registry) : IManageAdvance
             if (selectedAdv is null)
                 break;
 
-            var wasDeleted = await OpenAdvancementEditorAsync(selectedAdv, allKnownAdvancements);
+            var datapack = datapackLookup[selectedAdv];
+            var wasDeleted = await OpenAdvancementEditorAsync(selectedAdv, datapack, allKnownAdvancements);
             if (!wasDeleted)
                 continue;
 
             editableAdvancements.Remove(selectedAdv);
+            datapackLookup.Remove(selectedAdv);
             allKnownAdvancements.Remove(selectedAdv);
 
             if (editableAdvancements.Count == 0)
@@ -80,9 +86,10 @@ public class AdvancementEditorAction(DatapackRegistry registry) : IManageAdvance
     }
 
     /// <summary>
-    /// Displays the comprehensive editing menu for an individual advancement.
+    /// Displays the comprehensive editing menu for an individual advancement, offering only supported operations.
     /// </summary>
     /// <param name="advancement">The target BACAP advancement being configured.</param>
+    /// <param name="datapack">The parent datapack owning the advancement.</param>
     /// <param name="allAdvancements">The global list of known advancements across all datapacks for parent validation.</param>
     /// <returns>
     /// A task containing <see langword="true"/> if the advancement was deleted during the session;
@@ -90,21 +97,21 @@ public class AdvancementEditorAction(DatapackRegistry registry) : IManageAdvance
     /// </returns>
     private static async Task<bool> OpenAdvancementEditorAsync(
         BacapAdvancement advancement,
+        Datapack datapack,
         IReadOnlyList<ManagedAdvancement> allAdvancements)
     {
+
         while (true)
         {
-            TuiTheme.RenderHeader($"Edit Advancement: {advancement.TitleText}");
+            TuiTheme.RenderHeader($"Edit Advancement: {advancement.TitleText} [{datapack.Id}]");
 
-            var expSummary = FormatExpSummary(advancement);
-            var itemSummary = FormatItemSummary(advancement);
-            var trophySummary = FormatTrophySummary(advancement);
-            var descPreview = Truncate(advancement.DescriptionText, 28);
+            var descPreview = Truncate(advancement.DescriptionText, 80);
+            var choices = BuildAvailableOptions(datapack.Settings);
 
             var option = AnsiConsole.Prompt(
                 new SelectionPrompt<AdvancementEditOption>()
                     .Title("Choose an advancement property or function to configure:")
-                    .AddChoices(Enum.GetValues<AdvancementEditOption>())
+                    .AddChoices(choices)
                     .UseConverter(opt => opt switch
                     {
                         AdvancementEditOption.ChangeTitle =>
@@ -123,13 +130,13 @@ public class AdvancementEditorAction(DatapackRegistry registry) : IManageAdvance
                             $"Tier [yellow]{advancement.Tier}[/]",
 
                         AdvancementEditOption.ManageExperience =>
-                            $"Experience Reward [grey]—[/] {expSummary}",
+                            $"Experience Reward [grey]—[/] {FormatExpSummary(advancement)}",
 
                         AdvancementEditOption.ManageItems =>
-                            $"Item Rewards [grey]—[/] {itemSummary}",
+                            $"Item Rewards [grey]—[/] {FormatItemSummary(advancement)}",
 
                         AdvancementEditOption.ManageTrophies =>
-                            $"Trophy Rewards [grey]—[/] {trophySummary}",
+                            $"Trophy Rewards [grey]—[/] {FormatTrophySummary(advancement)}",
 
                         AdvancementEditOption.Delete =>
                             "[red]Delete Advancement[/]",
@@ -162,29 +169,61 @@ public class AdvancementEditorAction(DatapackRegistry registry) : IManageAdvance
                     EditTier(advancement);
                     break;
 
-                case AdvancementEditOption.Delete:
-                    if (TryDeleteAdvancement(advancement))
-                    {
-                        return true;
-                    }
-                    break;
-
                 case AdvancementEditOption.ManageExperience:
                     await new ChangeExpAction(advancement).ExecuteAsync();
+                    AdvancementIoManager.SaveAdvancement(advancement);
                     break;
 
                 case AdvancementEditOption.ManageItems:
                     await new ChangeItemAction(advancement).ExecuteAsync();
+                    AdvancementIoManager.SaveAdvancement(advancement);
                     break;
 
                 case AdvancementEditOption.ManageTrophies:
                     await new ChangeTrophyAction(advancement).ExecuteAsync();
+                    AdvancementIoManager.SaveAdvancement(advancement);
+                    break;
+
+                case AdvancementEditOption.Delete:
+                    if (TryDeleteAdvancement(advancement))
+                        return true;
                     break;
 
                 case AdvancementEditOption.Back:
                     return false;
             }
         }
+    }
+
+    /// <summary>
+    /// Constructs the list of permitted menu choices according to datapack capabilities.
+    /// </summary>
+    /// <param name="settings">The parent datapack settings.</param>
+    /// <returns>A list of eligible <see cref="AdvancementEditOption"/> entries.</returns>
+    private static List<AdvancementEditOption> BuildAvailableOptions(DatapackSettings settings)
+    {
+        var options = new List<AdvancementEditOption>(10)
+        {
+            AdvancementEditOption.ChangeTitle,
+            AdvancementEditOption.ChangeDescription,
+            AdvancementEditOption.ChangeTab,
+            AdvancementEditOption.ChangeParent,
+            AdvancementEditOption.ChangeTier
+        };
+
+        if (settings.SupportsExpRewards())
+            options.Add(AdvancementEditOption.ManageExperience);
+
+        if (settings.SupportsItemRewards())
+            options.Add(AdvancementEditOption.ManageItems);
+
+        if (settings.SupportsTrophyRewards())
+            options.Add(AdvancementEditOption.ManageTrophies);
+
+        options.Add(AdvancementEditOption.Delete);
+        options.Add(AdvancementEditOption.Back);
+
+        return options;
     }
 
     /// <summary>
@@ -199,7 +238,7 @@ public class AdvancementEditorAction(DatapackRegistry registry) : IManageAdvance
             errorMessage: "[red]Title cannot be empty.[/]");
 
         advancement.TitleText = newTitle;
-        SaveAndNotify(advancement, $"Title updated to '{Markup.Escape(newTitle)}'.");
+        SaveAndNotify(advancement,  $"Title updated to '{Markup.Escape(newTitle)}'.");
     }
 
     /// <summary>
@@ -241,7 +280,9 @@ public class AdvancementEditorAction(DatapackRegistry registry) : IManageAdvance
     /// <param name="advancement">The target advancement whose parent is being updated.</param>
     /// <param name="allAdvancements">The global list of known advancements for reference and validation.</param>
     /// <returns>A completed <see cref="Task"/> representing the asynchronous operation.</returns>
-    private static async Task EditParent(BacapAdvancement advancement, IReadOnlyList<ManagedAdvancement> allAdvancements)
+    private static async Task EditParent(
+        BacapAdvancement advancement,
+        IReadOnlyList<ManagedAdvancement> allAdvancements)
     {
         TuiTheme.RenderHeader($"Change Parent: {advancement.TitleText}");
         AnsiConsole.MarkupLine($"Current parent: [yellow]{Markup.Escape(advancement.Parent ?? "None")}[/]\n");
@@ -318,9 +359,7 @@ public class AdvancementEditorAction(DatapackRegistry registry) : IManageAdvance
     /// Requests confirmation and permanently deletes the specified advancement from storage.
     /// </summary>
     /// <param name="advancement">The advancement to delete.</param>
-    /// <returns>
-    /// <see langword="true"/> if deletion was confirmed and completed; otherwise, <see langword="false"/>.
-    /// </returns>
+    /// <returns><see langword="true"/> if deletion was confirmed and completed; otherwise, <see langword="false"/>.</returns>
     private static bool TryDeleteAdvancement(BacapAdvancement advancement)
     {
         var confirmed = AnsiConsole.Confirm(
@@ -337,7 +376,7 @@ public class AdvancementEditorAction(DatapackRegistry registry) : IManageAdvance
     }
 
     /// <summary>
-    /// Persists advancement state changes to disk and notifies the user via the TUI theme.
+    /// Persists advancement state changes to disk using the provided settings and notifies the user.
     /// </summary>
     /// <param name="advancement">The advancement instance with updated fields.</param>
     /// <param name="successMessage">The text displayed upon successful persistence.</param>

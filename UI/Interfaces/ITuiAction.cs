@@ -16,9 +16,10 @@ public interface ITuiAction
 }
 
 // Marker interfaces for specific menus
-public interface IMainMenuAction : ITuiAction { }
-public interface IManageAdvancementsAction : ITuiAction { }
+public interface IMainMenuAction : ITuiAction;
+public interface IManageAdvancementsAction : ITuiAction;
+public interface IManageDatapacksAction : ITuiAction;
 /// <summary>
 /// Marker interface for actions available in the Debug Advancements sub-menu.
 /// </summary>
-public interface IDebugAdvancementsAction : ITuiAction { }
+public interface IDebugAdvancementsAction : ITuiAction;

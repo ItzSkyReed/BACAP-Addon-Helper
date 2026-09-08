@@ -61,9 +61,12 @@ var host = Host.CreateDefaultBuilder(args)
         services.AddTransient<IDatapackFactory, DatapackFactory>();
         services.AddTransient<DatapackLoaderService>();
 
+        // UI menus
         services.AddTransient<MainMenuAction>();
         services.AddTransient<IMainMenuAction, ManageAdvancementsMenu>();
+        services.AddTransient<IMainMenuAction, ManageDatapacksMenu>();
 
+        // Advancement actions
         services.AddTransient<IManageAdvancementsAction, AdvancementStatsAction>();
         services.AddTransient<IManageAdvancementsAction, AdvancementInfoAction>();
         services.AddTransient<IManageAdvancementsAction, AdvancementEditorAction>();
@@ -73,14 +76,15 @@ var host = Host.CreateDefaultBuilder(args)
         services.AddTransient<IManageAdvancementsAction, AdvancementsRecoverAction>();
 
         services.AddTransient<IManageAdvancementsAction, GenerateMilestonesAction>();
-        services.AddTransient<IManageAdvancementsAction, GenerateDatapackFunctionsAction>();
-
         services.AddTransient<IManageAdvancementsAction, DebugAdvancementsMenuAction>();
 
-
-
+        // Advancement debug actions
         services.AddTransient<IDebugAdvancementsAction, ShowTechnicalInvalidAction>();
         services.AddTransient<IDebugAdvancementsAction, ShowBacapAdvancementsByTierAction>();
+
+
+        // Datapack actions
+        services.AddTransient<IManageDatapacksAction, GenerateDatapackFunctionsAction>();
 
     })
     .Build();

@@ -9,32 +9,38 @@ using UI.Styling;
 namespace UI.Actions.Advancements;
 
 /// <summary>
-/// Action that formats and rewrites all advancements in Addon datapacks.
-/// Standardizes JSON indentation and function formatting on the disk.
+/// Action that formats and rewrites advancements and reward functions across editable addon datapacks.
+/// Standardizes JSON indentation and function formatting on disk.
 /// </summary>
-public class AdvancementsFormatAction(
-    DatapackRegistry registry) : IManageAdvancementsAction
+/// <param name="registry">The registry containing loaded datapack instances.</param>
+public class AdvancementsFormatAction(DatapackRegistry registry) : IManageAdvancementsAction
 {
     public string Title => "Format All Advancements";
 
+    /// <summary>
+    /// Executes the batch formatting process across all eligible Addon and CompatibilityAddon datapacks.
+    /// </summary>
+    /// <returns>A completed <see cref="Task"/> representing the asynchronous operation.</returns>
     public Task ExecuteAsync()
     {
-        var advancements = registry.Values
-            .Where(dp => dp.Settings.Type == DatapackType.Addon)
-            .SelectMany(dp => dp.Advancements.OfType<BacapAdvancement>())
+        var targetAdvancements = registry.Values
+            .Where(dp => dp.Settings.IsRewardModifiableAddon())
+            .SelectMany(dp => dp.Advancements.OfType<BacapAdvancement>().Select(adv => (Datapack: dp, Advancement: adv)))
+            .Where(item => item.Datapack.Settings.Type == DatapackType.Addon
+                           || item.Datapack.Settings.HasAnyExistingReward(item.Advancement))
             .ToList();
 
-        if (advancements.Count == 0)
+        if (targetAdvancements.Count == 0)
         {
-            TuiTheme.ShowWarning("No advancements found across datapacks with Addon access.");
+            TuiTheme.ShowWarning("No advancements found across datapacks with editable Addon access.");
             TuiTheme.WaitForKey();
             return Task.CompletedTask;
         }
 
         TuiTheme.RenderHeader(Title);
 
-
-        var confirm = AnsiConsole.Confirm($"Are you sure you want to format and overwrite [green]{advancements.Count}[/] advancement files?");
+        var confirm = AnsiConsole.Confirm(
+            $"Are you sure you want to format and overwrite [green]{targetAdvancements.Count}[/] advancement files?");
         if (!confirm)
             return Task.CompletedTask;
 
@@ -42,12 +48,12 @@ public class AdvancementsFormatAction(
 
         TuiTheme.RunProgress(
             "Formatting JSON and function files...",
-            advancements,
-            AdvancementIoManager.SaveAdvancement
+            targetAdvancements,
+            entry => AdvancementIoManager.SaveAdvancement(entry.Advancement)
         );
 
         TuiTheme.Space();
-        TuiTheme.ShowSuccess($"Successfully formatted {advancements.Count} advancements!");
+        TuiTheme.ShowSuccess($"Successfully formatted {targetAdvancements.Count} advancements!");
         TuiTheme.WaitForKey();
 
         return Task.CompletedTask;
