@@ -1,53 +1,70 @@
 ﻿using BacapGenerator.Models.Advancements;
 using BacapGenerator.Models.Advancements.Functions;
+using BacapGenerator.Models.Datapacks.Settings;
 
 namespace BacapGenerator.Services.IO;
 
 /// <summary>
-/// Service responsible for handling all file system operations related to advancements.
+/// Service responsible for handling all file system operations related to advancements and their reward functions.
+/// Centralizes persistence policies based on datapack modes and compatibility overrides.
 /// </summary>
 public static class AdvancementIoManager
 {
     /// <summary>
-    /// Persists advancement JSON and core functions to disk.
-    /// Existing reward functions on disk are updated, while unconfigured reward files are left untouched.
+    /// Persists advancement JSON and its associated functions to disk according to datapack configuration rules.
+    /// Unconfigured reward files are left untouched, while disabled overrides are purged from disk.
     /// </summary>
     /// <param name="advancement">The target BACAP advancement model to persist.</param>
+    /// <exception cref="InvalidOperationException">Thrown when attempting to save an advancement from a Reference (read-only) datapack.</exception>
+    /// <example>
+    /// <code>
+    /// AdvancementIoManager.SaveAdvancement(advancement);
+    /// // Or with explicit settings:
+    /// AdvancementIoManager.SaveAdvancement(advancement, datapack.Settings);
+    /// </code>
+    /// </example>
     public static void SaveAdvancement(BacapAdvancement advancement)
     {
         advancement.EnsureMutable();
+
+        var effectiveSettings = advancement.Datapack.Settings;
+        if (effectiveSettings.Type == DatapackType.Reference)
+        {
+            throw new InvalidOperationException(
+                $"Cannot persist advancement '{advancement.McPath}' because datapack is configured as Reference (read-only).");
+        }
+
         advancement.Sync();
 
-        // Check if the main JSON file path changed. If so, delete the old one.
+        // Persist Advancement JSON (clean up old file if path changed)
         if (advancement.OriginalFile.FullName != advancement.File.FullName)
         {
             DeleteIfExists(advancement.OriginalFile);
             advancement.OriginalFile = advancement.File;
         }
 
-        // Save JSON definition
         advancement.File.Directory?.Create();
         File.WriteAllText(advancement.File.FullName, advancement.Advancement.ToJson());
         advancement.File.Refresh();
 
-        WriteFunctionSafely(advancement.MsgFunction);
+        // Resolve synchronization rules for functions
+        var isCompatibility = effectiveSettings.Type == DatapackType.CompatibilityAddon || advancement.IsOverride;
+        var compatSettings = effectiveSettings.CompatibilityAddonSettings;
 
-        if (advancement.IsOverride)
-        {
-            DeleteIfExists(advancement.MacroFunction.OriginalFile);
-            DeleteIfExists(advancement.ExpRewardFunction.OriginalFile);
-            DeleteIfExists(advancement.ItemRewardFunction.OriginalFile);
-            DeleteIfExists(advancement.TrophyRewardFunction.OriginalFile);
-        }
-        else
-        {
-            WriteFunctionSafely(advancement.MacroFunction);
+        var allowMsg = !isCompatibility || (compatSettings?.OverrideMsg ?? true);
+        var allowMacro = !isCompatibility;
+        var allowExp = !isCompatibility || (compatSettings?.OverrideExpRewards ?? false);
+        var allowItems = !isCompatibility || (compatSettings?.OverrideItemRewards ?? false);
+        var allowTrophies = !isCompatibility || (compatSettings?.OverrideTrophyRewards ?? false);
 
-            // Synchronize reward functions ONLY if they already exist on the disk
-            WriteRewardFunctionIfExists(advancement.ExpRewardFunction);
-            WriteRewardFunctionIfExists(advancement.ItemRewardFunction);
-            WriteRewardFunctionIfExists(advancement.TrophyRewardFunction);
-        }
+        // Synchronize core functions
+        SynchronizeFunction(advancement.MsgFunction, isEnabled: allowMsg, requireExistingOnDisk: false);
+        SynchronizeFunction(advancement.MacroFunction, isEnabled: allowMacro, requireExistingOnDisk: false);
+
+        // Synchronize reward functions (only written if configured/existing on disk)
+        SynchronizeFunction(advancement.ExpRewardFunction, isEnabled: allowExp, requireExistingOnDisk: true);
+        SynchronizeFunction(advancement.ItemRewardFunction, isEnabled: allowItems, requireExistingOnDisk: true);
+        SynchronizeFunction(advancement.TrophyRewardFunction, isEnabled: allowTrophies, requireExistingOnDisk: true);
     }
 
     /// <summary>
@@ -65,7 +82,7 @@ public static class AdvancementIoManager
     }
 
     /// <summary>
-    /// Deletes the given advancement and all its associated functions from the disk.
+    /// Deletes the given advancement and all its associated functions from disk.
     /// </summary>
     /// <param name="advancement">The advancement model to delete.</param>
     public static void DeleteAdvancement(BacapAdvancement advancement)
@@ -97,6 +114,36 @@ public static class AdvancementIoManager
     }
 
     /// <summary>
+    /// Conditionally writes or deletes a function file based on whether the feature is enabled for the datapack.
+    /// </summary>
+    /// <param name="function">The function to synchronize.</param>
+    /// <param name="isEnabled">Whether this function category is active in datapack settings.</param>
+    /// <param name="requireExistingOnDisk">
+    /// If <see langword="true"/>, the function will only be written if it already physically exists on disk.
+    /// </param>
+    private static void SynchronizeFunction(BaseFunction? function, bool isEnabled, bool requireExistingOnDisk)
+    {
+        if (function is null)
+            return;
+
+        if (!isEnabled)
+        {
+            DeleteIfExists(function.OriginalFile);
+            DeleteIfExists(function.File);
+            return;
+        }
+
+        if (requireExistingOnDisk)
+        {
+            WriteRewardFunctionIfExists(function);
+        }
+        else
+        {
+            WriteFunctionSafely(function);
+        }
+    }
+
+    /// <summary>
     /// Writes or moves a reward function only if it already physically exists on disk.
     /// </summary>
     /// <param name="function">The reward function to inspect and conditionally write.</param>
@@ -105,11 +152,11 @@ public static class AdvancementIoManager
         if (function is null)
             return;
 
-        // If the file exists either at the current or original path, it was intentionally created
+        // If the file exists either at current or original path, it was intentionally created
         if (File.Exists(function.OriginalFile.FullName) || File.Exists(function.File.FullName))
             WriteFunctionSafely(function);
         else
-            // Keep path pointers aligned in memory without creating the file on disk
+            // Keep path pointers aligned in memory without creating an empty dummy file
             function.OriginalFile = function.File;
     }
 
@@ -122,7 +169,6 @@ public static class AdvancementIoManager
         if (function is null)
             return;
 
-        // Clean up the old function file if the path was changed
         if (function.OriginalFile.FullName != function.File.FullName)
         {
             DeleteIfExists(function.OriginalFile);
@@ -140,12 +186,7 @@ public static class AdvancementIoManager
     /// <param name="fileInfo">The file descriptor to delete.</param>
     private static void DeleteIfExists(FileInfo? fileInfo)
     {
-        if (fileInfo is null)
-        {
-            return;
-        }
-
-        if (!File.Exists(fileInfo.FullName))
+        if (fileInfo is null || !File.Exists(fileInfo.FullName))
             return;
 
         fileInfo.Delete();
