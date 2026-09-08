@@ -66,6 +66,14 @@ public sealed class DatapackSettings
     [ConfigurationKeyName("advancement_legend_mc_path")]
     public string? AdvancementLegendMcPath { get; set; }
 
+    [PublicAPI]
+    [ConfigurationKeyName("compatibility_addon_settings")]
+    public CompatibilityAddonSettings? CompatibilityAddonSettings { get; set; }
+
+    [PublicAPI]
+    [ConfigurationKeyName("fanpacks_namespace")]
+    public string? FanpacksNamespace { get; set; }
+
     /// <summary>
     /// Validates the current settings object based on the configured access mode and paths.
     /// </summary>
@@ -91,7 +99,5 @@ public sealed class DatapackSettings
         {
             throw new InvalidOperationException($"'{nameof(ParentDatapackId)}' must be provided when Type is set to CompatibilityAddon.");
         }
-
-
     }
 }

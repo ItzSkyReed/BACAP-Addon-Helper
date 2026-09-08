@@ -33,4 +33,14 @@ public sealed class CompatibilityAddonSettings
     /// </summary>
     [ConfigurationKeyName("override_trophy_rewards")]
     public bool OverrideTrophyRewards { get; set; } = false;
+
+    /// <summary>
+    /// Gets a value indicating whether at least one override option is enabled.
+    /// </summary>
+    public bool HasAnyOverride => OverrideMsg || OverrideExpRewards || OverrideItemRewards || OverrideTrophyRewards;
+
+    /// <summary>
+    /// Gets a value indicating whether at least one reward (exp, items, or trophies) is overridden.
+    /// </summary>
+    public bool HasAnyRewardOverride => OverrideExpRewards || OverrideItemRewards || OverrideTrophyRewards;
 }
