@@ -31,6 +31,11 @@ public record AdvancementMessageSettingsEntry
 /// </summary>
 public static class DatapackDefaults
 {
+    public const string AdvancementsScoreboard = "bac_advancements";
+    public const string PointsScoreboard = "bac_advancements_points";
+    public const string CoopBaseScoreboard = "bac_obtained";
+
+
     private static readonly AdvancementMessageSettingsEntry AdvancementLegendEntry = new()
     {
         TranslationKey = "%1$s has completed every advancement in the %2$s tab, earning them the advancement %3$s%4$s%5$s",
