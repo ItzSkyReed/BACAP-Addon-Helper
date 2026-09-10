@@ -1,5 +1,4 @@
-﻿using Core.Advancements.Models;
-using Core.McFunctions.Models;
+﻿using Core.McFunctions.Models;
 using JetBrains.Annotations;
 
 namespace BacapGenerator.Models.Advancements.Functions;
@@ -26,11 +25,6 @@ public abstract class BaseFunction
     /// </summary>
     [PublicAPI]
     public FileInfo File { get; set; }
-
-    /// <summary>
-    /// Gets the corresponding advancement data model.
-    /// </summary>
-    public Advancement Advancement => BacapAdvancement.Advancement;
 
     internal BaseFunction(FileInfo file, McFunction parsedFunction, BacapAdvancement bacapAdvancement)
     {

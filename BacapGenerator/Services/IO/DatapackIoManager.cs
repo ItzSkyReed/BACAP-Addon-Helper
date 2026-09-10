@@ -1,4 +1,6 @@
-﻿using System.Text.Json;
+﻿using System.IO.Compression;
+using System.Text.Json;
+using BacapGenerator.Models.Interfaces;
 using Core.McFunctions.Models;
 using Core.Serialization;
 
@@ -22,11 +24,9 @@ public static class DatapackIoManager
         FileInfo? tagFile = null,
         string? functionCallPath = null)
     {
-        // 1. Запись самой функции
         functionFile.Directory?.Create();
         File.WriteAllText(functionFile.FullName, function.Build());
 
-        // Запись тега (аналог cls._update_function_tag из питона)
         if (tagFile == null || string.IsNullOrWhiteSpace(functionCallPath))
             return;
         tagFile.Directory?.Create();
@@ -40,5 +40,25 @@ public static class DatapackIoManager
         var jsonString = JsonSerializer.Serialize(tagContent, MinecraftDatapackJsonOptions.Default);
 
         File.WriteAllText(tagFile.FullName, jsonString);
+    }
+
+
+    /// <summary>
+    /// Creates a zip archive from the specified datapack directory.
+    /// </summary>
+    /// <param name="datapack">Datapack to release.</param>
+    /// <param name="version">The version string to append to the filename.</param>
+    /// <param name="outputDirectory">The directory to output the file</param>
+    /// <returns>A task representing the asynchronous compression process.</returns>
+    public static async Task ArchiveDatapackAsync(IReadOnlyDatapack datapack, string version, string outputDirectory)
+    {
+        Directory.CreateDirectory(outputDirectory);
+
+        var zipPath = Path.Combine(outputDirectory, $"{datapack.Settings.ReleaseName} {version}.zip");
+
+        if (File.Exists(zipPath))
+            File.Delete(zipPath);
+
+        await Task.Run(() => ZipFile.CreateFromDirectory(datapack.Settings.Path, zipPath, CompressionLevel.Optimal, includeBaseDirectory: false));
     }
 }

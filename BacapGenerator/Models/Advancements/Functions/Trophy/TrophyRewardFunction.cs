@@ -324,8 +324,8 @@ public sealed class TrophyRewardFunction : BaseFunction
     /// <returns>A configured <see cref="TellrawCommand"/> instance.</returns>
     private static TellrawCommand CreateDeathLocationMessage()
     {
-        var message = new PlainTextComponent(
-            Text: DeathLocationMessageText,
+        var message = new TranslatableComponent(
+            Translate: DeathLocationMessageText,
             Style: new TextStyle(Color: "gray")
         );
 

@@ -1,40 +1,33 @@
 ﻿using BacapGenerator.Models.Datapacks.Settings;
 using BacapGenerator.Models.Interfaces;
 using BacapGenerator.Utils;
-using Core.Advancements.Models;
 using JetBrains.Annotations;
 
 namespace BacapGenerator.Models.Advancements;
 
 /// <summary>
-/// Base class for all loaded advancements in the workspace.
-/// Contains purely in-memory state.
+/// Base class representing a tracked advancement file within the workspace.
+/// Encapsulates file system paths, mutability, and datapack association.
 /// </summary>
 public abstract class ManagedAdvancement
 {
-    private Advancement? _advancement;
     private FileInfo _file;
 
+    /// <summary>
+    /// Gets the datapack that owns this advancement file.
+    /// </summary>
     public IReadOnlyDatapack Datapack { get; }
 
     /// <summary>
-    /// Gets the precalculated macro command name.
+    /// Gets the relative file path within the datapack data directory.
     /// Computed once on first access and cached.
     /// </summary>
-    public string DatapackRelativePath => field ??= Path.GetRelativePath(Datapack.DatapackDataPath.ToString(), _file.FullName);
+    public string DatapackRelativePath => field ??= Path.GetRelativePath(Datapack.DatapackDataPath.FullName, _file.FullName);
 
     /// <summary>
-    /// Gets or sets the Minecraft path of the advancement.
+    /// Gets or sets the Minecraft identifier path (e.g., <c>namespace:folder/name</c>).
     /// </summary>
-    /// <remarks>
-    /// Setting this property automatically updates the associated physical <see cref="File"/>.
-    /// </remarks>
-    /// <exception cref="InvalidOperationException">Thrown when attempting to modify a read-only instance.</exception>
-    /// <example>
-    /// <code>
-    /// advancement.McPath = "bacap:adventure/root";
-    /// </code>
-    /// </example>
+    /// <exception cref="InvalidOperationException">Thrown when modifying a read-only datapack instance.</exception>
     [PublicAPI]
     public virtual string McPath
     {
@@ -52,31 +45,29 @@ public abstract class ManagedAdvancement
             File = new FileInfo(physicalPath);
         }
     }
+
     /// <summary>
-    /// Indicates whether the advancement is read-only (e.g., loaded from a Reference datapack).
+    /// Gets a value indicating whether this advancement belongs to a reference (immutable) datapack.
     /// </summary>
     public bool IsReadOnly => Datapack.Settings.Type == DatapackType.Reference;
 
     /// <summary>
-    /// Gets or sets a value indicating whether this advancement overrides an existing one
-    /// from a parent compatibility datapack. If true, core rewards (macros, XP) should not be generated.
+    /// Gets or sets a value indicating whether this advancement overrides an existing one from a parent datapack.
     /// </summary>
     [PublicAPI]
     public bool IsOverride { get; set; }
 
     /// <summary>
-    /// Gets the original file path before any unsaved modifications.
-    /// Used by the IO Manager to clean up old files when paths are changed.
+    /// Gets the initial file reference before any unsaved mutations took place.
     /// </summary>
     public FileInfo OriginalFile { get; internal set; }
 
     /// <summary>
-    /// Gets or sets the current intended file path.
-    /// Changing this does not affect the file system until the model is explicitly saved.
+    /// Gets or sets the current target file path.
     /// </summary>
-    /// <exception cref="ArgumentNullException">Thrown when setting a null value.</exception>
-    /// <exception cref="InvalidOperationException">Thrown when attempting to modify a read-only instance.</exception>
-    [PublicAPI] 
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="value"/> is <see langword="null"/>.</exception>
+    /// <exception cref="InvalidOperationException">Thrown when modifying a read-only instance.</exception>
+    [PublicAPI]
     public FileInfo File
     {
         get => _file;
@@ -89,37 +80,25 @@ public abstract class ManagedAdvancement
     }
 
     /// <summary>
-    /// Gets or sets the parsed Core advancement data model.
+    /// Initializes a new instance of the <see cref="ManagedAdvancement"/> class.
     /// </summary>
-    /// <exception cref="ArgumentNullException">Thrown when setting a null value.</exception>
-    /// <exception cref="InvalidOperationException">Thrown when attempting to modify a read-only instance.</exception>
-    [PublicAPI]
-    public virtual Advancement? Advancement
-    {
-        get => _advancement;
-        set
-        {
-            EnsureMutable();
-            ArgumentNullException.ThrowIfNull(value);
-            _advancement = value;
-        }
-    }
-
-    protected ManagedAdvancement(FileInfo file, Advancement? advancement, IReadOnlyDatapack datapack)
+    /// <param name="file">The physical advancement file info.</param>
+    /// <param name="datapack">The owning datapack.</param>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="file"/> or <paramref name="datapack"/> is <see langword="null"/>.</exception>
+    protected ManagedAdvancement(FileInfo file, IReadOnlyDatapack datapack)
     {
         ArgumentNullException.ThrowIfNull(file);
+        ArgumentNullException.ThrowIfNull(datapack);
 
         _file = file;
         OriginalFile = file;
-        _advancement = advancement;
         Datapack = datapack;
     }
 
-
     /// <summary>
-    /// Checks if the object is mutable, throwing an exception if it's frozen.
+    /// Verifies that the instance can be modified, throwing an exception if it is frozen.
     /// </summary>
-    /// <exception cref="InvalidOperationException">Thrown when attempting to modify a read-only instance.</exception>
+    /// <exception cref="InvalidOperationException">Thrown when the parent datapack is in Reference mode.</exception>
     public void EnsureMutable()
     {
         if (Datapack.Settings.Type == DatapackType.Reference)

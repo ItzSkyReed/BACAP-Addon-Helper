@@ -1,6 +1,7 @@
 ﻿using BacapGenerator.Models.Advancements;
 using BacapGenerator.Models.Advancements.Functions;
 using BacapGenerator.Models.Datapacks.Settings;
+using JetBrains.Annotations;
 
 namespace BacapGenerator.Services.IO;
 
@@ -11,20 +12,25 @@ namespace BacapGenerator.Services.IO;
 public static class AdvancementIoManager
 {
     /// <summary>
-    /// Persists advancement JSON and its associated functions to disk according to datapack configuration rules.
-    /// Unconfigured reward files are left untouched, while disabled overrides are purged from disk.
+    /// Persists advancement JSON to disk. If the target is a <see cref="BacapAdvancement"/>,
+    /// synchronizes attached function files according to datapack configuration rules.
     /// </summary>
-    /// <param name="advancement">The target BACAP advancement model to persist.</param>
-    /// <exception cref="InvalidOperationException">Thrown when attempting to save an advancement from a Reference (read-only) datapack.</exception>
+    /// <param name="advancement">The target valid advancement model to persist.</param>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="advancement"/> is <see langword="null"/>.</exception>
+    /// <exception cref="InvalidOperationException">
+    /// Thrown when attempting to save an advancement belonging to a Reference (read-only) datapack.
+    /// </exception>
     /// <example>
     /// <code>
-    /// AdvancementIoManager.SaveAdvancement(advancement);
-    /// // Or with explicit settings:
-    /// AdvancementIoManager.SaveAdvancement(advancement, datapack.Settings);
+    /// // Persists advancement JSON (and attached functions if BACAP)
+    /// AdvancementIoManager.SaveAdvancement(validAdvancement);
     /// </code>
     /// </example>
-    public static void SaveAdvancement(BacapAdvancement advancement)
+    [PublicAPI]
+    public static void SaveAdvancement(ValidAdvancement advancement)
     {
+        ArgumentNullException.ThrowIfNull(advancement);
+
         advancement.EnsureMutable();
 
         var effectiveSettings = advancement.Datapack.Settings;
@@ -34,46 +40,73 @@ public static class AdvancementIoManager
                 $"Cannot persist advancement '{advancement.McPath}' because datapack is configured as Reference (read-only).");
         }
 
-        advancement.Sync();
+        // If it's a BacapAdvancement, ensure in-memory function ASTs are synchronized before disk write
+        if (advancement is BacapAdvancement bacap)
+            bacap.Sync();
 
-        // Persist Advancement JSON (clean up old file if path changed)
-        if (advancement.OriginalFile.FullName != advancement.File.FullName)
-        {
-            DeleteIfExists(advancement.OriginalFile);
-            advancement.OriginalFile = advancement.File;
-        }
+        // Persist Advancement JSON (clean up old file if McPath/filename changed)
+        SaveAdvancementJson(advancement);
 
-        advancement.File.Directory?.Create();
-        File.WriteAllText(advancement.File.FullName, advancement.Advancement.ToJson());
-        advancement.File.Refresh();
+        // Persist and synchronize attached functions if this is a playable BACAP advancement
+        if (advancement is BacapAdvancement bacapAdv)
+            SynchronizeBacapFunctions(bacapAdv, effectiveSettings);
+    }
 
-        // Resolve synchronization rules for functions
-        var isCompatibility = effectiveSettings.Type == DatapackType.CompatibilityAddon || advancement.IsOverride;
-        var compatSettings = effectiveSettings.CompatibilityAddonSettings;
+    /// <summary>
+    /// Deletes the given advancement JSON and all its associated function files from disk.
+    /// </summary>
+    /// <param name="advancement">The advancement model to delete.</param>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="advancement"/> is <see langword="null"/>.</exception>
+    /// <exception cref="InvalidOperationException">
+    /// Thrown when attempting to delete an advancement belonging to a Reference (read-only) datapack.
+    /// </exception>
+    /// <example>
+    /// <code>
+    /// AdvancementIoManager.DeleteAdvancement(advancement);
+    /// </code>
+    /// </example>
+    [PublicAPI]
+    public static void DeleteAdvancement(ValidAdvancement advancement)
+    {
+        ArgumentNullException.ThrowIfNull(advancement);
 
-        var allowMsg = !isCompatibility || (compatSettings?.OverrideMsg ?? true);
-        var allowMacro = !isCompatibility;
-        var allowExp = !isCompatibility || (compatSettings?.OverrideExpRewards ?? false);
-        var allowItems = !isCompatibility || (compatSettings?.OverrideItemRewards ?? false);
-        var allowTrophies = !isCompatibility || (compatSettings?.OverrideTrophyRewards ?? false);
+        advancement.EnsureMutable();
 
-        // Synchronize core functions
-        SynchronizeFunction(advancement.MsgFunction, isEnabled: allowMsg, requireExistingOnDisk: false);
-        SynchronizeFunction(advancement.MacroFunction, isEnabled: allowMacro, requireExistingOnDisk: false);
+        // Delete main JSON file (both current and original if path was mutated in memory)
+        DeleteIfExists(advancement.OriginalFile);
+        DeleteIfExists(advancement.File);
 
-        // Synchronize reward functions (only written if configured/existing on disk)
-        SynchronizeFunction(advancement.ExpRewardFunction, isEnabled: allowExp, requireExistingOnDisk: true);
-        SynchronizeFunction(advancement.ItemRewardFunction, isEnabled: allowItems, requireExistingOnDisk: true);
-        SynchronizeFunction(advancement.TrophyRewardFunction, isEnabled: allowTrophies, requireExistingOnDisk: true);
+        // Delete all associated reward functions if this is a BACAP advancement
+        if (advancement is not BacapAdvancement bacap)
+            return;
+
+        DeleteIfExists(bacap.MacroFunction.OriginalFile);
+        DeleteIfExists(bacap.MacroFunction.File);
+
+        DeleteIfExists(bacap.MsgFunction.OriginalFile);
+        DeleteIfExists(bacap.MsgFunction.File);
+
+        DeleteIfExists(bacap.ExpRewardFunction.OriginalFile);
+        DeleteIfExists(bacap.ExpRewardFunction.File);
+
+        DeleteIfExists(bacap.ItemRewardFunction.OriginalFile);
+        DeleteIfExists(bacap.ItemRewardFunction.File);
+
+        DeleteIfExists(bacap.TrophyRewardFunction.OriginalFile);
+        DeleteIfExists(bacap.TrophyRewardFunction.File);
     }
 
     /// <summary>
     /// Explicitly creates or updates a specific reward function on disk and synchronizes the parent advancement.
     /// </summary>
-    /// <param name="advancement">The parent advancement containing the reward function.</param>
+    /// <param name="advancement">The parent BACAP advancement containing the reward function.</param>
     /// <param name="function">The reward function instance to persist.</param>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="advancement"/> is <see langword="null"/>.</exception>
+    [PublicAPI]
     public static void SaveRewardFunction(BacapAdvancement advancement, BaseFunction? function)
     {
+        ArgumentNullException.ThrowIfNull(advancement);
+
         if (function is null)
             return;
 
@@ -82,28 +115,16 @@ public static class AdvancementIoManager
     }
 
     /// <summary>
-    /// Deletes the given advancement and all its associated functions from disk.
-    /// </summary>
-    /// <param name="advancement">The advancement model to delete.</param>
-    public static void DeleteAdvancement(BacapAdvancement advancement)
-    {
-        advancement.EnsureMutable();
-
-        DeleteIfExists(advancement.OriginalFile);
-        DeleteIfExists(advancement.MacroFunction.OriginalFile);
-        DeleteIfExists(advancement.MsgFunction.OriginalFile);
-        DeleteIfExists(advancement.ExpRewardFunction.OriginalFile);
-        DeleteIfExists(advancement.ItemRewardFunction.OriginalFile);
-        DeleteIfExists(advancement.TrophyRewardFunction.OriginalFile);
-    }
-
-    /// <summary>
     /// Deletes a specific reward function file from disk and updates the parent advancement.
     /// </summary>
-    /// <param name="advancement">The parent advancement.</param>
+    /// <param name="advancement">The parent BACAP advancement.</param>
     /// <param name="function">The reward function to remove from disk.</param>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="advancement"/> is <see langword="null"/>.</exception>
+    [PublicAPI]
     public static void DeleteRewardFunction(BacapAdvancement advancement, BaseFunction? function)
     {
+        ArgumentNullException.ThrowIfNull(advancement);
+
         if (function is null)
             return;
 
@@ -111,6 +132,49 @@ public static class AdvancementIoManager
         DeleteIfExists(function.File);
 
         SaveAdvancement(advancement);
+    }
+
+    /// <summary>
+    /// Handles physical file creation, movement, and JSON writing for an advancement.
+    /// </summary>
+    /// <param name="advancement">The advancement whose JSON is being persisted.</param>
+    private static void SaveAdvancementJson(ValidAdvancement advancement)
+    {
+        if (!string.Equals(advancement.OriginalFile.FullName, advancement.File.FullName, StringComparison.OrdinalIgnoreCase))
+        {
+            DeleteIfExists(advancement.OriginalFile);
+            advancement.OriginalFile = advancement.File;
+        }
+
+        advancement.File.Directory?.Create();
+        File.WriteAllText(advancement.File.FullName, advancement.Advancement.ToJson());
+        advancement.File.Refresh();
+    }
+
+    /// <summary>
+    /// Synchronizes all five BACAP function files according to datapack capabilities and override rules.
+    /// </summary>
+    /// <param name="advancement">The BACAP advancement owning the functions.</param>
+    /// <param name="settings">The parent datapack settings.</param>
+    private static void SynchronizeBacapFunctions(BacapAdvancement advancement, DatapackSettings settings)
+    {
+        var isCompatibility = settings.Type == DatapackType.CompatibilityAddon || advancement.IsOverride;
+        var compatSettings = settings.CompatibilityAddonSettings;
+
+        var allowMsg = !isCompatibility || (compatSettings?.OverrideMsg ?? true);
+        var allowMacro = !isCompatibility;
+        var allowExp = !isCompatibility || (compatSettings?.OverrideExpRewards ?? false);
+        var allowItems = !isCompatibility || (compatSettings?.OverrideItemRewards ?? false);
+        var allowTrophies = !isCompatibility || (compatSettings?.OverrideTrophyRewards ?? false);
+
+        // Core execution and announcement functions
+        SynchronizeFunction(advancement.MsgFunction, isEnabled: allowMsg, requireExistingOnDisk: false);
+        SynchronizeFunction(advancement.MacroFunction, isEnabled: allowMacro, requireExistingOnDisk: false);
+
+        // Optional reward functions (only persisted if explicitly configured/existing on disk)
+        SynchronizeFunction(advancement.ExpRewardFunction, isEnabled: allowExp, requireExistingOnDisk: true);
+        SynchronizeFunction(advancement.ItemRewardFunction, isEnabled: allowItems, requireExistingOnDisk: true);
+        SynchronizeFunction(advancement.TrophyRewardFunction, isEnabled: allowTrophies, requireExistingOnDisk: true);
     }
 
     /// <summary>
@@ -134,13 +198,9 @@ public static class AdvancementIoManager
         }
 
         if (requireExistingOnDisk)
-        {
             WriteRewardFunctionIfExists(function);
-        }
         else
-        {
             WriteFunctionSafely(function);
-        }
     }
 
     /// <summary>
@@ -169,7 +229,7 @@ public static class AdvancementIoManager
         if (function is null)
             return;
 
-        if (function.OriginalFile.FullName != function.File.FullName)
+        if (!string.Equals(function.OriginalFile.FullName, function.File.FullName, StringComparison.OrdinalIgnoreCase))
         {
             DeleteIfExists(function.OriginalFile);
             function.OriginalFile = function.File;

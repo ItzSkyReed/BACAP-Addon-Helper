@@ -1,4 +1,5 @@
 ﻿using BacapGenerator.Models.Advancements;
+using Core.Advancements.Models;
 
 namespace BacapGenerator.Models.Datapacks;
 
@@ -25,6 +26,20 @@ public record AdvancementMessageSettingsEntry
     /// </summary>
     public required string DescriptionColor { get; init; }
 }
+
+/// <summary>
+/// Represents visual and structural constraints associated with a specific BACAP tier.
+/// </summary>
+/// <param name="Frame">The Minecraft display frame assigned to this tier.</param>
+/// <param name="DescriptionColor">The color code applied to the description, or <see langword="null"/> if unstyled.</param>
+/// <param name="IsHidden">Indicates whether the advancement should be visually hidden from the tree.</param>
+/// <param name="RequiredTab">The specific tab required by this tier, or <see langword="null"/> if universal.</param>
+public readonly record struct BacapTierProfile(
+    string DescriptionColor,
+    bool IsHidden = false,
+    AdvancementFrame? Frame = null,
+    BacapAdvancementTab? RequiredTab = null
+);
 
 /// <summary>
 /// Provides default tier announcements and domain metadata for datapacks.
@@ -86,7 +101,7 @@ public static class DatapackDefaults
     };
 
     /// <summary>
-    /// Resolves default message settings for the specified advancement tier via a jump-table switch.
+    /// Resolves default message settings for the specified advancement tier.
     /// </summary>
     /// <param name="tier">The advancement tier to resolve.</param>
     /// <returns>The pre-allocated <see cref="AdvancementMessageSettingsEntry"/> instance.</returns>
@@ -105,6 +120,77 @@ public static class DatapackDefaults
         BacapAdvancementTier.Challenge => ChallengeEntry,
         BacapAdvancementTier.Goal => GoalEntry,
         BacapAdvancementTier.Task => TaskEntry,
+        _ => throw new ArgumentOutOfRangeException(nameof(tier), tier, "Unsupported advancement tier.")
+    };
+
+    private static readonly BacapTierProfile AdvancementLegendTierProfile = new()
+    {
+        Frame = AdvancementFrame.Challenge,
+        DescriptionColor = "gold",
+        RequiredTab = BacapAdvancementTab.Bacap
+
+    };
+
+    private static readonly BacapTierProfile MilestoneTierProfile = new()
+    {
+        Frame = AdvancementFrame.Challenge,
+        DescriptionColor = "yellow",
+        RequiredTab = BacapAdvancementTab.Bacap
+
+    };
+
+    private static readonly BacapTierProfile SuperChallengeTierProfile = new()
+    {
+        Frame = AdvancementFrame.Challenge,
+        DescriptionColor = "#FF2A2A",
+        RequiredTab = BacapAdvancementTab.Challenges
+
+    };
+
+    private static readonly BacapTierProfile HiddenTierProfile = new()
+    {
+        DescriptionColor = "light_purple"
+    };
+
+    private static readonly BacapTierProfile ChallengeTierProfile = new()
+    {
+        Frame = AdvancementFrame.Challenge,
+        DescriptionColor = "dark_purple"
+    };
+
+    private static readonly BacapTierProfile GoalTierProfile = new()
+    {
+        Frame = AdvancementFrame.Goal,
+        DescriptionColor = "#75E1FF"
+    };
+
+    private static readonly BacapTierProfile TaskTierProfile = new()
+    {
+        Frame = AdvancementFrame.Task,
+        DescriptionColor = "green"
+    };
+
+
+    /// <summary>
+    /// Resolves default tier profile for the specified advancement tier.
+    /// </summary>
+    /// <param name="tier">The advancement tier to resolve.</param>
+    /// <returns>The pre-allocated <see cref="BacapTierProfile"/> instance.</returns>
+    /// <exception cref="ArgumentOutOfRangeException">Thrown when <paramref name="tier"/> contains an undefined enum value.</exception>
+    /// <example>
+    /// <code>
+    /// AdvancementMessageSettingsEntry entry = BacapAdvancementTier.Challenge.GetDefaultMessage();
+    /// </code>
+    /// </example>
+    public static BacapTierProfile GetTierProfile(this BacapAdvancementTier tier) => tier switch
+    {
+        BacapAdvancementTier.AdvancementLegend => AdvancementLegendTierProfile,
+        BacapAdvancementTier.Milestone => MilestoneTierProfile,
+        BacapAdvancementTier.SuperChallenge => SuperChallengeTierProfile,
+        BacapAdvancementTier.Hidden => HiddenTierProfile,
+        BacapAdvancementTier.Challenge => ChallengeTierProfile,
+        BacapAdvancementTier.Goal => GoalTierProfile,
+        BacapAdvancementTier.Task => TaskTierProfile,
         _ => throw new ArgumentOutOfRangeException(nameof(tier), tier, "Unsupported advancement tier.")
     };
 }

@@ -10,20 +10,29 @@ namespace BacapGenerator.Factories;
 
 /// <summary>
 /// Factory responsible for reading files, parsing JSON/McFunction ASTs,
-/// and instantiating the correct <see cref="ManagedAdvancement"/> subtype.
+/// and instantiating the appropriate <see cref="ManagedAdvancement"/> subtype.
 /// </summary>
 public static class AdvancementFactory
 {
     /// <summary>
-    /// Creates a ManagedAdvancement from a raw JSON string.
+    /// Creates a <see cref="ManagedAdvancement"/> from a raw JSON string content.
     /// </summary>
+    /// <param name="file">The physical advancement file info.</param>
+    /// <param name="jsonContent">The raw JSON string to parse.</param>
+    /// <param name="datapack">The owning datapack.</param>
+    /// <returns>
+    /// An instance of <see cref="ValidAdvancement"/> (<see cref="BacapAdvancement"/> or <see cref="TechnicalAdvancement"/>)
+    /// if successfully parsed; otherwise, an <see cref="InvalidAdvancement"/>.
+    /// </returns>
     public static ManagedAdvancement Create(FileInfo file, string jsonContent, IReadOnlyDatapack datapack)
     {
         try
         {
             var parsedData = Advancement.Parse(jsonContent);
-            if (parsedData == null)
+            if (parsedData is null)
+            {
                 return new InvalidAdvancement(file, null, datapack, AdvancementValidationError.MalformedJson);
+            }
 
             return Create(file, parsedData, datapack);
         }
@@ -34,11 +43,24 @@ public static class AdvancementFactory
     }
 
     /// <summary>
-    /// Creates a ManagedAdvancement from an already parsed or modified Advancement model.
+    /// Creates a <see cref="ManagedAdvancement"/> from an already parsed <see cref="Advancement"/> model.
     /// </summary>
+    /// <param name="file">The physical advancement file info.</param>
+    /// <param name="parsedData">The valid, parsed core advancement model.</param>
+    /// <param name="datapack">The owning datapack.</param>
+    /// <returns>
+    /// A <see cref="TechnicalAdvancement"/> if display metadata is missing,
+    /// a fully initialized <see cref="BacapAdvancement"/> if valid,
+    /// or an <see cref="InvalidAdvancement"/> describing the failure reason.
+    /// </returns>
     public static ManagedAdvancement Create(FileInfo file, Advancement parsedData, IReadOnlyDatapack datapack)
     {
-        if (parsedData.Display == null)
+        ArgumentNullException.ThrowIfNull(file);
+        ArgumentNullException.ThrowIfNull(parsedData);
+        ArgumentNullException.ThrowIfNull(datapack);
+
+        // Technical advancements do not have display elements or associated functions
+        if (parsedData.Display is null)
             return new TechnicalAdvancement(file, parsedData, datapack);
 
         if (!BacapAdvancement.TryCreate(file, parsedData, datapack, out var bacapAdv, out var error))
@@ -46,8 +68,9 @@ public static class AdvancementFactory
 
         try
         {
-            LoadFunctions(bacapAdv!);
-            return bacapAdv!;
+            // bacapAdv is recognized as non-null by the compiler via [NotNullWhen(true)]
+            LoadFunctions(bacapAdv);
+            return bacapAdv;
         }
         catch
         {
@@ -57,8 +80,9 @@ public static class AdvancementFactory
 
     /// <summary>
     /// Locates, reads, and parses the five function files associated with a BACAP advancement,
-    /// injecting them directly into the model.
+    /// injecting them directly into the model instance.
     /// </summary>
+    /// <param name="adv">The target BACAP advancement instance.</param>
     private static void LoadFunctions(BacapAdvancement adv)
     {
         var relativePath = $"{MinecraftUtils.StripNamespace(adv.Advancement.Rewards!.Function!)}.mcfunction";
@@ -78,13 +102,15 @@ public static class AdvancementFactory
     }
 
     /// <summary>
-    /// Reads the physical file if it exists and parses it into an AST.
-    /// Returns an empty AST if the file is missing.
+    /// Reads the physical mcfunction file if it exists and parses it into an AST.
+    /// Returns an empty AST if the file does not exist on disk.
     /// </summary>
+    /// <param name="file">The physical function file info.</param>
+    /// <returns>The parsed <see cref="McFunction"/> AST.</returns>
     private static McFunction ParseMcFunction(FileInfo file)
     {
+        file.Refresh();
         var content = file.Exists ? File.ReadAllText(file.FullName) : string.Empty;
-
         return McFunction.Parse(content);
     }
 }

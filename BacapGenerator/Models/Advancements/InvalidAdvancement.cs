@@ -4,22 +4,37 @@ using Core.Advancements.Models;
 namespace BacapGenerator.Models.Advancements;
 
 /// <summary>
-/// Represents a broken or unparseable advancement file.
+/// Represents an unparseable or broken advancement file.
 /// </summary>
 public class InvalidAdvancement : ManagedAdvancement
 {
-    public AdvancementValidationError ErrorReason { get; init; }
+    /// <summary>
+    /// Gets the possibly parsed advancement model, or <see langword="null"/> if parsing failed completely.
+    /// </summary>
+    public Advancement? Advancement { get; }
 
+    /// <summary>
+    /// Gets the validation error that caused this file to be marked invalid.
+    /// </summary>
+    public AdvancementValidationError ErrorReason { get; }
+
+    /// <summary>
+    /// Initializes a new instance of the <see cref="InvalidAdvancement"/> class.
+    /// </summary>
     /// <param name="file">The physical file information.</param>
-    /// <param name="advancement"> Advancement parsed data or null if JSON is broken or file not exists</param>
-    /// <param name="datapack">Datapack of the advancement</param>
-    /// <param name="errorReason">The reason why it is considered invalid.</param>
-    public InvalidAdvancement(FileInfo file, Advancement? advancement, IReadOnlyDatapack datapack, AdvancementValidationError errorReason) : base(
-        file, advancement,
-        datapack)
+    /// <param name="advancement">The partially parsed advancement data, or <see langword="null"/>.</param>
+    /// <param name="datapack">The owning datapack.</param>
+    /// <param name="errorReason">The reason why the advancement failed validation.</param>
+    public InvalidAdvancement(
+        FileInfo file,
+        Advancement? advancement,
+        IReadOnlyDatapack datapack,
+        AdvancementValidationError errorReason)
+        : base(file, datapack)
     {
+        Advancement = advancement;
         ErrorReason = errorReason;
     }
 
-    public override string ToString() => $"{GetType().Name}({File}), Error: {ErrorReason}";
+    public override string ToString() => $"{GetType().Name}({File.Name}), Error: {ErrorReason}";
 }

@@ -11,9 +11,8 @@ using UI.Styling;
 namespace UI.Actions.Advancements;
 
 /// <summary>
-/// Provides an interactive management hub for BACAP advancements, allowing modification
-/// of core properties (Title, Description, Tab, Parent, Tier) as well as attached reward functions,
-/// dynamically adapting options based on datapack capabilities and override settings.
+/// Provides an interactive TUI management hub for BACAP advancements, allowing modification
+/// of core properties (Title, Description, Tab, Parent, Tier) as well as attached reward functions.
 /// </summary>
 /// <param name="registry">The registry containing loaded datapacks.</param>
 public class AdvancementEditorAction(DatapackRegistry registry) : IManageAdvancementsAction
@@ -41,28 +40,26 @@ public class AdvancementEditorAction(DatapackRegistry registry) : IManageAdvance
     }
 
     /// <summary>
-    /// Executes the search loop to select an advancement and opens its configuration hub.
+    /// Executes the search loop to select an editable advancement and opens its configuration hub.
     /// </summary>
     /// <returns>A completed <see cref="Task"/> representing the asynchronous operation.</returns>
     public async Task ExecuteAsync()
     {
-        var editablePairs = registry.Values
+        var editableAdvancements = registry.Values
             .Where(dp => dp.Settings.Type != DatapackType.Reference)
-            .SelectMany(dp => dp.Advancements.OfType<BacapAdvancement>().Select(adv => (Datapack: dp, Advancement: adv)))
+            .SelectMany(dp => dp.Advancements.OfType<BacapAdvancement>())
             .ToList();
 
-        if (editablePairs.Count == 0)
+        if (editableAdvancements.Count == 0)
         {
-            TuiTheme.ShowWarning("No advancements found across editable addon datapacks.");
+            TuiTheme.ShowWarning("No editable BACAP advancements found across addon datapacks.");
             TuiTheme.WaitForKey();
             return;
         }
 
-        var editableAdvancements = editablePairs.Select(p => p.Advancement).ToList();
-        var datapackLookup = editablePairs.ToDictionary(p => p.Advancement, p => p.Datapack);
-
-        var allKnownAdvancements = registry.Values
-            .SelectMany(dp => dp.Advancements)
+        // Only valid advancements can act as parents; broken files (InvalidAdvancement) are discarded
+        var allValidAdvancements = registry.Values
+            .SelectMany(dp => dp.Advancements.OfType<ValidAdvancement>())
             .ToList();
 
         while (true)
@@ -71,14 +68,12 @@ public class AdvancementEditorAction(DatapackRegistry registry) : IManageAdvance
             if (selectedAdv is null)
                 break;
 
-            var datapack = datapackLookup[selectedAdv];
-            var wasDeleted = await OpenAdvancementEditorAsync(selectedAdv, datapack, allKnownAdvancements);
+            var wasDeleted = await OpenAdvancementEditorAsync(selectedAdv, allValidAdvancements);
             if (!wasDeleted)
                 continue;
 
             editableAdvancements.Remove(selectedAdv);
-            datapackLookup.Remove(selectedAdv);
-            allKnownAdvancements.Remove(selectedAdv);
+            allValidAdvancements.Remove(selectedAdv);
 
             if (editableAdvancements.Count == 0)
                 break;
@@ -86,27 +81,24 @@ public class AdvancementEditorAction(DatapackRegistry registry) : IManageAdvance
     }
 
     /// <summary>
-    /// Displays the comprehensive editing menu for an individual advancement, offering only supported operations.
+    /// Displays the comprehensive editing menu for an individual advancement.
     /// </summary>
     /// <param name="advancement">The target BACAP advancement being configured.</param>
-    /// <param name="datapack">The parent datapack owning the advancement.</param>
-    /// <param name="allAdvancements">The global list of known advancements across all datapacks for parent validation.</param>
+    /// <param name="allValidAdvancements">The global list of known valid advancements for parent validation.</param>
     /// <returns>
     /// A task containing <see langword="true"/> if the advancement was deleted during the session;
     /// otherwise, <see langword="false"/>.
     /// </returns>
     private static async Task<bool> OpenAdvancementEditorAsync(
         BacapAdvancement advancement,
-        Datapack datapack,
-        IReadOnlyList<ManagedAdvancement> allAdvancements)
+        IReadOnlyList<ValidAdvancement> allValidAdvancements)
     {
-
         while (true)
         {
-            TuiTheme.RenderHeader($"Edit Advancement: {advancement.TitleText} [{datapack.Id}]");
+            TuiTheme.RenderHeader($"Edit Advancement: {advancement.TitleText} [{advancement.Datapack.Id}]");
 
             var descPreview = Truncate(advancement.DescriptionText, 80);
-            var choices = BuildAvailableOptions(datapack.Settings);
+            var choices = BuildAvailableOptions(advancement.Datapack.Settings);
 
             var option = AnsiConsole.Prompt(
                 new SelectionPrompt<AdvancementEditOption>()
@@ -162,7 +154,7 @@ public class AdvancementEditorAction(DatapackRegistry registry) : IManageAdvance
                     break;
 
                 case AdvancementEditOption.ChangeParent:
-                    await EditParent(advancement, allAdvancements);
+                    await EditParent(advancement, allValidAdvancements);
                     break;
 
                 case AdvancementEditOption.ChangeTier:
@@ -227,7 +219,7 @@ public class AdvancementEditorAction(DatapackRegistry registry) : IManageAdvance
     }
 
     /// <summary>
-    /// Prompts the user to update the display title.
+    /// Prompts the user to update the display title and saves changes.
     /// </summary>
     /// <param name="advancement">The target advancement to update.</param>
     private static void EditTitle(BacapAdvancement advancement)
@@ -237,12 +229,14 @@ public class AdvancementEditorAction(DatapackRegistry registry) : IManageAdvance
             defaultValue: advancement.TitleText,
             errorMessage: "[red]Title cannot be empty.[/]");
 
-        advancement.TitleText = newTitle;
-        SaveAndNotify(advancement,  $"Title updated to '{Markup.Escape(newTitle)}'.");
+        TryApplyMutation(
+            advancement,
+            () => advancement.TitleText = newTitle,
+            $"Title updated to '{Markup.Escape(newTitle)}'.");
     }
 
     /// <summary>
-    /// Prompts the user to update the description text.
+    /// Prompts the user to update the description text and saves changes.
     /// </summary>
     /// <param name="advancement">The target advancement to update.</param>
     private static void EditDescription(BacapAdvancement advancement)
@@ -252,8 +246,10 @@ public class AdvancementEditorAction(DatapackRegistry registry) : IManageAdvance
             defaultValue: advancement.DescriptionText,
             errorMessage: "[red]Description cannot be empty.[/]");
 
-        advancement.DescriptionText = newDesc;
-        SaveAndNotify(advancement, "Description updated.");
+        TryApplyMutation(
+            advancement,
+            () => advancement.DescriptionText = newDesc,
+            "Description updated.");
     }
 
     /// <summary>
@@ -270,19 +266,21 @@ public class AdvancementEditorAction(DatapackRegistry registry) : IManageAdvance
                 .UseConverter(tab => $"[{tab.Color}]■[/] [white]{tab.DisplayName}[/] [grey]({tab.FolderName})[/]")
         );
 
-        advancement.Tab = newTab;
-        SaveAndNotify(advancement, $"Tab changed to '{newTab.DisplayName}'.");
+        TryApplyMutation(
+            advancement,
+            () => advancement.Tab = newTab,
+            $"Tab changed to '{newTab.DisplayName}'.");
     }
 
     /// <summary>
     /// Guides the user through choosing a new parent advancement via interactive search or direct McPath entry.
     /// </summary>
     /// <param name="advancement">The target advancement whose parent is being updated.</param>
-    /// <param name="allAdvancements">The global list of known advancements for reference and validation.</param>
+    /// <param name="allValidAdvancements">The global list of known valid advancements for reference and validation.</param>
     /// <returns>A completed <see cref="Task"/> representing the asynchronous operation.</returns>
     private static async Task EditParent(
         BacapAdvancement advancement,
-        IReadOnlyList<ManagedAdvancement> allAdvancements)
+        IReadOnlyList<ValidAdvancement> allValidAdvancements)
     {
         TuiTheme.RenderHeader($"Change Parent: {advancement.TitleText}");
         AnsiConsole.MarkupLine($"Current parent: [yellow]{Markup.Escape(advancement.Parent ?? "None")}[/]\n");
@@ -299,10 +297,11 @@ public class AdvancementEditorAction(DatapackRegistry registry) : IManageAdvance
         {
             case TuiTheme.BackOptionString:
                 return;
+
             case searchChoice:
             {
-                var bacapAdvancements = allAdvancements.OfType<BacapAdvancement>().ToList();
-                var candidate = await AdvancementSearcher.PromptSearch(bacapAdvancements);
+                // Can be any valid advancement (including technical root advancements like 'minecraft:adventure/root')
+                var candidate = await AdvancementSearcher.PromptSearch(allValidAdvancements);
                 if (candidate is null)
                     return;
 
@@ -313,33 +312,41 @@ public class AdvancementEditorAction(DatapackRegistry registry) : IManageAdvance
                     return;
                 }
 
-                advancement.Parent = candidate.McPath;
-                SaveAndNotify(advancement, $"Parent set to '{candidate.McPath}'.");
+                TryApplyMutation(
+                    advancement,
+                    () => advancement.Parent = candidate.McPath,
+                    $"Parent set to '{candidate.McPath}'.");
+                return;
+            }
+
+            case manualChoice:
+            {
+                var newParent = AnsiConsole.Prompt(
+                    new TextPrompt<string>("Enter parent McPath (e.g. 'minecraft:adventure/root'):")
+                        .DefaultValue(advancement.Parent ?? string.Empty)
+                        .Validate(input =>
+                        {
+                            var trimmed = input.Trim();
+                            if (trimmed.Equals(advancement.McPath, StringComparison.OrdinalIgnoreCase))
+                                return ValidationResult.Error("[red]An advancement cannot be its own parent.[/]");
+
+                            return allValidAdvancements.Any(a => a.McPath.Equals(trimmed, StringComparison.OrdinalIgnoreCase))
+                                ? ValidationResult.Success()
+                                : ValidationResult.Error($"[red]Valid advancement with McPath '{Markup.Escape(trimmed)}' was not found.[/]");
+                        })
+                ).Trim();
+
+                TryApplyMutation(
+                    advancement,
+                    () => advancement.Parent = newParent,
+                    $"Parent set to '{newParent}'.");
                 return;
             }
         }
-
-        var newParent = AnsiConsole.Prompt(
-            new TextPrompt<string>("Enter parent McPath (e.g. 'minecraft:adventure/root'):")
-                .DefaultValue(advancement.Parent ?? string.Empty)
-                .Validate(input =>
-                {
-                    var trimmed = input.Trim();
-                    if (trimmed.Equals(advancement.McPath, StringComparison.OrdinalIgnoreCase))
-                        return ValidationResult.Error("[red]An advancement cannot be its own parent.[/]");
-
-                    return allAdvancements.Any(a => a.McPath.Equals(trimmed, StringComparison.OrdinalIgnoreCase))
-                        ? ValidationResult.Success()
-                        : ValidationResult.Error($"[red]Advancement with McPath '{Markup.Escape(trimmed)}' was not found.[/]");
-                })
-        ).Trim();
-
-        advancement.Parent = newParent;
-        SaveAndNotify(advancement, $"Parent set to '{newParent}'.");
     }
 
     /// <summary>
-    /// Prompts the user to select an advancement tier (excluding Root).
+    /// Prompts the user to select an advancement tier and saves changes.
     /// </summary>
     /// <param name="advancement">The target advancement to update.</param>
     private static void EditTier(BacapAdvancement advancement)
@@ -351,12 +358,40 @@ public class AdvancementEditorAction(DatapackRegistry registry) : IManageAdvance
                 .UseConverter(t => $"[yellow]{t}[/]")
         );
 
-        advancement.Tier = newTier;
-        SaveAndNotify(advancement, $"Tier changed to '{newTier}'.");
+        TryApplyMutation(
+            advancement,
+            () => advancement.Tier = newTier,
+            $"Tier changed to '{newTier}'.");
     }
 
     /// <summary>
-    /// Requests confirmation and permanently deletes the specified advancement from storage.
+    /// Executes a mutation action on the advancement, persists changes, and displays feedback.
+    /// Catches and presents domain validation errors without crashing the TUI.
+    /// </summary>
+    /// <param name="advancement">The target advancement instance.</param>
+    /// <param name="mutation">The mutation delegate to execute.</param>
+    /// <param name="successMessage">The text displayed upon successful persistence.</param>
+    /// <returns><see langword="true"/> if the mutation was successfully applied; otherwise, <see langword="false"/>.</returns>
+    private static bool TryApplyMutation(BacapAdvancement advancement, Action mutation, string successMessage)
+    {
+        try
+        {
+            mutation();
+            AdvancementIoManager.SaveAdvancement(advancement);
+            TuiTheme.ShowSuccess(successMessage);
+            TuiTheme.WaitForKey();
+            return true;
+        }
+        catch (Exception ex)
+        {
+            TuiTheme.ShowError($"Failed to update advancement: {ex.Message}");
+            TuiTheme.WaitForKey();
+            return false;
+        }
+    }
+
+    /// <summary>
+    /// Requests confirmation and permanently deletes the specified advancement from storage and memory.
     /// </summary>
     /// <param name="advancement">The advancement to delete.</param>
     /// <returns><see langword="true"/> if deletion was confirmed and completed; otherwise, <see langword="false"/>.</returns>
@@ -369,22 +404,26 @@ public class AdvancementEditorAction(DatapackRegistry registry) : IManageAdvance
         if (!confirmed)
             return false;
 
-        AdvancementIoManager.DeleteAdvancement(advancement);
-        TuiTheme.ShowSuccess("Advancement deleted successfully.");
-        TuiTheme.WaitForKey();
-        return true;
-    }
+        try
+        {
+            AdvancementIoManager.DeleteAdvancement(advancement);
 
-    /// <summary>
-    /// Persists advancement state changes to disk using the provided settings and notifies the user.
-    /// </summary>
-    /// <param name="advancement">The advancement instance with updated fields.</param>
-    /// <param name="successMessage">The text displayed upon successful persistence.</param>
-    private static void SaveAndNotify(BacapAdvancement advancement, string successMessage)
-    {
-        AdvancementIoManager.SaveAdvancement(advancement);
-        TuiTheme.ShowSuccess(successMessage);
-        TuiTheme.WaitForKey();
+            // Synchronize parent datapack's in-memory collection
+            if (advancement.Datapack is Datapack mutableDatapack)
+            {
+                mutableDatapack.Advancements.Remove(advancement);
+            }
+
+            TuiTheme.ShowSuccess("Advancement deleted successfully.");
+            TuiTheme.WaitForKey();
+            return true;
+        }
+        catch (Exception ex)
+        {
+            TuiTheme.ShowError($"Failed to delete advancement: {ex.Message}");
+            TuiTheme.WaitForKey();
+            return false;
+        }
     }
 
     /// <summary>
@@ -403,13 +442,12 @@ public class AdvancementEditorAction(DatapackRegistry registry) : IManageAdvance
                     : ValidationResult.Error(errorMessage))
         ).Trim();
 
-    /// <summary>
-    /// Formats the display line for the experience reward function status.
-    /// </summary>
-    /// <param name="advancement">The advancement to inspect.</param>
-    /// <returns>A Spectre.Console markup string summarizing experience points.</returns>
     private static string FormatExpSummary(BacapAdvancement advancement)
     {
+        // Если это оверрайд и локальный файл награды пока не создан пользователем
+        if (advancement is { IsOverride: true, ExpRewardFunction.File.Exists: false })
+            return "[grey]Inherited from parent[/]";
+
         var exp = advancement.ExpRewardFunction.ExperienceAmount;
         return exp > 0 ? $"[green]{exp} points[/]" : "[grey]None (Empty)[/]";
     }

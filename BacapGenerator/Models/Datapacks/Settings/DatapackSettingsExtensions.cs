@@ -1,10 +1,10 @@
-﻿
-using BacapGenerator.Models.Advancements;
+﻿using BacapGenerator.Models.Advancements;
 
 namespace BacapGenerator.Models.Datapacks.Settings;
 
 /// <summary>
-/// Provides extension methods for <see cref="DatapackSettings"/> to evaluate reward capabilities and file requirements.
+/// Provides extension methods for <see cref="DatapackSettings"/> to evaluate reward capabilities,
+/// requirement rules per advancement, and physical file existence.
 /// </summary>
 public static class DatapackSettingsExtensions
 {
@@ -12,25 +12,25 @@ public static class DatapackSettingsExtensions
     extension(DatapackSettings settings)
     {
         /// <summary>
-        /// Determines whether experience rewards are active for this datapack.
+        /// Determines whether experience rewards are supported and enabled for this datapack.
         /// </summary>
-        /// <returns><see langword="true"/> if experience rewards are supported and enabled; otherwise, <see langword="false"/>.</returns>
+        /// <returns><see langword="true"/> if experience rewards are active; otherwise, <see langword="false"/>.</returns>
         public bool SupportsExpRewards() =>
             settings.Type == DatapackType.Addon
             || settings is { Type: DatapackType.CompatibilityAddon, CompatibilityAddonSettings.OverrideExpRewards: true };
 
         /// <summary>
-        /// Determines whether item loot rewards are active for this datapack.
+        /// Determines whether item loot rewards are supported and enabled for this datapack.
         /// </summary>
-        /// <returns><see langword="true"/> if item loot rewards are supported and enabled; otherwise, <see langword="false"/>.</returns>
+        /// <returns><see langword="true"/> if item loot rewards are active; otherwise, <see langword="false"/>.</returns>
         public bool SupportsItemRewards() =>
             settings.Type == DatapackType.Addon
             || settings is { Type: DatapackType.CompatibilityAddon, CompatibilityAddonSettings.OverrideItemRewards: true };
 
         /// <summary>
-        /// Determines whether trophy rewards are active for this datapack.
+        /// Determines whether trophy rewards are supported and enabled for this datapack.
         /// </summary>
-        /// <returns><see langword="true"/> if trophy rewards are supported and enabled; otherwise, <see langword="false"/>.</returns>
+        /// <returns><see langword="true"/> if trophy rewards are active; otherwise, <see langword="false"/>.</returns>
         public bool SupportsTrophyRewards() =>
             settings.Type == DatapackType.Addon
             || settings is { Type: DatapackType.CompatibilityAddon, CompatibilityAddonSettings.OverrideTrophyRewards: true };
@@ -44,24 +44,75 @@ public static class DatapackSettingsExtensions
             || settings is { Type: DatapackType.CompatibilityAddon, CompatibilityAddonSettings.HasAnyRewardOverride: true };
 
         /// <summary>
-        /// Checks whether an advancement has at least one active reward function existing on disk.
+        /// Evaluates whether a specific advancement is strictly required to have an experience reward function file in this datapack.
+        /// Overridden advancements do not require a local file unless explicit override settings demand it.
+        /// </summary>
+        /// <param name="advancement">The target BACAP advancement.</param>
+        /// <returns><see langword="true"/> if the experience file is mandatory; otherwise, <see langword="false"/>.</returns>
+        public bool RequiresExpReward(BacapAdvancement advancement)
+        {
+            if (advancement.Tier == BacapAdvancementTier.Root || !settings.SupportsExpRewards())
+                return false;
+
+            return !advancement.IsOverride || (settings.CompatibilityAddonSettings?.OverrideExpRewards ?? false);
+        }
+
+        /// <summary>
+        /// Evaluates whether a specific advancement is strictly required to have an item reward function file in this datapack.
+        /// </summary>
+        /// <param name="advancement">The target BACAP advancement.</param>
+        /// <returns><see langword="true"/> if the item reward file is mandatory; otherwise, <see langword="false"/>.</returns>
+        public bool RequiresItemReward(BacapAdvancement advancement)
+        {
+            if (advancement.Tier == BacapAdvancementTier.Root || !settings.SupportsItemRewards())
+                return false;
+
+            return !advancement.IsOverride || (settings.CompatibilityAddonSettings?.OverrideItemRewards ?? false);
+        }
+
+        /// <summary>
+        /// Evaluates whether a specific advancement is strictly required to have a trophy reward function file in this datapack.
+        /// </summary>
+        /// <param name="advancement">The target BACAP advancement.</param>
+        /// <returns><see langword="true"/> if the trophy file is mandatory; otherwise, <see langword="false"/>.</returns>
+        public bool RequiresTrophyReward(BacapAdvancement advancement)
+        {
+            if (advancement.Tier == BacapAdvancementTier.Root || !settings.SupportsTrophyRewards())
+                return false;
+
+            return !advancement.IsOverride || (settings.CompatibilityAddonSettings?.OverrideTrophyRewards ?? false);
+        }
+
+        /// <summary>
+        /// Checks whether an advancement has at least one active reward function existing physically on disk in this datapack.
         /// </summary>
         /// <param name="advancement">The BACAP advancement to inspect.</param>
         /// <returns><see langword="true"/> if at least one enabled reward file exists; otherwise, <see langword="false"/>.</returns>
-        public bool HasAnyExistingReward(BacapAdvancement advancement) =>
-            (settings.SupportsExpRewards() && advancement.ExpRewardFunction.File.Exists)
-            || (settings.SupportsItemRewards() && advancement.ItemRewardFunction.File.Exists)
-            || (settings.SupportsTrophyRewards() && advancement.TrophyRewardFunction.File.Exists);
+        public bool HasAnyExistingReward(BacapAdvancement advancement)
+        {
+            advancement.ExpRewardFunction.File.Refresh();
+            advancement.ItemRewardFunction.File.Refresh();
+            advancement.TrophyRewardFunction.File.Refresh();
+
+            return (settings.SupportsExpRewards() && advancement.ExpRewardFunction.File.Exists)
+                   || (settings.SupportsItemRewards() && advancement.ItemRewardFunction.File.Exists)
+                   || (settings.SupportsTrophyRewards() && advancement.TrophyRewardFunction.File.Exists);
+        }
 
         /// <summary>
-        /// Checks whether an advancement is missing at least one active reward function on disk.
+        /// Checks whether an advancement is missing any mandatory reward function on disk according to its tier and override status.
         /// </summary>
         /// <param name="advancement">The BACAP advancement to inspect.</param>
-        /// <returns><see langword="true"/> if at least one enabled reward file is missing; otherwise, <see langword="false"/>.</returns>
-        public bool HasAnyMissingReward(BacapAdvancement advancement) =>
-            advancement.Tier != BacapAdvancementTier.Root
-            && ((settings.SupportsExpRewards() && !advancement.ExpRewardFunction.File.Exists)
-                || (settings.SupportsItemRewards() && !advancement.ItemRewardFunction.File.Exists)
-                || (settings.SupportsTrophyRewards() && !advancement.TrophyRewardFunction.File.Exists));
+        /// <returns><see langword="true"/> if a mandatory reward file is missing; otherwise, <see langword="false"/>.</returns>
+        public bool HasAnyMissingReward(BacapAdvancement advancement)
+        {
+            advancement.ExpRewardFunction.File.Refresh();
+            advancement.ItemRewardFunction.File.Refresh();
+            advancement.TrophyRewardFunction.File.Refresh();
+
+            return (settings.RequiresExpReward(advancement) && !advancement.ExpRewardFunction.File.Exists)
+                   || (settings.RequiresItemReward(advancement) && !advancement.ItemRewardFunction.File.Exists)
+                   || (settings.RequiresTrophyReward(advancement) && !advancement.TrophyRewardFunction.File.Exists);
+        }
     }
 }

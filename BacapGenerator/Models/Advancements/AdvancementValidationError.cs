@@ -8,7 +8,6 @@ public enum AdvancementValidationError
     MalformedJson,
     MissingRewardFunction,
     MissingDisplay,
-    MissingTab,
     NotParsableTier,
     FailedToLoadAssociatedFunctions,
     Unknown

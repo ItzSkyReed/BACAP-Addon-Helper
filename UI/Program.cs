@@ -1,4 +1,6 @@
 ﻿using System.Diagnostics;
+using System.Text;
+using BacapGenerator.Configuration;
 using BacapGenerator.Factories;
 using BacapGenerator.Models.Datapacks;
 using BacapGenerator.Models.Datapacks.Settings;
@@ -9,6 +11,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using NReco.Logging.File;
 using UI.Actions.Advancements;
 using UI.Actions.Advancements.Debug;
@@ -23,6 +26,8 @@ const string embeddedConfigResourceName = "UI.default_config.yaml";
 
 // Check config and fail-fast if it was missing
 YamlConfigBootstrapper.EnsureConfigExists(configFileName, embeddedConfigResourceName);
+
+Console.OutputEncoding = Encoding.UTF8;
 
 // Build the host with DI and Configuration
 var host = Host.CreateDefaultBuilder(args)
@@ -47,6 +52,14 @@ var host = Host.CreateDefaultBuilder(args)
     })
     .ConfigureServices((context, services) =>
     {
+        // Bind root configuration directly to GeneratorOptions
+        services.AddOptions<GeneratorConfig>()
+            .Bind(context.Configuration)
+            .PostConfigure(options => options.Validate())
+            .ValidateOnStart();
+
+        services.AddSingleton(sp => sp.GetRequiredService<IOptions<GeneratorConfig>>().Value);
+
         ComponentRegistry.RegisterAll();
 
         services.Configure<Dictionary<string, DatapackSettings>>(
@@ -65,6 +78,7 @@ var host = Host.CreateDefaultBuilder(args)
         services.AddTransient<MainMenuAction>();
         services.AddTransient<IMainMenuAction, ManageAdvancementsMenu>();
         services.AddTransient<IMainMenuAction, ManageDatapacksMenu>();
+        services.AddTransient<IMainMenuAction, ReleaseMenu>();
 
         // Advancement actions
         services.AddTransient<IManageAdvancementsAction, AdvancementStatsAction>();

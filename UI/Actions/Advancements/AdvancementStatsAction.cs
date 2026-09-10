@@ -34,12 +34,7 @@ public class AdvancementStatsAction(DatapackRegistry registry) : IManageAdvancem
                 .ToDictionary(group => group.Key, group => group.Count());
 
             var row = new List<string> { $"[cyan]{id}[/]" };
-
-            foreach (var tier in tiers)
-            {
-                var count = tierCounts.GetValueOrDefault(tier, 0);
-                row.Add(count.ToString());
-            }
+            row.AddRange(tiers.Select(tier => tierCounts.GetValueOrDefault(tier, 0)).Select(count => count.ToString()));
 
             var total = tierCounts.Values.Sum();
             row.Add($"[bold yellow]{total}[/]");

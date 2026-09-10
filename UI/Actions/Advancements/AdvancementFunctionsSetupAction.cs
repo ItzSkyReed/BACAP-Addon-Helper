@@ -10,9 +10,9 @@ using UI.Styling;
 namespace UI.Actions.Advancements;
 
 /// <summary>
-/// Scans editable BACAP advancements lacking reward function files and guides the user
-/// sequentially through Experience, Item, and Trophy setup wizards for whichever files are missing,
-/// strictly respecting compatibility addon override settings.
+/// Scans editable BACAP advancements lacking mandatory reward function files and guides the user
+/// sequentially through Experience, Item, and Trophy setup wizards for whichever files are strictly required,
+/// adhering to compatibility addon override configurations.
 /// </summary>
 /// <param name="registry">The registry containing loaded datapack instances.</param>
 public class AdvancementFunctionsSetupAction(DatapackRegistry registry) : IManageAdvancementsAction
@@ -20,20 +20,21 @@ public class AdvancementFunctionsSetupAction(DatapackRegistry registry) : IManag
     public string Title => "Reward Setup (Missing Rewards)";
 
     /// <summary>
-    /// Executes the batch reward configuration pipeline over all eligible advancements with missing reward files.
+    /// Executes the batch reward configuration pipeline over all eligible advancements with missing required reward files.
     /// </summary>
     /// <returns>A completed <see cref="Task"/> representing the asynchronous operation.</returns>
     public async Task ExecuteAsync()
     {
+        // 1. Collect only advancements where required reward files are physically missing on disk
         var targetAdvancements = registry.Values
             .Where(dp => dp.Settings.IsRewardModifiableAddon())
-            .SelectMany(dp => dp.Advancements.OfType<BacapAdvancement>().Select(adv => (Datapack: dp, Advancement: adv)))
-            .Where(item => item.Datapack.Settings.HasAnyMissingReward(item.Advancement))
+            .SelectMany(dp => dp.Advancements.OfType<BacapAdvancement>())
+            .Where(adv => adv.Datapack.Settings.HasAnyMissingReward(adv))
             .ToList();
 
         if (targetAdvancements.Count == 0)
         {
-            TuiTheme.ShowWarning("No editable BACAP advancements with missing reward files were found.");
+            TuiTheme.ShowWarning("No editable BACAP advancements with missing required reward files were found.");
             TuiTheme.WaitForKey();
             return;
         }
@@ -44,14 +45,20 @@ public class AdvancementFunctionsSetupAction(DatapackRegistry registry) : IManag
 
         for (var i = 0; i < targetAdvancements.Count; i++)
         {
-            var (datapack, advancement) = targetAdvancements[i];
-            var settings = datapack.Settings;
+            var advancement = targetAdvancements[i];
+            var settings = advancement.Datapack.Settings;
             var stepNumber = i + 1;
             var totalSteps = targetAdvancements.Count;
 
-            var missingExp = settings.SupportsExpRewards() && !advancement.ExpRewardFunction.File.Exists;
-            var missingItems = settings.SupportsItemRewards() && !advancement.ItemRewardFunction.File.Exists;
-            var missingTrophies = settings.SupportsTrophyRewards() && !advancement.TrophyRewardFunction.File.Exists;
+            // Invalidate cached disk information before inspecting requirements
+            advancement.ExpRewardFunction.File.Refresh();
+            advancement.ItemRewardFunction.File.Refresh();
+            advancement.TrophyRewardFunction.File.Refresh();
+
+            // Strictly check whether this specific advancement requires the file
+            var missingExp = settings.RequiresExpReward(advancement) && !advancement.ExpRewardFunction.File.Exists;
+            var missingItems = settings.RequiresItemReward(advancement) && !advancement.ItemRewardFunction.File.Exists;
+            var missingTrophies = settings.RequiresTrophyReward(advancement) && !advancement.TrophyRewardFunction.File.Exists;
 
             RenderAdvancementSummary(advancement, settings, stepNumber, totalSteps);
 
@@ -69,27 +76,27 @@ public class AdvancementFunctionsSetupAction(DatapackRegistry registry) : IManag
                     continue;
             }
 
-            // Step 1: Experience reward
+            // Experience reward wizard
             if (missingExp)
             {
-                RenderAdvancementSummary(advancement, settings, stepNumber, totalSteps);
                 await new ChangeExpAction(advancement).ExecuteAsync();
+                AdvancementIoManager.SaveAdvancement(advancement);
             }
 
-            // Step 2: Item reward
+            // Item reward wizard
             if (missingItems)
             {
                 RenderAdvancementSummary(advancement, settings, stepNumber, totalSteps);
                 await new ChangeItemAction(advancement).ExecuteAsync();
+                AdvancementIoManager.SaveAdvancement(advancement);
             }
 
-            // Step 3: Trophy reward
-            if (missingTrophies)
-            {
-                RenderAdvancementSummary(advancement, settings, stepNumber, totalSteps);
-                await new ChangeTrophyAction(advancement).ExecuteAsync();
-            }
+            // Trophy reward wizard
+            if (!missingTrophies)
+                continue;
 
+            RenderAdvancementSummary(advancement, settings, stepNumber, totalSteps);
+            await new ChangeTrophyAction(advancement).ExecuteAsync();
             AdvancementIoManager.SaveAdvancement(advancement);
         }
 
@@ -98,7 +105,7 @@ public class AdvancementFunctionsSetupAction(DatapackRegistry registry) : IManag
     }
 
     /// <summary>
-    /// Clears any residual keypresses and renders the advancement header along with an informative summary card.
+    /// Flushes residual input buffer and renders an informative summary card for the active advancement.
     /// </summary>
     /// <param name="advancement">The advancement being displayed.</param>
     /// <param name="settings">The settings of the parent datapack.</param>
@@ -111,18 +118,29 @@ public class AdvancementFunctionsSetupAction(DatapackRegistry registry) : IManag
         int totalSteps)
     {
         while (Console.KeyAvailable)
-        {
             Console.ReadKey(intercept: true);
-        }
 
-        // Invalidate cached FileInfo metadata
         advancement.ExpRewardFunction.File.Refresh();
         advancement.ItemRewardFunction.File.Refresh();
         advancement.TrophyRewardFunction.File.Refresh();
 
-        var expStatus = FormatStatus(settings.SupportsExpRewards(), advancement.ExpRewardFunction.File.Exists);
-        var itemStatus = FormatStatus(settings.SupportsItemRewards(), advancement.ItemRewardFunction.File.Exists);
-        var trophyStatus = FormatStatus(settings.SupportsTrophyRewards(), advancement.TrophyRewardFunction.File.Exists);
+        var expStatus = FormatRewardStatus(
+            isSupported: settings.SupportsExpRewards(),
+            isRequired: settings.RequiresExpReward(advancement),
+            isOverride: advancement.IsOverride,
+            exists: advancement.ExpRewardFunction.File.Exists);
+
+        var itemStatus = FormatRewardStatus(
+            isSupported: settings.SupportsItemRewards(),
+            isRequired: settings.RequiresItemReward(advancement),
+            isOverride: advancement.IsOverride,
+            exists: advancement.ItemRewardFunction.File.Exists);
+
+        var trophyStatus = FormatRewardStatus(
+            isSupported: settings.SupportsTrophyRewards(),
+            isRequired: settings.RequiresTrophyReward(advancement),
+            isOverride: advancement.IsOverride,
+            exists: advancement.TrophyRewardFunction.File.Exists);
 
         TuiTheme.RenderHeader(Markup.Escape($"Reward Setup [{stepNumber}/{totalSteps}]"));
 
@@ -147,16 +165,24 @@ public class AdvancementFunctionsSetupAction(DatapackRegistry registry) : IManag
     }
 
     /// <summary>
-    /// Formats the UI status label according to whether the reward category is active and exists on disk.
+    /// Formats the UI status label accurately distinguishing between configured, inherited, missing, and disabled states.
     /// </summary>
-    /// <param name="isEnabled">Whether the reward category is enabled for this datapack.</param>
-    /// <param name="exists">Whether the underlying function file exists.</param>
-    /// <returns>A formatted markup string representing the status.</returns>
-    private static string FormatStatus(bool isEnabled, bool exists)
+    /// <param name="isSupported">Whether the reward category is enabled in the datapack settings.</param>
+    /// <param name="isRequired">Whether this advancement strictly mandates a local reward function.</param>
+    /// <param name="isOverride">Whether this advancement overrides a parent datapack definition.</param>
+    /// <param name="exists">Whether the function file currently exists on disk.</param>
+    /// <returns>A formatted markup string representing the operational status.</returns>
+    private static string FormatRewardStatus(bool isSupported, bool isRequired, bool isOverride, bool exists)
     {
-        if (!isEnabled)
+        if (!isSupported)
             return "[Gray70]Disabled[/]";
 
-        return exists ? "[green]Configured[/]" : "[red]Missing[/]";
+        if (exists)
+            return isOverride ? "[green]Overridden[/]" : "[green]Configured[/]";
+
+        if (isOverride && !isRequired)
+            return "[grey]Inherited (Parent)[/]";
+
+        return "[red]Missing[/]";
     }
 }

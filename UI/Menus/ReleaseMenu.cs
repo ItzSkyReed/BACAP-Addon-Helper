@@ -1,0 +1,140 @@
+﻿using System.Text.RegularExpressions;
+using BacapGenerator.Configuration;
+using BacapGenerator.Models.Advancements;
+using BacapGenerator.Models.Datapacks;
+using BacapGenerator.Models.Datapacks.Settings;
+using BacapGenerator.Services.Global;
+using BacapGenerator.Services.IO;
+using Spectre.Console;
+using UI.Interfaces;
+using UI.Styling;
+
+namespace UI.Menus;
+
+/// <summary>
+/// Sub-menu for managing existing advancements.
+/// </summary>
+public partial class ReleaseMenu(DatapackRegistry registry, GeneratorConfig config) : IMainMenuAction
+{
+    [GeneratedRegex(@"^[0-9]+\.[0-9]+(\.[0-9]+)?(-(alpha|beta))?$", RegexOptions.IgnoreCase)]
+    private static partial Regex VersionPatternRegex();
+
+    public string Title => "Make Release";
+
+    /// <summary>
+    /// Executes the interactive release process by prompting for versioning per parent addon family
+    /// and archiving all corresponding datapack folders into distribution archives.
+    /// </summary>
+    /// <returns>A task representing the asynchronous operation.</returns>
+    /// <exception cref="InvalidOperationException">Thrown when an orphaned compatibility addon is detected.</exception>
+    public async Task ExecuteAsync()
+    {
+        if (string.IsNullOrWhiteSpace(config.ReleasePath))
+        {
+            TuiTheme.ShowError("Release path not specified, release will be cancelled.");
+            TuiTheme.WaitForKey();
+        }
+
+        var nonReferencePacks = registry.Values
+            .Where(dp => dp.Settings.Type != DatapackType.Reference)
+            .ToArray();
+
+        // Separate root addons from compatibility addons
+        var rootAddons = nonReferencePacks
+            .Where(dp => dp.Settings.Type == DatapackType.Addon)
+            .ToArray();
+
+        var compatibilityAddons = nonReferencePacks
+            .Where(dp => dp.Settings.Type == DatapackType.CompatibilityAddon)
+            .ToArray();
+
+        // Iterate through each root addon family
+        foreach (var parent in rootAddons)
+        {
+            // Identify parent identifier: use registry key or datapack identifier property
+            var parentId = parent.Id;
+            var parentDisplayName = parent.Settings.ReleaseName ?? parent.Settings.MainNamespace;
+
+            AnsiConsole.MarkupLine($"\n[bold yellow]Processing release family:[/] [cyan]{parentDisplayName}[/]");
+
+            // Ask version once per root family
+            var version = AskValidVersion();
+
+            // Find all compatibility addons linked to this parent
+            var relatedChildren = compatibilityAddons
+                .Where(child => string.Equals(child.Settings.ParentDatapackId, parentId, StringComparison.OrdinalIgnoreCase))
+                .ToArray();
+
+            // Form the unified release list (Parent + all its Compatibility addons)
+            var releaseFamily = new List<Datapack>(1 + relatedChildren.Length) { parent };
+            releaseFamily.AddRange(relatedChildren);
+
+            // Process archiving for each member of the family
+            foreach (var datapack in releaseFamily)
+            {
+                AnsiConsole.MarkupLine($"  [green]•[/] Processing [white]{datapack.ReleaseName}[/] (version [teal]{version}[/])...");
+
+
+                if (datapack.Settings.Type == DatapackType.Addon)
+                {
+                    GlobalAdvancementsService.GenerateAndSaveAll(datapack);
+                    GlobalFunctionsService.GenerateAndSaveAll(datapack);
+
+                    foreach (var advancement in datapack.Advancements.OfType<ValidAdvancement>())
+                    {
+                        AdvancementIoManager.SaveAdvancement(advancement);
+                    }
+                }
+
+                await DatapackIoManager.ArchiveDatapackAsync(datapack, version, config.ReleasePath!);
+            }
+        }
+
+        TuiTheme.ShowSuccess("Successfully archived all datapacks");
+        TuiTheme.WaitForKey();
+
+        // Sanity check: ensure no compatibility addons were left orphaned
+        var processedIds = rootAddons.Select(a => a.Id).ToHashSet(StringComparer.OrdinalIgnoreCase);
+        var orphanedChildren = compatibilityAddons
+            .Where(c => string.IsNullOrWhiteSpace(c.Settings.ParentDatapackId) || !processedIds.Contains(c.Settings.ParentDatapackId))
+            .ToArray();
+
+        if (orphanedChildren.Length > 0)
+        {
+            var orphanNames = string.Join(", ", orphanedChildren.Select(c => c.Settings.MainNamespace));
+            throw new InvalidOperationException($"Found orphaned CompatibilityAddons without a registered parent Addon: {orphanNames}");
+        }
+    }
+
+
+    /// <summary>
+    /// Prompts the user to enter a version string matching the pattern 'X.Y[.Z][-alpha|-beta]'.
+    /// Continues prompting until validation passes.
+    /// </summary>
+    /// <returns>A validated semantic-style version string.</returns>
+    /// <example>
+    /// Valid values: "1.0", "1.0.3", "2.1-beta", "3.0.0-alpha".
+    /// </example>
+    private static string AskValidVersion()
+    {
+        return AnsiConsole.Prompt(
+            new TextPrompt<string>("Enter [green]datapack version[/]:")
+                .PromptStyle("teal")
+                .Validate(input =>
+                {
+                    if (string.IsNullOrWhiteSpace(input))
+                        return ValidationResult.Error("[red]Version cannot be empty![/]");
+
+                    var trimmed = input.Trim();
+
+                    if (!VersionPatternRegex().IsMatch(trimmed))
+                    {
+                        return ValidationResult.Error(
+                            "[red]Invalid format![/] Expected: [yellow]X.Y[/], [yellow]X.Y.Z[/], [yellow]X.Y-alpha[/], [yellow]X.Y.Z-beta[/] etc."
+                        );
+                    }
+
+                    return ValidationResult.Success();
+                }));
+    }
+}

@@ -1,11 +1,14 @@
-﻿using BacapGenerator.Models.Advancements.Functions;
+﻿using System.Diagnostics.CodeAnalysis;
+using BacapGenerator.Models.Advancements.Functions;
 using BacapGenerator.Models.Advancements.Functions.Trophy;
+using BacapGenerator.Models.Datapacks;
 using BacapGenerator.Models.Interfaces;
 using BacapGenerator.Services;
 using BacapGenerator.Utils;
 using Core.Advancements.Models;
 using Core.TextComponents.Components;
 using Core.TextComponents.Extensions;
+using Core.TextComponents.Models;
 using JetBrains.Annotations;
 
 namespace BacapGenerator.Models.Advancements;
@@ -14,7 +17,7 @@ namespace BacapGenerator.Models.Advancements;
 /// Represents a valid, playable BACAP advancement with UI elements and rewards.
 /// Contains purely in-memory state.
 /// </summary>
-public class BacapAdvancement : ManagedAdvancement
+public class BacapAdvancement : ValidAdvancement
 {
     private BacapAdvancementTab _tab;
     private BacapAdvancementTier _tier;
@@ -41,7 +44,7 @@ public class BacapAdvancement : ManagedAdvancement
         FileInfo file,
         Advancement advancement,
         IReadOnlyDatapack datapack,
-        out BacapAdvancement? result,
+        [NotNullWhen(true)] out BacapAdvancement? result,
         out AdvancementValidationError error)
     {
         result = null;
@@ -88,7 +91,8 @@ public class BacapAdvancement : ManagedAdvancement
             return false;
         }
 
-        var color = advancement.Display.Description?.GetTag<string>("color");
+        var color = advancement.Display.Description?.Style?.Color
+                    ?? advancement.Display.Description?.GetTag<string>("color");
 
         if (BacapTierResolver.TryResolve(
                 filename: Path.GetFileNameWithoutExtension(file.Name),
@@ -104,32 +108,26 @@ public class BacapAdvancement : ManagedAdvancement
 
     public override string ToString() => $"{GetType().Name}({File}): {McPath} {Tier}";
 
+
     /// <summary>
-    /// Gets or sets the <see cref="Advancement"/> object.
-    /// Mutating this property validates the new state.
+    /// Gets or sets the underlying core <see cref="Advancement"/> data model.
+    /// Mutating this property validates the advancement state and synchronizes attached function files.
     /// </summary>
-    /// <summary>
-    /// Gets or sets the <see cref="Advancement"/> object.
-    /// Mutating this property validates the new state.
-    /// </summary>
-    // ReSharper disable once AnnotationConflictInHierarchy
-    // ReSharper disable once UseNullableReferenceTypesAnnotationSyntax
+    /// <exception cref="ArgumentNullException">Thrown when setting a <see langword="null"/> value.</exception>
+    /// <exception cref="ArgumentException">Thrown when the new state fails BACAP tier validation.</exception>
+    /// <exception cref="InvalidOperationException">Thrown when modifying a read-only instance.</exception>
     public override Advancement Advancement
     {
-        get => base.Advancement!;
-#pragma warning disable CS8765 // Nullability of type of parameter doesn't match overridden member (possibly because of nullability attributes).
+        get => base.Advancement;
         set
-#pragma warning restore CS8765 // Nullability of type of parameter doesn't match overridden member (possibly because of nullability attributes).
         {
-            EnsureMutable();
-            ArgumentNullException.ThrowIfNull(value); // 3. Отсекаем null в рантайме
+            ArgumentNullException.ThrowIfNull(value);
 
             if (!TryValidate(File, value, out var newTab, out var newTier, out var error))
             {
                 throw new ArgumentException($"Cannot update advancement: {error}", nameof(value));
             }
 
-            // Apply the new valid state. Disk is NOT touched.
             _tab = newTab;
             _tier = newTier;
             base.Advancement = value;
@@ -139,77 +137,170 @@ public class BacapAdvancement : ManagedAdvancement
         }
     }
 
+/// <summary>
+    /// Gets the display configuration guaranteed to exist for playable BACAP advancements.
+    /// </summary>
+    [PublicAPI]
+    public AdvancementDisplay Display => Advancement.Display!;
+
+    /// <summary>
+    /// Gets the complete extracted plain text of the description.
+    /// </summary>
+    [PublicAPI]
+    public string FullDescriptionText => DescriptionComponent.ExtractPlainText();
+
+    /// <summary>
+    /// Gets the extracted plain text of the first paragraph of the description.
+    /// </summary>
+    [PublicAPI]
+    public string CleanDescriptionText => DescriptionComponent.ExtractFirstParagraph();
+
+    /// <summary>
+    /// Gets or sets the plain text or translation key of the advancement title, preserving any applied styles.
+    /// </summary>
+    /// <exception cref="ArgumentException">Thrown when <paramref name="value"/> is <see langword="null"/> or empty.</exception>
+    /// <example>
+    /// <code>
+    /// advancement.TitleText = "advancements.adventure.root.title";
+    /// </code>
+    /// </example>
+    [PublicAPI]
     public string TitleText
     {
-        [PublicAPI]
         get => (TitleComponent as TranslatableComponent)?.Translate
                ?? (TitleComponent as PlainTextComponent)?.Text
                ?? TitleComponent.ToString()!;
-
-        [PublicAPI]
         set
         {
-            EnsureMutable();
             ArgumentException.ThrowIfNullOrEmpty(value);
-            TitleComponent = new TranslatableComponent(value);
+
+            TitleComponent = TitleComponent switch
+            {
+                TranslatableComponent translatable => translatable with { Translate = value },
+                PlainTextComponent plainText => plainText with { Text = value },
+                _ => throw new InvalidOperationException(
+                    $"Cannot change text directly on '{TitleComponent.GetType().Name}'. Expected TranslatableComponent or PlainTextComponent.")
+            };
         }
     }
 
-    [PublicAPI] public string FullDescriptionText => DescriptionComponent.ExtractPlainText();
-
-    [PublicAPI] public string CleanDescriptionText => DescriptionComponent.ExtractFirstParagraph();
-
+    /// <summary>
+    /// Gets or sets the display title text component.
+    /// </summary>
+    /// <exception cref="ArgumentNullException">Thrown when setting a <see langword="null"/> value.</exception>
     [PublicAPI]
     public TextComponent TitleComponent
     {
-        get => Advancement.Display!.Title!;
+        get => Display.Title!;
         set
         {
-            EnsureMutable();
             ArgumentNullException.ThrowIfNull(value);
 
-            if (Advancement == null)
-                throw new InvalidOperationException("Cannot set Title on an uninitialized advancement Data object.");
-
-            var currentDisplay = Advancement.Display ?? new AdvancementDisplay();
-            Advancement = Advancement with { Display = currentDisplay with { Title = value } };
-
-            Sync();
+            // Reconstructs Display and triggers Advancement setter (Sync, validation, paths)
+            Advancement = Advancement with
+            {
+                Display = Display with { Title = value }
+            };
         }
     }
 
+    /// <summary>
+    /// Gets or sets the text content or translation key of the advancement description,
+    /// preserving the component type (Translatable or PlainText), styles, and tier colors.
+    /// </summary>
+    /// <exception cref="ArgumentException">Thrown when <paramref name="value"/> is <see langword="null"/> or empty.</exception>
+    /// <exception cref="InvalidOperationException">
+    /// Thrown when attempting to update text on an unsupported component type.
+    /// </exception>
+    /// <example>
+    /// <code>
+    /// advancement.DescriptionText = "advancements.adventure.kill_a_mob.description";
+    /// </code>
+    /// </example>
+    [PublicAPI]
     public string DescriptionText
     {
-        [PublicAPI]
         get => (DescriptionComponent as TranslatableComponent)?.Translate
                ?? (DescriptionComponent as PlainTextComponent)?.Text
                ?? DescriptionComponent.ToString()!;
-
-        [PublicAPI]
         set
         {
-            EnsureMutable();
             ArgumentException.ThrowIfNullOrEmpty(value);
-            DescriptionComponent = new TranslatableComponent(value);
+
+            DescriptionComponent = DescriptionComponent switch
+            {
+                TranslatableComponent translatable => translatable with { Translate = value },
+                PlainTextComponent plainText => plainText with { Text = value },
+                _ => throw new InvalidOperationException(
+                    $"Cannot change text directly on '{DescriptionComponent.GetType().Name}'. Expected TranslatableComponent or PlainTextComponent.")
+            };
+        }
+    }
+
+    /// <summary>
+    /// Gets or sets the display description text component.
+    /// </summary>
+    /// <exception cref="ArgumentNullException">Thrown when setting a <see langword="null"/> value.</exception>
+    [PublicAPI]
+    public TextComponent DescriptionComponent
+    {
+        get => Display.Description!;
+        set
+        {
+            ArgumentNullException.ThrowIfNull(value);
+
+            // Reconstructs Display and triggers Advancement setter (Sync, validation, paths)
+            Advancement = Advancement with
+            {
+                Display = Display with { Description = value }
+            };
         }
     }
 
     [PublicAPI]
-    public TextComponent DescriptionComponent
+    public BacapAdvancementTier Tier
     {
-        get => Advancement.Display!.Description!;
+        get => _tier;
         set
         {
-            EnsureMutable();
-            ArgumentNullException.ThrowIfNull(value);
+            if (value == _tier)
+                return;
 
-            if (Advancement == null)
-                throw new InvalidOperationException("Cannot set Description on an uninitialized advancement Data object.");
+            if (value == BacapAdvancementTier.Root)
+                throw new ArgumentException("Creating Root advancements is not allowed.", nameof(value));
 
-            var currentDisplay = Advancement.Display ?? new AdvancementDisplay();
-            Advancement = Advancement with { Display = currentDisplay with { Description = value } };
+            var tierProfile = value.GetTierProfile();
 
-            Sync();
+            // Resolve rewards function path if the new tier mandates a specific tab
+            var targetTab = tierProfile.RequiredTab ?? Tab;
+            var updatedRewards = Advancement.Rewards;
+
+            if (targetTab != Tab && !string.IsNullOrWhiteSpace(updatedRewards?.Function))
+            {
+                var updatedFunction = MinecraftUtils.ReplaceFirstPathSegment(updatedRewards.Function, targetTab.FolderName);
+                updatedRewards = updatedRewards with { Function = updatedFunction };
+            }
+
+            var currentDescription = Display.Description ?? new PlainTextComponent(string.Empty);
+            var updatedDescription = currentDescription with
+            {
+                Style = (currentDescription.Style ?? new TextStyle()) with
+                {
+                    Color = tierProfile.DescriptionColor
+                }
+            };
+
+            // Atomically update state via Display accessor
+            Advancement = Advancement with
+            {
+                Display = Display with
+                {
+                    Hidden = tierProfile.IsHidden,
+                    Frame = tierProfile.Frame ?? Display.Frame,
+                    Description = updatedDescription
+                },
+                Rewards = updatedRewards
+            };
         }
     }
 
@@ -217,12 +308,14 @@ public class BacapAdvancement : ManagedAdvancement
     /// Gets or sets the Minecraft path (McPath) of the BACAP advancement.
     /// </summary>
     /// <remarks>
-    /// Overrides the base implementation to synchronize attached functions and update function file paths after the base file update.
+    /// Overrides the base implementation to keep the rewards function path in sync with the advancement path,
+    /// re-evaluating tabs, tiers, and attached function file locations.
     /// </remarks>
     /// <exception cref="InvalidOperationException">Thrown when attempting to modify a read-only instance.</exception>
+    /// <exception cref="ArgumentException">Thrown when the new path results in an invalid BACAP advancement state.</exception>
     /// <example>
     /// <code>
-    /// bacapAdvancement.McPath = "bacap:tab/advancement_name";
+    /// bacapAdvancement.McPath = "bacap:adventure/kill_a_mob";
     /// </code>
     /// </example>
     [PublicAPI]
@@ -234,27 +327,49 @@ public class BacapAdvancement : ManagedAdvancement
             if (base.McPath == value)
                 return;
 
+            // Update base path and underlying File first so TryValidate sees the new filename
             base.McPath = value;
 
-            Sync();
-            UpdateFunctionFilePaths();
+            // Synchronize rewards function path to match the new McPath
+            var rewardNamespace = Datapack.Settings.RewardNamespace;
+            var relativePath = MinecraftUtils.StripNamespace(value);
+            var updatedFunction = $"{rewardNamespace}:{relativePath}";
+
+            // Atomically update Advancement.
+            // This triggers EnsureMutable(), runs TryValidate() with the new File and Tab,
+            // updates _tab and _tier, and calls Sync() and UpdateFunctionFilePaths() with the new path.
+            Advancement = Advancement with
+            {
+                Rewards = (Advancement.Rewards ?? new AdvancementRewards()) with
+                {
+                    Function = updatedFunction
+                }
+            };
         }
     }
 
+    /// <summary>
+    /// Gets or sets the BACAP tab.
+    /// Changing the tab updates the rewards function namespace segment and synchronizes attached functions.
+    /// </summary>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="value"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentException">Thrown when the resulting advancement state fails tier validation.</exception>
     [PublicAPI]
     public BacapAdvancementTab Tab
     {
         get => _tab;
         set
         {
-            EnsureMutable();
             ArgumentNullException.ThrowIfNull(value);
 
-            if (_tab == value) return;
+            if (_tab == value)
+                return;
 
             var currentFunc = Advancement.Rewards!.Function!;
             var updatedFunction = MinecraftUtils.ReplaceFirstPathSegment(currentFunc, value.FolderName);
 
+            // Invoking this setter automatically triggers EnsureMutable(), TryValidate(),
+            // updates _tab and _tier, and executes Sync() and UpdateFunctionFilePaths().
             Advancement = Advancement with
             {
                 Rewards = Advancement.Rewards with
@@ -262,28 +377,21 @@ public class BacapAdvancement : ManagedAdvancement
                     Function = updatedFunction
                 }
             };
-
-            _tab = value;
-
-            Sync();
-            UpdateFunctionFilePaths();
         }
     }
 
     /// <summary>
     /// Gets or sets the parent advancement identifier (McPath).
     /// Mutating this property automatically extracts the tab from the parent path,
-    /// synchronizes the rewards function path segment, and recalculates both <see cref="Tab"/> and <see cref="Tier"/>
-    /// using <see cref="BacapTierResolver"/>.
+    /// updates the rewards function namespace segment, and recalculates both <see cref="Tab"/> and <see cref="Tier"/>.
     /// </summary>
     /// <exception cref="InvalidOperationException">
-    /// Thrown when attempting to modify a read-only instance or when <see cref="BacapTierResolver"/> fails to resolve a tier.
+    /// Thrown when attempting to modify a read-only instance or when the advancement tier cannot be resolved for the target tab.
     /// </exception>
     /// <exception cref="ArgumentNullException">Thrown when <paramref name="value"/> is <see langword="null"/> for non-root advancements.</exception>
-    /// <exception cref="ArgumentException">Thrown when the parent McPath contains an unknown or invalid BACAP tab folder.</exception>
+    /// <exception cref="ArgumentException">Thrown when the parent McPath contains an invalid BACAP tab identifier.</exception>
     /// <example>
     /// <code>
-    /// // Sets parent, updating Tab to Adventure and Tier via BacapTierResolver
     /// advancement.Parent = "minecraft:adventure/root";
     /// </code>
     /// </example>
@@ -293,8 +401,6 @@ public class BacapAdvancement : ManagedAdvancement
         get => Advancement.Parent;
         set
         {
-            EnsureMutable();
-
             if (Tier != BacapAdvancementTier.Root)
                 ArgumentNullException.ThrowIfNull(value);
 
@@ -303,8 +409,7 @@ public class BacapAdvancement : ManagedAdvancement
 
             if (value is null)
             {
-                base.Advancement = Advancement with { Parent = null };
-                Sync();
+                Advancement = Advancement with { Parent = null };
                 return;
             }
 
@@ -317,54 +422,18 @@ public class BacapAdvancement : ManagedAdvancement
             }
 
             // Synchronize Rewards.Function path segment to match the new tab
-            var currentFunc = Advancement.Rewards?.Function;
             var updatedRewards = Advancement.Rewards;
-            if (!string.IsNullOrWhiteSpace(currentFunc))
+            if (!string.IsNullOrWhiteSpace(updatedRewards?.Function))
             {
-                var updatedFunction = MinecraftUtils.ReplaceFirstPathSegment(currentFunc, newTab.FolderName);
-                updatedRewards = Advancement.Rewards! with { Function = updatedFunction };
+                var updatedFunction = MinecraftUtils.ReplaceFirstPathSegment(updatedRewards.Function, newTab.FolderName);
+                updatedRewards = updatedRewards with { Function = updatedFunction };
             }
 
-            // Resolve new Tier using BacapTierResolver with the updated tab and display properties
-            var descriptionColor = Advancement.Display?.Description?.GetTag<string>("color")
-                                   ?? Advancement.Display?.Description?.Style?.Color;
-
-            var filename = Path.GetFileNameWithoutExtension(File.Name);
-            var hidden = Advancement.Display?.Hidden ?? false;
-            var frame = Advancement.Display?.Frame;
-
-            if (!BacapTierResolver.TryResolve(filename, newTab, hidden, frame, descriptionColor, out var newTier))
-            {
-                throw new InvalidOperationException(
-                    $"Cannot resolve tier for advancement '{filename}' in tab '{newTab.DisplayName}'.");
-            }
-
-            // Apply synchronized tab and tier
-            _tab = newTab;
-            _tier = newTier;
-
-            base.Advancement = Advancement with
+            Advancement = Advancement with
             {
                 Parent = value,
                 Rewards = updatedRewards
             };
-
-            Sync();
-            UpdateFunctionFilePaths();
-        }
-    }
-
-    public BacapAdvancementTier Tier
-    {
-        get => _tier;
-        set
-        {
-            EnsureMutable();
-            if (value == BacapAdvancementTier.Root)
-                throw new ArgumentException("Creating Root advancements is not allowed");
-
-            _tier = value;
-            Sync();
         }
     }
 
@@ -387,7 +456,7 @@ public class BacapAdvancement : ManagedAdvancement
     private void UpdateFunctionFilePaths()
     {
         var relativePath = $"{MinecraftUtils.StripNamespace(Advancement.Rewards!.Function!)}.mcfunction";
-        var basePath = Path.Combine(Datapack.DatapackDataPath.ToString(), Datapack.Settings.RewardNamespace, "function");
+        var basePath = Path.Combine(Datapack.DatapackDataPath.FullName, Datapack.Settings.RewardNamespace, "function");
 
         MacroFunction.File = new FileInfo(Path.Combine(basePath, relativePath));
 

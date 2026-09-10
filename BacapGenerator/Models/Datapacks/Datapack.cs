@@ -12,33 +12,45 @@ namespace BacapGenerator.Models.Datapacks;
 /// </summary>
 public class Datapack : IReadOnlyDatapack
 {
-    private readonly List<ManagedAdvancement> _advancements = [];
-
     /// <summary>
     /// Gets the strongly-typed identifier of the datapack.
     /// </summary>
     /// <summary>
     /// Gets the string identifier of the datapack, loaded from the configuration.
     /// </summary>
-    public string Id { get; }
+    public string Id { get; init; }
 
     /// <summary>
     /// Gets the settings and configuration associated with this datapack.
     /// </summary>
-    public DatapackSettings Settings { get; }
+    public DatapackSettings Settings { get; init; }
 
     /// <summary>
     /// Gets the <see cref="DirectoryInfo"/> representing the data folder of the datapack.
     /// </summary>
-    public DirectoryInfo DatapackDataPath { get; }
+    public DirectoryInfo DatapackDataPath { get;  init;}
+
+    /// <summary>
+    /// Gets the display name for distribution releases.
+    /// Returns the explicitly configured <see cref="DatapackSettings.ReleaseName"/>,
+    /// or falls back to a predefined value based on <see cref="Id"/>.
+    /// </summary>
+    public string ReleaseName => !string.IsNullOrWhiteSpace(Settings.ReleaseName)
+        ? Settings.ReleaseName
+        : $"{Id} Datapack";
 
     /// <summary>
     /// Gets the global Minecraft registry data.
     /// </summary>
-    public MinecraftData MinecraftData { get; }
+    public MinecraftData MinecraftData { get;  init;}
 
-    /// <inheritdoc/>
-    public IReadOnlyList<ManagedAdvancement> Advancements => _advancements;
+    /// <summary>
+    /// Gets the mutable collection of advancements belonging to this datapack.
+    /// </summary>
+    public List<ManagedAdvancement> Advancements { get; } = [];
+
+    /// <inheritdoc cref="IReadOnlyDatapack.Advancements"/>
+    IReadOnlyList<ManagedAdvancement> IReadOnlyDatapack.Advancements => Advancements.AsReadOnly();
 
     /// <summary>
     /// Initializes a new instance of the <see cref="Datapack"/> model.
@@ -72,11 +84,11 @@ public class Datapack : IReadOnlyDatapack
         ArgumentNullException.ThrowIfNull(oldAdvancement);
         ArgumentNullException.ThrowIfNull(newAdvancement);
 
-        var index = _advancements.IndexOf(oldAdvancement);
+        var index = Advancements.IndexOf(oldAdvancement);
         if (index < 0)
             return false;
 
-        _advancements[index] = newAdvancement;
+        Advancements[index] = newAdvancement;
         return true;
     }
 
@@ -88,6 +100,6 @@ public class Datapack : IReadOnlyDatapack
     internal void InitializeAdvancements(IEnumerable<ManagedAdvancement> parsedAdvancements)
     {
         ArgumentNullException.ThrowIfNull(parsedAdvancements);
-        _advancements.AddRange(parsedAdvancements);
+        Advancements.AddRange(parsedAdvancements);
     }
 }
