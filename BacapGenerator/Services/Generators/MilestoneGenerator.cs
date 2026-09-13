@@ -79,24 +79,31 @@ public static class MilestoneGenerator
     /// <param name="mcPath">The Minecraft namespaced ID of the required advancement.</param>
     private static void WriteAdvancementCriterion(Utf8JsonWriter writer, string mcPath)
     {
+        ArgumentException.ThrowIfNullOrWhiteSpace(mcPath);
+
         // Writes:
-        // {
-        //   "trigger": "minecraft:location",
-        //   "conditions": {
+        // "trigger": "minecraft:location",
+        // "conditions": {
         //     "player": {
-        //       "minecraft:type_specific/player": {
-        //         "advancements": {
-        //           "<mc_path>": true
+        //         "type": "minecraft:entity_properties",
+        //         "entity": "this",
+        //         "predicate": {
+        //             "minecraft:type_specific/player": {
+        //                 "advancements": {
+        //                     "<advancement_mcpath>": true
+        //                 }
+        //             }
         //         }
-        //       }
         //     }
-        //   }
         // }
         writer.WriteStartObject();
         writer.WriteString("trigger", "minecraft:location");
 
         writer.WriteStartObject("conditions");
         writer.WriteStartObject("player");
+        writer.WriteString("type", "minecraft:entity_properties");
+        writer.WriteString("entity", "this");
+        writer.WriteStartObject("predicate");
         writer.WriteStartObject("minecraft:type_specific/player");
         writer.WriteStartObject("advancements");
 
@@ -104,6 +111,7 @@ public static class MilestoneGenerator
 
         writer.WriteEndObject(); // advancements
         writer.WriteEndObject(); // minecraft:type_specific/player
+        writer.WriteEndObject(); // predicate
         writer.WriteEndObject(); // player
         writer.WriteEndObject(); // conditions
 
