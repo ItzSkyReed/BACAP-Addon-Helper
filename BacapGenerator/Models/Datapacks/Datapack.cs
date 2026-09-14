@@ -1,4 +1,6 @@
-﻿using BacapGenerator.Models.Advancements;
+﻿using System.Collections.Frozen;
+using System.Diagnostics.CodeAnalysis;
+using BacapGenerator.Models.Advancements;
 using BacapGenerator.Models.Datapacks.Settings;
 using BacapGenerator.Models.Interfaces;
 using Core.Registries;
@@ -28,7 +30,7 @@ public class Datapack : IReadOnlyDatapack
     /// <summary>
     /// Gets the <see cref="DirectoryInfo"/> representing the data folder of the datapack.
     /// </summary>
-    public DirectoryInfo DatapackDataPath { get;  init;}
+    public DirectoryInfo DatapackDataPath { get; init; }
 
     /// <summary>
     /// Gets the display name for distribution releases.
@@ -42,7 +44,7 @@ public class Datapack : IReadOnlyDatapack
     /// <summary>
     /// Gets the global Minecraft registry data.
     /// </summary>
-    public MinecraftData MinecraftData { get;  init;}
+    public MinecraftData MinecraftData { get; init; }
 
     /// <summary>
     /// Gets the mutable collection of advancements belonging to this datapack.
@@ -51,6 +53,32 @@ public class Datapack : IReadOnlyDatapack
 
     /// <inheritdoc cref="IReadOnlyDatapack.Advancements"/>
     IReadOnlyList<ManagedAdvancement> IReadOnlyDatapack.Advancements => Advancements.AsReadOnly();
+
+
+    /// <summary>
+    /// Gets a cached lookup mapping advancement McPath to its model.
+    /// Safely handles duplicate paths and ignores casing.
+    /// </summary>
+    public IReadOnlyDictionary<string, ManagedAdvancement> AdvancementsById
+    {
+        get => field ??= BuildLookup();
+        private set;
+    }
+
+    /// <summary>
+    /// Attempts to find an advancement by its mcPath.
+    /// </summary>
+    /// <param name="mcPath">The advancement resource path to search for.</param>
+    /// <param name="advancement">When found, contains the matching advancement; otherwise, <see langword="null"/>.</param>
+    /// <returns><see langword="true"/> if found; otherwise, <see langword="false"/>.</returns>
+    public bool TryGetAdvancement(string mcPath, [NotNullWhen(true)] out ManagedAdvancement? advancement)
+    {
+        if (!string.IsNullOrWhiteSpace(mcPath))
+            return AdvancementsById.TryGetValue(mcPath, out advancement);
+
+        advancement = null;
+        return false;
+    }
 
     /// <summary>
     /// Initializes a new instance of the <see cref="Datapack"/> model.
@@ -72,13 +100,12 @@ public class Datapack : IReadOnlyDatapack
     }
 
     /// <summary>
-    /// Replaces an existing managed advancement with an updated or promoted instance.
+    /// Replaces an existing managed advancement and resets the lookup cache.
     /// </summary>
-    /// <param name="oldAdvancement">The current advancement instance to be replaced.</param>
-    /// <param name="newAdvancement">The new advancement instance.</param>
-    /// <returns><see langword="true"/> if the item was found and replaced; otherwise, <see langword="false"/>.</returns>
-    /// <exception cref="ArgumentNullException">Thrown when any argument is null.</exception>
-    [PublicAPI]
+    /// <param name="oldAdvancement">The advancement to be replaced.</param>
+    /// <param name="newAdvancement">The replacement instance.</param>
+    /// <returns><see langword="true"/> if replaced; otherwise, <see langword="false"/>.</returns>
+    /// <exception cref="ArgumentNullException">Thrown when either argument is null.</exception>
     public bool ReplaceAdvancement(ManagedAdvancement oldAdvancement, ManagedAdvancement newAdvancement)
     {
         ArgumentNullException.ThrowIfNull(oldAdvancement);
@@ -86,20 +113,39 @@ public class Datapack : IReadOnlyDatapack
 
         var index = Advancements.IndexOf(oldAdvancement);
         if (index < 0)
+        {
             return false;
+        }
 
         Advancements[index] = newAdvancement;
+        AdvancementsById = null!; // Reset cache
         return true;
     }
 
+
     /// <summary>
-    /// Populates the datapack with loaded advancements.
+    /// Populates advancements and resets the lookup cache.
     /// </summary>
-    /// <param name="parsedAdvancements">The collection of advancements to add.</param>
+    /// <param name="parsedAdvancements">The collection of loaded advancements.</param>
     /// <exception cref="ArgumentNullException">Thrown when <paramref name="parsedAdvancements"/> is null.</exception>
     internal void InitializeAdvancements(IEnumerable<ManagedAdvancement> parsedAdvancements)
     {
         ArgumentNullException.ThrowIfNull(parsedAdvancements);
         Advancements.AddRange(parsedAdvancements);
+        AdvancementsById = null!; // Reset cache
+    }
+
+    /// <summary>
+    /// Compiles current advancements into an immutable dictionary, skipping empty or duplicate paths.
+    /// </summary>
+    /// <returns>A case-insensitive frozen dictionary mapping McPath to advancement.</returns>
+    private FrozenDictionary<string, ManagedAdvancement> BuildLookup()
+    {
+        var map = new Dictionary<string, ManagedAdvancement>(Advancements.Count, StringComparer.OrdinalIgnoreCase);
+
+        foreach (var adv in Advancements)
+            map.TryAdd(adv.McPath, adv);
+
+        return map.ToFrozenDictionary(StringComparer.OrdinalIgnoreCase);
     }
 }
