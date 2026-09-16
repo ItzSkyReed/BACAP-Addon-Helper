@@ -14,12 +14,21 @@ namespace UI.Services;
 public sealed class ValidationRunnerService(DatapackRegistry datapackRegistry)
 {
     /// <summary>
-    /// Executes the validation engine for the given datapack and renders a formatted report.
+    /// Executes the validation engine for the given datapack and renders a formatted report tree.
     /// </summary>
     /// <param name="datapack">The datapack to validate.</param>
-    /// <returns><see langword="true"/> if validation passed (no Errors); otherwise, <see langword="false"/>.</returns>
+    /// <returns><see langword="true"/> if validation passed with no blocking errors; otherwise, <see langword="false"/>.</returns>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="datapack"/> is null.</exception>
+    /// <example>
+    /// <code>
+    /// var runner = new ValidationRunnerService(registry);
+    /// bool isValid = runner.ValidateAndRenderReport(datapack);
+    /// </code>
+    /// </example>
     public bool ValidateAndRenderReport(Datapack datapack)
     {
+        ArgumentNullException.ThrowIfNull(datapack);
+
         if (datapack.Settings.Type == DatapackType.Reference)
             return true;
 
@@ -38,7 +47,6 @@ public sealed class ValidationRunnerService(DatapackRegistry datapackRegistry)
             return true;
         }
 
-        // Render diagnostics as a structured tree
         var rootNodeMarkup = $"[bold cyan]Validation Report:[/] {datapack.ReleaseName}";
         var tree = TuiTheme.CreateTree(rootNodeMarkup);
 
@@ -56,12 +64,25 @@ public sealed class ValidationRunnerService(DatapackRegistry datapackRegistry)
             {
                 var ruleNode = severityNode.AddNode($"[grey]Rule:[/] {ruleGroup.Key}");
 
-                foreach (var issue in ruleGroup)
+                // Grouping by target advancement and property
+                var targetGroups = ruleGroup.GroupBy(i => new
                 {
-                    var target = issue.Advancement?.McPath ?? "Pack-Level";
-                    var pathSuffix = issue.PropertyPath != null ? $" -> {issue.PropertyPath}" : string.Empty;
+                    Target = i.Advancement?.McPath ?? "Pack-Level",
+                    i.PropertyPath
+                });
 
-                    ruleNode.AddNode($"[white]{target}[/][grey]{pathSuffix}[/]\n[{severityColor}]{issue.Message}[/]");
+                foreach (var targetGroup in targetGroups)
+                {
+                    var pathSuffix = targetGroup.Key.PropertyPath is not null
+                        ? $" -> {targetGroup.Key.PropertyPath}"
+                        : string.Empty;
+
+                    var targetNode = ruleNode.AddNode($"[white]{targetGroup.Key.Target}[/][grey]{pathSuffix}[/]");
+
+                    foreach (var issue in targetGroup)
+                    {
+                        targetNode.AddNode($"[{severityColor}]{Markup.Escape(issue.Message)}[/]");
+                    }
                 }
             }
         }
@@ -70,17 +91,19 @@ public sealed class ValidationRunnerService(DatapackRegistry datapackRegistry)
         TuiTheme.RenderElement(tree);
         TuiTheme.Space();
 
-        // Check if there are any blocking errors
         var hasErrors = issues.Any(i => i.Severity == ValidationSeverity.Error);
-
         if (!hasErrors)
             return true;
 
         TuiTheme.ShowError($"'{datapack.ReleaseName}' failed validation with blocking errors.");
         return false;
-
     }
 
+    /// <summary>
+    /// Maps a <see cref="ValidationSeverity"/> value to its corresponding Spectre.Console markup style.
+    /// </summary>
+    /// <param name="severity">The severity level to map.</param>
+    /// <returns>A string representing Spectre.Console color tag markup.</returns>
     private static string GetSeverityColor(ValidationSeverity severity) => severity switch
     {
         ValidationSeverity.Error => "bold red",
