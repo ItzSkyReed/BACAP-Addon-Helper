@@ -1,7 +1,5 @@
 ﻿using BacapGenerator.Advancements.Models;
-using BacapGenerator.Common;
 using BacapGenerator.Datapacks;
-using BacapGenerator.Datapacks.Models;
 using Spectre.Console;
 using UI.Styling;
 

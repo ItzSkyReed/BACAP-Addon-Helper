@@ -1,5 +1,4 @@
 ﻿using BacapGenerator.Advancements.Models;
-using BacapGenerator.Common;
 using BacapGenerator.Utils;
 using Core.DataComponents.Components;
 using Core.DataComponents.Interfaces;

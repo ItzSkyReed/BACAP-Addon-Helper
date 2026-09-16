@@ -1,5 +1,4 @@
 ﻿using System.Diagnostics;
-using BacapGenerator.Datapacks.Models;
 using BacapGenerator.Datapacks.Models.Settings;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;

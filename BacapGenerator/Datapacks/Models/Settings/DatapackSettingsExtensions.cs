@@ -1,5 +1,4 @@
 ﻿using BacapGenerator.Advancements.Models;
-using BacapGenerator.Common;
 
 namespace BacapGenerator.Datapacks.Models.Settings;
 
