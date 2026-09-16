@@ -12,6 +12,30 @@ public static class DatapackSettingsExtensions
     extension(DatapackSettings settings)
     {
         /// <summary>
+        /// Determines whether validation should actually run for this datapack,
+        /// taking into account its <see cref="DatapackType"/> and explicit toggle.
+        /// </summary>
+        /// <returns><see langword="true"/> if validation is active; otherwise, <see langword="false"/>.</returns>
+        public bool IsValidationActive()
+        {
+            // Reference datapacks should skip validation by default unless explicitly enabled
+            return settings is not { Type: DatapackType.Reference, Validation.Enabled: false } && settings.Validation.Enabled;
+        }
+
+        /// <summary>
+        /// Determines whether missing reward functions on disk should be flagged as errors,
+        /// respecting whether the pack actually supports rewards.
+        /// </summary>
+        /// <returns><see langword="true"/> if missing rewards should be verified.</returns>
+        public bool ShouldValidateRewardFiles() =>
+            settings.IsValidationActive()
+            && settings.Validation.RewardPaths.Enabled
+            && settings.SupportsAnyReward();
+
+        private bool SupportsAnyReward() =>
+            settings.SupportsExpRewards() || settings.SupportsItemRewards() || settings.SupportsTrophyRewards();
+
+        /// <summary>
         /// Determines whether experience rewards are supported and enabled for this datapack.
         /// </summary>
         /// <returns><see langword="true"/> if experience rewards are active; otherwise, <see langword="false"/>.</returns>

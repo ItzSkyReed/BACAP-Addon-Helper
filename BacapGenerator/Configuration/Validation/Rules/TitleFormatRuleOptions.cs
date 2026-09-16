@@ -1,39 +1,54 @@
-﻿using BacapGenerator.Utils;
+﻿using System.Collections.Frozen;
+using BacapGenerator.Utils;
 using JetBrains.Annotations;
+using Microsoft.Extensions.Configuration;
 
 namespace BacapGenerator.Configuration.Validation.Rules;
-
-using System.Collections.Frozen;
-using BacapGenerator.Validation.Models;
 
 /// <summary>
 /// Configuration options for advancement title formatting validation.
 /// </summary>
-public sealed class TitleFormatRuleOptions
+public sealed class TitleFormatRuleOptions : GenericRuleOptions
 {
-    /// <summary>
-    /// Gets or sets whether this rule is executed during validation.
-    /// </summary>
+    // === Minor Words (Articles/Prepositions) ===
+
     [PublicAPI]
-    public bool Enabled { get; set; } = true;
+    [ConfigurationKeyName("use_default_minor_words")]
+    public bool UseDefaultMinorWords { get; init; } = true;
+
+    [PublicAPI]
+    [ConfigurationKeyName("minor_words")]
+    public List<string>? MinorWords { get; init; }
+
+    [PublicAPI]
+    public FrozenSet<string> MinorWordsSet => field ??= BuildMinorWordsSet();
+
 
     /// <summary>
-    /// Gets or sets the severity level reported for violations.
+    /// Gets the list of exact advancement titles that bypass the Title Case validation entirely.
     /// </summary>
     [PublicAPI]
-    public ValidationSeverity Severity { get; set; } = ValidationSeverity.Warning;
+    [ConfigurationKeyName("allowed_titles")]
+    public List<string>? AllowedTitles { get; init; }
 
     /// <summary>
-    /// Gets or sets the list of minor words loaded from configuration.
+    /// Gets an immutable frozen set lookup for case-sensitive strict matches of exact allowed titles.
     /// </summary>
     [PublicAPI]
-    public List<string>? MinorWords { get; set; }
+    public FrozenSet<string> AllowedTitlesSet => field ??= AllowedTitles is { Count: > 0 }
+        ? AllowedTitles.ToFrozenSet(StringComparer.Ordinal)
+        : FrozenSet<string>.Empty;
 
-    /// <summary>
-    /// Gets a frozen set lookup compiled from <see cref="MinorWords"/> or defaults to <see cref="StringExtensions.DefaultMinorWords"/>.
-    /// </summary>
-    [PublicAPI]
-    public FrozenSet<string> MinorWordsSet => field ??= MinorWords is { Count: > 0 }
-        ? MinorWords.ToFrozenSet(StringComparer.OrdinalIgnoreCase)
-        : StringExtensions.DefaultMinorWords;
+    private FrozenSet<string> BuildMinorWordsSet()
+    {
+        var combined = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+        if (UseDefaultMinorWords)
+            combined.UnionWith(StringExtensions.DefaultMinorWords);
+
+        if (MinorWords is { Count: > 0 })
+            combined.UnionWith(MinorWords);
+
+        return combined.ToFrozenSet(StringComparer.OrdinalIgnoreCase);
+    }
 }

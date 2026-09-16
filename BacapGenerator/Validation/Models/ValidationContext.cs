@@ -1,7 +1,6 @@
-﻿using BacapGenerator.Validation.Models;
-using BacapGenerator.Models.Interfaces;
+﻿using BacapGenerator.Models.Interfaces;
 
-namespace BacapGenerator.Validation.Context;
+namespace BacapGenerator.Validation.Models;
 
 
 /// <summary>

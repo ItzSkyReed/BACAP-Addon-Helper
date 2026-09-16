@@ -4,12 +4,71 @@ registry_base_path: "./registries"
 
 # Path for release archives
 release_path: "./releases"
+
 # Optional logging configurations
 #logging:
 #  log_level:
 #    Default: "Debug"
 #  # Optional: leave empty or remove this line to disable writing logs to disk
 #  file_path: "./logs/generator.log"
+
+# Validation templates allow you to define standard rules once and reuse them across multiple datapacks
+# using YAML anchors (*default_validation).
+# Available severity levels: ignore, info, warning, error
+
+#templates:
+#  validation: &default_validation
+#    # Master switch to enable or disable the entire validation engine for a datapack
+#    enabled: true
+#
+#    # Ensures advancement titles follow English Title Case conventions
+#    title_case_formatting:
+#      enabled: true
+#      severity: warning
+#      use_default_minor_words: true
+#      allowed_titles: ["Say NO to Campfires", "Craft Me ALL!", "CoolGrill"]
+#      # Words that should remain lowercase unless they are the first or last word of the title
+#      minor_words: [ "a", "an", "the", "and", "but", "or", "for", "of", "in", "to", "with", "vs" ]
+#
+#    # Detects accidental leading or trailing spaces in advancement titles and descriptions
+#    whitespace_trimming:
+#      enabled: true
+#      severity: warning
+#
+#    # Prevents raw text strings in UI, enforcing the use of localization keys (translate components)
+#    plain_text_usage:
+#      enabled: true
+#      severity: warning
+#      # If true, appends built-in defaults (BACAP, WIP, v1.17-v1.21) to the allowed list
+#      include_default_strings: true
+#      # Custom strings and acronyms allowed to be used as plain text (merged with defaults if enabled)
+#      allowed_strings: [ "MyAddon", "CustomAcronym" ]
+#
+#    # Verifies that reward mcfunctions are correctly named, strictly follow the namespace conventions,
+#    # and physically exist on the disk for modifiable datapacks
+#    reward_paths:
+#      enabled: true
+#      severity: error
+#
+#    # Checks that parent advancements actually exist in loaded datapacks
+#    # and ensures there are no circular dependencies (e.g., A -> B -> A)
+#    parent_references:
+#      enabled: true
+#      severity: error
+#
+# Example of how to apply this template to a specific datapack:
+#datapacks:
+#  my_addon:
+#    type: Addon
+#    path: "./datapacks/my_addon"
+#    main_namespace: "my_addon"
+#    reward_namespace: "my_addon_rewards"
+#    # Inject the template and override specific rules if needed
+#    validation:
+#      <<: *default_validation
+#      reward_paths:
+#        enabled: false # Override example: disable reward validation for this specific pack
+
 
 # Filesystem paths and settings for each target datapack.
 datapacks:
@@ -46,6 +105,7 @@ datapacks:
       statistics: "bacaped:bacap/enhanced_statistics_milestone"
       weaponry: "bacaped:bacap/enhanced_weaponry_milestone"
     release_name: "Enhanced Discoveries"
+#    validation: *default_validation
 
   # BACAP Enhanced Hardcore variant (ReadWrite target)
   bacaped_hardcore:
@@ -61,3 +121,4 @@ datapacks:
       override_item_rewards: false
       override_trophy_rewards: false
     release_name: "Enhanced Discoveries Hardcore"
+#    validation: *default_validation

@@ -22,7 +22,7 @@ public enum ValidationSeverity
 /// <param name="Message">Human-readable explanation of the issue.</param>
 /// <param name="Advancement">The object of the affected advancement.</param>
 /// <param name="PropertyPath">Optional dot-separated path to the problematic property (e.g., "Display.Title").</param>
-public class ValidationIssue(
+public sealed record ValidationIssue(
     string RuleId,
     ValidationSeverity Severity,
     string Message,

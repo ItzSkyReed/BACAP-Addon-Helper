@@ -1,4 +1,5 @@
-﻿using BacapGenerator.Models.Advancements;
+﻿using BacapGenerator.Configuration.Validation;
+using BacapGenerator.Models.Advancements;
 using Microsoft.Extensions.Configuration;
 using JetBrains.Annotations;
 
@@ -69,6 +70,14 @@ public sealed class DatapackSettings
     [PublicAPI]
     [ConfigurationKeyName("compatibility_addon_settings")]
     public CompatibilityAddonSettings? CompatibilityAddonSettings { get; init; }
+
+    /// <summary>
+    /// Gets the validation rules and thresholds configured for this specific datapack.
+    /// If omitted in configuration, default settings are used.
+    /// </summary>
+    [PublicAPI]
+    [ConfigurationKeyName("validation")]
+    public DatapackValidationSettings Validation { get; init; } = new();
 
     [PublicAPI]
     [ConfigurationKeyName("fanpacks_namespace")]

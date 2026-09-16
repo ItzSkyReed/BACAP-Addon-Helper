@@ -19,6 +19,7 @@ using UI.Actions.Datapacks;
 using UI.Configuration;
 using UI.Interfaces;
 using UI.Menus;
+using UI.Services;
 
 const string configFileName = "config.yaml";
 
@@ -79,6 +80,8 @@ var host = Host.CreateDefaultBuilder(args)
         services.AddTransient<IMainMenuAction, ManageAdvancementsMenu>();
         services.AddTransient<IMainMenuAction, ManageDatapacksMenu>();
         services.AddTransient<IMainMenuAction, ReleaseMenu>();
+        services.AddTransient<ValidationRunnerService>();
+
 
         // Advancement actions
         services.AddTransient<IManageAdvancementsAction, AdvancementStatsAction>();
@@ -99,6 +102,7 @@ var host = Host.CreateDefaultBuilder(args)
 
         // Datapack actions
         services.AddTransient<IManageDatapacksAction, GenerateDatapackFunctionsAction>();
+        services.AddTransient<IManageDatapacksAction, ValidateDatapacksAction>();
 
     })
     .Build();

@@ -7,6 +7,7 @@ using BacapGenerator.Services.Global;
 using BacapGenerator.Services.IO;
 using Spectre.Console;
 using UI.Interfaces;
+using UI.Services;
 using UI.Styling;
 
 namespace UI.Menus;
@@ -14,7 +15,7 @@ namespace UI.Menus;
 /// <summary>
 /// Sub-menu for managing existing advancements.
 /// </summary>
-public partial class ReleaseMenu(DatapackRegistry registry, GeneratorConfig config) : IMainMenuAction
+public partial class ReleaseMenu(DatapackRegistry registry, GeneratorConfig config, ValidationRunnerService validationService) : IMainMenuAction
 {
     [GeneratedRegex(@"^[0-9]+\.[0-9]+(\.[0-9]+)?(-(alpha|beta))?$", RegexOptions.IgnoreCase)]
     private static partial Regex VersionPatternRegex();
@@ -33,11 +34,36 @@ public partial class ReleaseMenu(DatapackRegistry registry, GeneratorConfig conf
         {
             TuiTheme.ShowError("Release path not specified, release will be cancelled.");
             TuiTheme.WaitForKey();
+            return;
         }
 
         var nonReferencePacks = registry.Values
             .Where(dp => dp.Settings.Type != DatapackType.Reference)
             .ToArray();
+
+        // Pre-release Validation
+        TuiTheme.RenderHeader("Pre-Release Validation");
+        var validationPassed = true;
+
+        foreach (var pack in nonReferencePacks)
+        {
+            if (!validationService.ValidateAndRenderReport(pack))
+            {
+                validationPassed = false;
+            }
+        }
+
+        if (!validationPassed)
+        {
+            TuiTheme.Space();
+            TuiTheme.ShowError("Validation failed. Please fix the highlighted ERRORS before making a release.");
+            TuiTheme.WaitForKey();
+            return; // Abort release
+        }
+
+        TuiTheme.Space();
+        TuiTheme.ShowSuccess("All datapacks passed validation! Proceeding with release.");
+        TuiTheme.Space();
 
         // Separate root addons from compatibility addons
         var rootAddons = nonReferencePacks
@@ -51,7 +77,6 @@ public partial class ReleaseMenu(DatapackRegistry registry, GeneratorConfig conf
         // Iterate through each root addon family
         foreach (var parent in rootAddons)
         {
-            // Identify parent identifier: use registry key or datapack identifier property
             var parentId = parent.Id;
             var parentDisplayName = parent.Settings.ReleaseName ?? parent.Settings.MainNamespace;
 
@@ -65,7 +90,6 @@ public partial class ReleaseMenu(DatapackRegistry registry, GeneratorConfig conf
                 .Where(child => string.Equals(child.Settings.ParentDatapackId, parentId, StringComparison.OrdinalIgnoreCase))
                 .ToArray();
 
-            // Form the unified release list (Parent + all its Compatibility addons)
             var releaseFamily = new List<Datapack>(1 + relatedChildren.Length) { parent };
             releaseFamily.AddRange(relatedChildren);
 
@@ -73,7 +97,6 @@ public partial class ReleaseMenu(DatapackRegistry registry, GeneratorConfig conf
             foreach (var datapack in releaseFamily)
             {
                 AnsiConsole.MarkupLine($"  [green]•[/] Processing [white]{datapack.ReleaseName}[/] (version [teal]{version}[/])...");
-
 
                 if (datapack.Settings.Type == DatapackType.Addon)
                 {
@@ -93,7 +116,6 @@ public partial class ReleaseMenu(DatapackRegistry registry, GeneratorConfig conf
         TuiTheme.ShowSuccess("Successfully archived all datapacks");
         TuiTheme.WaitForKey();
 
-        // Sanity check: ensure no compatibility addons were left orphaned
         var processedIds = rootAddons.Select(a => a.Id).ToHashSet(StringComparer.OrdinalIgnoreCase);
         var orphanedChildren = compatibilityAddons
             .Where(c => string.IsNullOrWhiteSpace(c.Settings.ParentDatapackId) || !processedIds.Contains(c.Settings.ParentDatapackId))

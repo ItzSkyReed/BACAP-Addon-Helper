@@ -372,7 +372,7 @@ public class AdvancementEditorAction(DatapackRegistry registry) : IManageAdvance
     /// <param name="mutation">The mutation delegate to execute.</param>
     /// <param name="successMessage">The text displayed upon successful persistence.</param>
     /// <returns><see langword="true"/> if the mutation was successfully applied; otherwise, <see langword="false"/>.</returns>
-    private static bool TryApplyMutation(BacapAdvancement advancement, Action mutation, string successMessage)
+    private static void TryApplyMutation(BacapAdvancement advancement, Action mutation, string successMessage)
     {
         try
         {
@@ -380,13 +380,11 @@ public class AdvancementEditorAction(DatapackRegistry registry) : IManageAdvance
             AdvancementIoManager.SaveAdvancement(advancement);
             TuiTheme.ShowSuccess(successMessage);
             TuiTheme.WaitForKey();
-            return true;
         }
         catch (Exception ex)
         {
             TuiTheme.ShowError($"Failed to update advancement: {ex.Message}");
             TuiTheme.WaitForKey();
-            return false;
         }
     }
 

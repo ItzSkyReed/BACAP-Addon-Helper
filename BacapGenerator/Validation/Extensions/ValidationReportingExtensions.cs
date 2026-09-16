@@ -1,5 +1,4 @@
-﻿using BacapGenerator.Validation.Context;
-using BacapGenerator.Validation.Interfaces;
+﻿using BacapGenerator.Validation.Interfaces;
 using BacapGenerator.Validation.Models;
 using BacapGenerator.Models.Advancements;
 

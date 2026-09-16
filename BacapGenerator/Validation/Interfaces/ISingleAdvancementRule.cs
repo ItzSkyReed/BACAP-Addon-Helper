@@ -1,5 +1,5 @@
 ﻿using BacapGenerator.Models.Advancements;
-using BacapGenerator.Validation.Context;
+using BacapGenerator.Validation.Models;
 
 namespace BacapGenerator.Validation.Interfaces;
 
