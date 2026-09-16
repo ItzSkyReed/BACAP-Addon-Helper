@@ -1,11 +1,11 @@
 ﻿using System.ComponentModel;
 using System.Globalization;
-using BacapGenerator.Models.Advancements;
+using BacapGenerator.Common;
 
 namespace BacapGenerator.Converters;
 
 /// <summary>
-/// Converts case-insensitive string folder names into strongly-typed <see cref="BacapAdvancementTab"/> instances.
+/// Converts case-insensitive string folder names into strongly-typed <see cref="BacapTab"/> instances.
 /// </summary>
 public sealed class BacapAdvancementTabConverter : TypeConverter
 {
@@ -19,24 +19,24 @@ public sealed class BacapAdvancementTabConverter : TypeConverter
         sourceType == typeof(string) || base.CanConvertFrom(context, sourceType);
 
     /// <summary>
-    /// Converts the specified string value into a <see cref="BacapAdvancementTab"/>.
+    /// Converts the specified string value into a <see cref="BacapTab"/>.
     /// </summary>
     /// <param name="context">Format context information.</param>
     /// <param name="culture">Culture information.</param>
     /// <param name="value">The folder name string to convert.</param>
-    /// <returns>The resolved <see cref="BacapAdvancementTab"/> instance.</returns>
+    /// <returns>The resolved <see cref="BacapTab"/> instance.</returns>
     /// <exception cref="FormatException">Thrown when the string cannot be resolved to any known tab.</exception>
     /// <example>
     /// <code>
     /// var converter = new BacapAdvancementTabConverter();
-    /// var tab = (BacapAdvancementTab)converter.ConvertFrom("adventure")!; // BacapAdvancementTab.Adventure
+    /// var tab = (BacapTab)converter.ConvertFrom("adventure")!; // BacapTab.Adventure
     /// </code>
     /// </example>
     public override object? ConvertFrom(ITypeDescriptorContext? context, CultureInfo? culture, object value)
     {
         if (value is string folderName)
         {
-            return BacapAdvancementTab.TryFromFolderName(folderName, out var tab)
+            return BacapTab.TryFromFolderName(folderName, out var tab)
                 ? tab
                 : throw new FormatException($"Unknown BACAP advancement tab folder name: '{folderName}'.");
         }

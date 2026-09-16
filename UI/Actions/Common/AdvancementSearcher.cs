@@ -1,4 +1,4 @@
-﻿using BacapGenerator.Models.Advancements;
+﻿using BacapGenerator.Advancements.Models;
 using Core.TextComponents.Components;
 using Spectre.Console;
 using UI.Interfaces;

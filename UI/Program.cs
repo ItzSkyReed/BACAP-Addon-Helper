@@ -1,10 +1,10 @@
 ﻿using System.Diagnostics;
 using System.Text;
 using BacapGenerator.Configuration;
-using BacapGenerator.Factories;
-using BacapGenerator.Models.Datapacks;
-using BacapGenerator.Models.Datapacks.Settings;
-using BacapGenerator.Services;
+using BacapGenerator.Datapacks;
+using BacapGenerator.Datapacks.Models;
+using BacapGenerator.Datapacks.Models.Settings;
+using BacapGenerator.Datapacks.Services;
 using Core.DataComponents;
 using Core.Registries;
 using Microsoft.Extensions.Configuration;
@@ -54,12 +54,12 @@ var host = Host.CreateDefaultBuilder(args)
     .ConfigureServices((context, services) =>
     {
         // Bind root configuration directly to GeneratorOptions
-        services.AddOptions<GeneratorConfig>()
+        services.AddOptions<GlobalConfig>()
             .Bind(context.Configuration)
             .PostConfigure(options => options.Validate())
             .ValidateOnStart();
 
-        services.AddSingleton(sp => sp.GetRequiredService<IOptions<GeneratorConfig>>().Value);
+        services.AddSingleton(sp => sp.GetRequiredService<IOptions<GlobalConfig>>().Value);
 
         ComponentRegistry.RegisterAll();
 

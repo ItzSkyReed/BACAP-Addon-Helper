@@ -1,6 +1,7 @@
-﻿using BacapGenerator.Models.Datapacks;
-using BacapGenerator.Models.Datapacks.Settings;
-using BacapGenerator.Services.Global;
+﻿using BacapGenerator.Advancements.Services;
+using BacapGenerator.Datapacks;
+using BacapGenerator.Datapacks.Models;
+using BacapGenerator.Datapacks.Models.Settings;
 using UI.Interfaces;
 using UI.Styling;
 

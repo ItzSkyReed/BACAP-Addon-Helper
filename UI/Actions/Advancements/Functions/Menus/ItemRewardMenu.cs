@@ -1,5 +1,5 @@
-﻿using BacapGenerator.Models.Advancements;
-using BacapGenerator.Services.IO;
+﻿using BacapGenerator.Advancements.Models;
+using BacapGenerator.Io;
 using Core.Items;
 using Core.Registries;
 using Spectre.Console;

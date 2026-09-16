@@ -1,7 +1,8 @@
-﻿using BacapGenerator.Models.Advancements;
-using BacapGenerator.Models.Datapacks;
-using BacapGenerator.Models.Datapacks.Settings;
-using BacapGenerator.Services.IO;
+﻿using BacapGenerator.Advancements.Models;
+using BacapGenerator.Datapacks;
+using BacapGenerator.Datapacks.Models;
+using BacapGenerator.Datapacks.Models.Settings;
+using BacapGenerator.Io;
 using Spectre.Console;
 using UI.Interfaces;
 using UI.Styling;

@@ -1,4 +1,5 @@
-﻿using BacapGenerator.Models.Datapacks;
+﻿using BacapGenerator.Datapacks;
+using BacapGenerator.Datapacks.Models;
 using UI.Interfaces;
 using UI.Services;
 using UI.Styling;

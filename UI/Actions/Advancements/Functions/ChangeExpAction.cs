@@ -1,5 +1,5 @@
-﻿using BacapGenerator.Models.Advancements;
-using BacapGenerator.Services.IO;
+﻿using BacapGenerator.Advancements.Models;
+using BacapGenerator.Io;
 using Spectre.Console;
 using UI.Interfaces;
 

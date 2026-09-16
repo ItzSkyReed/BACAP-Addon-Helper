@@ -1,10 +1,12 @@
 ﻿using System.Text.RegularExpressions;
+using BacapGenerator.Advancements.Models;
+using BacapGenerator.Advancements.Services;
 using BacapGenerator.Configuration;
-using BacapGenerator.Models.Advancements;
-using BacapGenerator.Models.Datapacks;
-using BacapGenerator.Models.Datapacks.Settings;
-using BacapGenerator.Services.Global;
-using BacapGenerator.Services.IO;
+using BacapGenerator.Datapacks;
+using BacapGenerator.Datapacks.Models;
+using BacapGenerator.Datapacks.Models.Settings;
+using BacapGenerator.Datapacks.Services;
+using BacapGenerator.Io;
 using Spectre.Console;
 using UI.Interfaces;
 using UI.Services;
@@ -15,7 +17,7 @@ namespace UI.Menus;
 /// <summary>
 /// Sub-menu for managing existing advancements.
 /// </summary>
-public partial class ReleaseMenu(DatapackRegistry registry, GeneratorConfig config, ValidationRunnerService validationService) : IMainMenuAction
+public partial class ReleaseMenu(DatapackRegistry registry, GlobalConfig config, ValidationRunnerService validationService) : IMainMenuAction
 {
     [GeneratedRegex(@"^[0-9]+\.[0-9]+(\.[0-9]+)?(-(alpha|beta))?$", RegexOptions.IgnoreCase)]
     private static partial Regex VersionPatternRegex();

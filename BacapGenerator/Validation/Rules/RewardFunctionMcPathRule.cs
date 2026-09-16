@@ -1,6 +1,6 @@
-﻿using BacapGenerator.Configuration.Validation.Rules;
-using BacapGenerator.Models.Advancements;
-using BacapGenerator.Models.Datapacks.Settings;
+﻿using BacapGenerator.Advancements.Models;
+using BacapGenerator.Datapacks.Models.Settings;
+using BacapGenerator.Datapacks.Models.Settings.Validation.Rules;
 using BacapGenerator.Validation.Extensions;
 using BacapGenerator.Utils;
 using BacapGenerator.Validation.Models;

@@ -1,5 +1,5 @@
-﻿using BacapGenerator.Configuration.Validation.Rules;
-using BacapGenerator.Models.Advancements;
+﻿using BacapGenerator.Advancements.Models;
+using BacapGenerator.Datapacks.Models.Settings.Validation.Rules;
 using BacapGenerator.Validation.Extensions;
 using BacapGenerator.Validation.Models;
 using Core.TextComponents.Components;

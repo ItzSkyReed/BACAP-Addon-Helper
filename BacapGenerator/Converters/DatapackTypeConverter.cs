@@ -1,6 +1,6 @@
 ﻿using System.ComponentModel;
 using System.Globalization;
-using BacapGenerator.Models.Datapacks.Settings;
+using BacapGenerator.Datapacks.Models.Settings;
 
 namespace BacapGenerator.Converters;
 

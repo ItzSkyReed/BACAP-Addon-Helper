@@ -1,5 +1,5 @@
-﻿using BacapGenerator.Models.Advancements;
-using BacapGenerator.Models.Datapacks;
+﻿using BacapGenerator.Advancements.Models;
+using BacapGenerator.Datapacks.Models;
 using BacapGenerator.Validation.Interfaces;
 using BacapGenerator.Validation.Models;
 

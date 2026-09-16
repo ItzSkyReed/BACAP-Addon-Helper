@@ -1,7 +1,9 @@
-﻿using BacapGenerator.Models.Advancements;
-using BacapGenerator.Models.Datapacks;
-using BacapGenerator.Models.Datapacks.Settings;
-using BacapGenerator.Services.IO;
+﻿using BacapGenerator.Advancements.Models;
+using BacapGenerator.Common;
+using BacapGenerator.Datapacks;
+using BacapGenerator.Datapacks.Models;
+using BacapGenerator.Datapacks.Models.Settings;
+using BacapGenerator.Io;
 using Spectre.Console;
 using UI.Actions.Advancements.Functions;
 using UI.Actions.Common;
@@ -259,10 +261,10 @@ public class AdvancementEditorAction(DatapackRegistry registry) : IManageAdvance
     private static void EditTab(BacapAdvancement advancement)
     {
         var newTab = AnsiConsole.Prompt(
-            new SelectionPrompt<BacapAdvancementTab>()
+            new SelectionPrompt<BacapTab>()
                 .Title("Select advancement tab:")
                 .EnableSearch()
-                .AddChoices(BacapAdvancementTab.All)
+                .AddChoices(BacapTab.All)
                 .UseConverter(tab => $"[{tab.Color}]■[/] [white]{tab.DisplayName}[/] [grey]({tab.FolderName})[/]")
         );
 

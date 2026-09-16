@@ -1,7 +1,9 @@
 ﻿using System.Diagnostics.CodeAnalysis;
-using BacapGenerator.Configuration.Validation.Rules;
-using BacapGenerator.Models.Advancements;
-using BacapGenerator.Models.Datapacks;
+using BacapGenerator.Advancements.Models;
+using BacapGenerator.Common;
+using BacapGenerator.Datapacks;
+using BacapGenerator.Datapacks.Models;
+using BacapGenerator.Datapacks.Models.Settings.Validation.Rules;
 using BacapGenerator.Validation.Extensions;
 using BacapGenerator.Validation.Models;
 

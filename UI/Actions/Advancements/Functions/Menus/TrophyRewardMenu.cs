@@ -1,7 +1,7 @@
 ﻿using System.Text.RegularExpressions;
-using BacapGenerator.Models.Advancements;
-using BacapGenerator.Models.Advancements.Functions.Trophy;
-using BacapGenerator.Services.IO;
+using BacapGenerator.Advancements.Functions.Trophy;
+using BacapGenerator.Advancements.Models;
+using BacapGenerator.Io;
 using Core.DataComponents.Components;
 using Core.DataComponents.Interfaces;
 using Core.Registries;

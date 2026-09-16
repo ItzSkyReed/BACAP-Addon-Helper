@@ -1,4 +1,4 @@
-﻿using BacapGenerator.Configuration.Validation;
+﻿using BacapGenerator.Datapacks.Models.Settings.Validation.Rules;
 using BacapGenerator.Validation.Interfaces;
 using BacapGenerator.Validation.Models;
 

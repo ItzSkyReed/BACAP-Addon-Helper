@@ -1,4 +1,4 @@
-﻿using BacapGenerator.Models.Advancements;
+﻿using BacapGenerator.Advancements.Models;
 using BacapGenerator.Validation.Models;
 
 namespace BacapGenerator.Validation.Interfaces;
