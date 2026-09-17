@@ -1,5 +1,6 @@
 ﻿using BacapGenerator.Datapacks.Models.Settings.Validation.Rules;
 using BacapGenerator.Validation.Models;
+using JetBrains.Annotations;
 using Microsoft.Extensions.Configuration;
 
 namespace BacapGenerator.Datapacks.Models.Settings.Validation;
@@ -9,6 +10,13 @@ namespace BacapGenerator.Datapacks.Models.Settings.Validation;
 /// </summary>
 public sealed class DatapackValidationSettings
 {
+    /// <summary>
+    /// Gets the optional name of the validation template to inherit settings from.
+    /// </summary>
+    [PublicAPI]
+    [ConfigurationKeyName("template")]
+    public string? Template { get; init; }
+
     /// <summary>
     /// Gets a value indicating whether validation is active for this datapack.
     /// </summary>

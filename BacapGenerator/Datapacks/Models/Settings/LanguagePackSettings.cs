@@ -13,6 +13,13 @@ public class LanguagePackSettings
     private static readonly FrozenSet<string> DefaultIgnoredKeys = BuildDefaultIgnoredKeys();
 
     /// <summary>
+    /// Gets the optional name of the language pack template to inherit settings from.
+    /// </summary>
+    [PublicAPI]
+    [ConfigurationKeyName("template")]
+    public string? Template { get; init; }
+
+    /// <summary>
     /// Gets the optional filesystem path to the language resource pack folder.
     /// </summary>
     [PublicAPI]

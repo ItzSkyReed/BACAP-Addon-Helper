@@ -35,6 +35,7 @@ var host = Host.CreateDefaultBuilder(args)
     {
         config.Sources.Clear();
         config.AddYamlFile(configFileName, optional: false, reloadOnChange: true);
+        config.ExpandTemplates();
     })
     .ConfigureLogging((context, logging) =>
     {
