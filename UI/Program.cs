@@ -102,6 +102,7 @@ var host = Host.CreateDefaultBuilder(args)
         // Datapack actions
         services.AddTransient<IManageDatapacksAction, GenerateDatapackFunctionsAction>();
         services.AddTransient<IManageDatapacksAction, ValidateDatapacksAction>();
+        services.AddTransient<IManageDatapacksAction, UpdateBaseTranslations>();
 
     })
     .Build();

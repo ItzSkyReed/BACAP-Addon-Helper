@@ -18,10 +18,10 @@ public sealed class DatapackSettings
     public string Path { get; init; } = string.Empty;
 
     /// <summary>
-    /// Gets the optional filesystem path to the language resource pack folder.
+    /// Gets the optional language pack settings.
     /// </summary>
-    [ConfigurationKeyName("language_pack_path")]
-    public string? LanguagePackPath { get; init; }
+    [ConfigurationKeyName("language_pack")]
+    public LanguagePackSettings? LanguagePackSettigs { get; init; }
 
     /// <summary>
     /// Gets the primary namespace containing the advancements.
@@ -107,9 +107,6 @@ public sealed class DatapackSettings
 
         if (Type != DatapackType.Addon)
             return;
-
-        if (string.IsNullOrWhiteSpace(LanguagePackPath))
-            throw new InvalidOperationException($"'{nameof(LanguagePackPath)}' must be provided when Type is set to Addon.");
 
         if (Type == DatapackType.CompatibilityAddon && string.IsNullOrWhiteSpace(ParentDatapackId))
         {
