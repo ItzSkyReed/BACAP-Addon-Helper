@@ -1,6 +1,6 @@
 ﻿using System.Text.Json.Serialization;
 
-namespace BacapGenerator.Datapacks.McMeta;
+namespace BacapGenerator.McMeta;
 
 /// <summary>
 /// Represents filters for excluding files from lower-priority packs.

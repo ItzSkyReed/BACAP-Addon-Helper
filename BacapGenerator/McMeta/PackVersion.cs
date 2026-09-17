@@ -1,4 +1,4 @@
-﻿namespace BacapGenerator.Datapacks.McMeta;
+﻿namespace BacapGenerator.McMeta;
 
 /// <summary>
 /// Represents a Minecraft pack version format (Major, Minor).

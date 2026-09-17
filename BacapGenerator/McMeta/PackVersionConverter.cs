@@ -1,7 +1,7 @@
 ﻿using System.Text.Json;
 using System.Text.Json.Serialization;
 
-namespace BacapGenerator.Datapacks.McMeta;
+namespace BacapGenerator.McMeta;
 
 /// <summary>
 /// Handles reading and writing <see cref="PackVersion"/> from either a single integer or an array of integers.

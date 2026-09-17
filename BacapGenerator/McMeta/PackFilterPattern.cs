@@ -1,6 +1,6 @@
 ﻿using System.Text.Json.Serialization;
 
-namespace BacapGenerator.Datapacks.McMeta;
+namespace BacapGenerator.McMeta;
 
 /// <summary>
 /// A pattern used in the pack filter.

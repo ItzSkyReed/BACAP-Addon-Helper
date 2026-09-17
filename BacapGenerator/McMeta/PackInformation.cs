@@ -1,7 +1,7 @@
 ﻿using System.Text.Json.Serialization;
 using Core.TextComponents.Components;
 
-namespace BacapGenerator.Datapacks.McMeta;
+namespace BacapGenerator.McMeta;
 
 /// <summary>
 /// Core information about the pack.

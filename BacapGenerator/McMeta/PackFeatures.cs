@@ -1,6 +1,6 @@
 ﻿using System.Text.Json.Serialization;
 
-namespace BacapGenerator.Datapacks.McMeta;
+namespace BacapGenerator.McMeta;
 
 /// <summary>
 /// Represents experimental features enabled in the pack.
