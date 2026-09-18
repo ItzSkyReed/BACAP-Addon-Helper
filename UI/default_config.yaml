@@ -72,6 +72,9 @@ templates:
       # Excludes standard vanilla Minecraft keys (e.g., item.minecraft.*, entity.minecraft.*)
       exclude_vanilla_keys: true
 
+      # Removes unused keys from translation files while syncing
+      remove_unused_keys: true
+
       # Additional translation keys or literals to exclude from discovery
       ignored_keys:
         - "DonationAlerts"

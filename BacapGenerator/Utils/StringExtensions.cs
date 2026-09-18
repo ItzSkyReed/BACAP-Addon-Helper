@@ -114,4 +114,42 @@ public static class StringExtensions
 
         return false;
     }
+
+    /// <summary>
+    /// Determines whether the specified string contains at least one Unicode letter character.
+    /// </summary>
+    /// <param name="value">The string to inspect, which may be <see langword="null"/> or empty.</param>
+    /// <returns><see langword="true"/> if the string contains at least one letter; otherwise, <see langword="false"/>.</returns>
+    /// <example>
+    /// <code>
+    /// bool result1 = "1234_#".ContainsAnyLetter(); // false
+    /// bool result2 = "Loser".ContainsAnyLetter();   // true
+    /// </code>
+    /// </example>
+    public static bool ContainsAnyLetter(this string? value)
+    {
+        return !string.IsNullOrEmpty(value) && value.AsSpan().ContainsAnyLetter();
+    }
+
+    /// <summary>
+    /// Determines whether the specified read-only character span contains at least one Unicode letter character without allocating memory.
+    /// </summary>
+    /// <param name="span">The read-only character span to inspect.</param>
+    /// <returns><see langword="true"/> if at least one letter character is found; otherwise, <see langword="false"/>.</returns>
+    /// <example>
+    /// <code>
+    /// ReadOnlySpan&lt;char&gt; span = "Loser".AsSpan();
+    /// bool result = span.ContainsAnyLetter(); // true
+    /// </code>
+    /// </example>
+    public static bool ContainsAnyLetter(this ReadOnlySpan<char> span)
+    {
+        foreach (var c in span)
+        {
+            if (char.IsLetter(c))
+                return true;
+        }
+
+        return false;
+    }
 }

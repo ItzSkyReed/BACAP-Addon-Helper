@@ -1,6 +1,6 @@
 ﻿using BacapGenerator.Datapacks.Models;
 
-namespace BacapGenerator.LanguagePack.Models;
+namespace BacapGenerator.LanguagePacks.Models;
 
 /// <summary>
 /// Result entry for a base translation generation run for a single parent datapack.

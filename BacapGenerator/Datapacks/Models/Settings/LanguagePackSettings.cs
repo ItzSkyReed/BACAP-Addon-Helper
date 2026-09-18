@@ -1,5 +1,6 @@
 ﻿using System.Collections.Frozen;
 using System.Reflection;
+using BacapGenerator.Common;
 using JetBrains.Annotations;
 using Microsoft.Extensions.Configuration;
 
@@ -43,6 +44,13 @@ public class LanguagePackSettings
     public List<string>? IgnoredKeys { get; init; }
 
     /// <summary>
+    /// Gets the list of user-configured translation keys or literal tokens to bypass during discovery.
+    /// </summary>
+    [PublicAPI]
+    [ConfigurationKeyName("remove_unused_keys")]
+    public bool RemoveUnusedKeys { get; init; }
+
+    /// <summary>
     /// Gets the optional filesystem path to the language resource pack folder.
     /// </summary>
     [PublicAPI]
@@ -79,15 +87,13 @@ public class LanguagePackSettings
     /// <returns>An immutable <see cref="FrozenSet{T}"/> of standard ignored tokens.</returns>
     private static FrozenSet<string> BuildDefaultIgnoredKeys()
     {
-        var keys = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+        var keys = new HashSet<string>(StringComparer.Ordinal)
         {
-            "GitHub",
-            "Modrinth",
-            "Discord",
-            "CurseForge",
-            "YouTube",
-            "Twitter",
-            "To view progress, run:"
+            "GitHub", "Modrinth", "Discord", "CurseForge", "YouTube", "Twitter", // Social media
+            // Lines from BACAP
+            "To view progress, run:", "Awarded for achieving", "Animals", "Challenges",
+            // Rewards
+            "Experience"
         };
 
         var entryFields = typeof(DatapackDefaults)
@@ -103,6 +109,11 @@ public class LanguagePackSettings
             }
         }
 
-        return keys.ToFrozenSet(StringComparer.OrdinalIgnoreCase);
+        foreach (var key in BacapTab.All)
+        {
+            keys.Add(key.DisplayName);
+        }
+
+        return keys.ToFrozenSet(StringComparer.Ordinal);
     }
 }

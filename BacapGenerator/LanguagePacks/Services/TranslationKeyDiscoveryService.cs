@@ -14,7 +14,7 @@ using Core.SNBT.Nodes;
 using Core.TextComponents;
 using Core.TextComponents.Components;
 
-namespace BacapGenerator.LanguagePack.Services;
+namespace BacapGenerator.LanguagePacks.Services;
 
 /// <summary>
 /// Service responsible for scanning a datapack to extract all declared translation keys across
@@ -81,7 +81,7 @@ public static class TranslationKeyDiscoveryService
         if (IsVanillaMinecraftKey(rawKey))
             return false;
 
-        if (!ContainsAnyLetter(rawKey.AsSpan()))
+        if (!rawKey.ContainsAnyLetter())
             return false;
 
         return !settings.IgnoredKeysSet.Contains(rawKey) && destination.TryAdd(rawKey, true);
@@ -314,16 +314,5 @@ public static class TranslationKeyDiscoveryService
         }
 
         return null;
-    }
-
-    private static bool ContainsAnyLetter(ReadOnlySpan<char> span)
-    {
-        foreach (var c in span)
-        {
-            if (char.IsLetter(c))
-                return true;
-        }
-
-        return false;
     }
 }

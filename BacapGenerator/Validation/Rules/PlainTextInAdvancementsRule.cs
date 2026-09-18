@@ -1,5 +1,6 @@
 ﻿using BacapGenerator.Advancements.Models;
 using BacapGenerator.Datapacks.Models.Settings.Validation.Rules;
+using BacapGenerator.Utils;
 using BacapGenerator.Validation.Extensions;
 using BacapGenerator.Validation.Models;
 using Core.TextComponents.Components;
@@ -103,24 +104,10 @@ public sealed class PlainTextInAdvancementsRule(PlainTextRuleOptions options)
         var cleanText = text.Trim();
 
         // Skip tokens that contain no alphabetic letters (e.g., "[1/5]", "-", "->", "100%")
-        if (!ContainsAnyLetter(cleanText.AsSpan()))
+        if (!cleanText.ContainsAnyLetter())
             return false;
 
-        // 3. Skip if explicitly permitted by configuration
+        // Skip if explicitly permitted by configuration
         return !Options.AllowedStringsSet.Contains(cleanText);
-    }
-
-    /// <summary>
-    /// Checks whether the character span contains at least one alphabetic letter without allocating.
-    /// </summary>
-    private static bool ContainsAnyLetter(ReadOnlySpan<char> span)
-    {
-        foreach (var c in span)
-        {
-            if (char.IsLetter(c))
-                return true;
-        }
-
-        return false;
     }
 }

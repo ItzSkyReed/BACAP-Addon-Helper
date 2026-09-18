@@ -1,8 +1,7 @@
 ﻿using System.Text;
-using System.Text.Json;
 using BacapGenerator.Datapacks.Models;
-using BacapGenerator.LanguagePack.Services;
-using Core.Serialization;
+using BacapGenerator.LanguagePacks.Services;
+using BacapGenerator.LanguagePacks.Utils;
 
 namespace BacapGenerator.Generation;
 
@@ -10,7 +9,7 @@ namespace BacapGenerator.Generation;
 /// Service responsible for generating and synchronizing the special <c>base_translation.json</c> template file
 /// containing configuration header comments and unpopulated key-value entries.
 /// </summary>
-public sealed class BaseTranslationGenerator
+public static class BaseTranslationGenerator
 {
     private static readonly UTF8Encoding Utf8NoBom = new(encoderShouldEmitUTF8Identifier: false);
 
@@ -29,7 +28,7 @@ public sealed class BaseTranslationGenerator
     /// FileInfo file = generator.Generate(mainAddon, compatibilityAddons);
     /// </code>
     /// </example>
-    public FileInfo Generate(Datapack datapack, IEnumerable<Datapack>? compatibilityAddons = null)
+    public static FileInfo Generate(Datapack datapack, IEnumerable<Datapack>? compatibilityAddons = null)
     {
         ArgumentNullException.ThrowIfNull(datapack);
 
@@ -93,18 +92,9 @@ public sealed class BaseTranslationGenerator
 
     private static void WriteEntries(TextWriter writer, IReadOnlyCollection<string> keys)
     {
-        var total = keys.Count;
-        var index = 0;
-
-        foreach (var key in keys)
+        foreach (var line in TranslationEntryFormatter.FormatEntries(keys, indent: "    ", asComment: false))
         {
-            index++;
-            var isLast = index == total;
-
-            var serializedKey = JsonSerializer.Serialize(key, MinecraftDatapackJsonOptions.BaseTranslation);
-            var comma = isLast ? string.Empty : ",";
-
-            writer.WriteLine($"    {serializedKey}: \"\"{comma}");
+            writer.WriteLine(line);
         }
     }
 }
