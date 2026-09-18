@@ -72,10 +72,10 @@ public sealed class SyncWithTranslationPack(DatapackRegistry datapackRegistry) :
                 var statusMarkup = (summary.WasPatched, summary.MissingKeysCount, summary.UnusedKeysCount) switch
                 {
                     (false, > 0, _) or (false, _, > 0) => "[bold red]Patch failed[/]",
-                    (_, 0, 0) => "[bold green]Up to date[/]",
                     (_, > 0, > 0) => $"[bold yellow]+{summary.MissingKeysCount}[/] [bold red]-{summary.UnusedKeysCount}[/]",
                     (_, > 0, 0) => $"[bold yellow]+{summary.MissingKeysCount} added[/]",
-                    (_, 0, > 0) => $"[bold red]-{summary.UnusedKeysCount} removed[/]"
+                    (_, 0, > 0) => $"[bold red]-{summary.UnusedKeysCount} removed[/]",
+                    _ => "[bold green]Up to date[/]"
                 };
 
                 table.AddRow(

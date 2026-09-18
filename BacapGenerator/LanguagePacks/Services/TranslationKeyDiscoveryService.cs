@@ -13,6 +13,7 @@ using Core.SNBT.Interfaces;
 using Core.SNBT.Nodes;
 using Core.TextComponents;
 using Core.TextComponents.Components;
+using JetBrains.Annotations;
 
 namespace BacapGenerator.LanguagePacks.Services;
 
@@ -70,6 +71,7 @@ public static class TranslationKeyDiscoveryService
         return keyMap.Keys;
     }
 
+    [PublicAPI]
     private static bool TryRegisterKey(
         string? rawKey,
         OrderedDictionary<string, bool> destination,
