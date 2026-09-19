@@ -21,11 +21,11 @@ public static class GlobalFunctionsService
 
         var settings = datapack.Settings;
 
-        var fanpacksTags = Path.Combine(datapack.DatapackDataPath.ToString(), "bacap_fanpacks", "tags", "function");
-        var rewardFuncPath = Path.Combine(datapack.DatapackDataPath.ToString(), "data", settings.RewardNamespace, "function");
+        var fanpacksTags = Path.Combine(datapack.DatapackDataPath.FullName, "bacap_fanpacks", "tags", "function");
+        var rewardFuncPath = Path.Combine(datapack.DatapackDataPath.FullName, settings.RewardNamespace, "function");
 
         var configTags = Path.Combine(fanpacksTags, "config");
-        var configFuncPath = Path.Combine(datapack.DatapackDataPath.ToString(), "data", settings.MainNamespace, "function", "config");
+        var configFuncPath = Path.Combine(datapack.DatapackDataPath.FullName, settings.MainNamespace, "function", "config");
 
         Save(DatapackFunctionsGenerator.GenerateUpdateScore(scoreAdvancements),
             rewardFuncPath, "update_score", fanpacksTags, $"{settings.RewardNamespace}:update_score");
