@@ -1,50 +1,74 @@
 ﻿using System.Reflection;
+using Spectre.Console;
+using UI.Styling;
 
 namespace UI.Configuration;
 
 public static class YamlConfigBootstrapper
 {
     /// <summary>
-    /// Ensures that the configuration file exists on the disk.
-    /// If it is missing, it extracts the default configuration from the embedded assembly resources,
-    /// saves it to the disk, and throws an exception to prevent the application from running with unconfigured settings.
+    /// Ensures that the configuration file exists on disk.
+    /// If missing, it extracts the default configuration from embedded resources,
+    /// saves it to disk, displays a formatted TUI warning, and terminates execution.
     /// </summary>
-    /// <param name="targetFilePath">The path where the configuration file should be located on the disk.</param>
-    /// <param name="resourceName">The full name of the embedded resource (usually "ProjectNamespace.FileName").</param>
-    /// <exception cref="InvalidOperationException">Thrown when the embedded resource cannot be found in the assembly.</exception>
-    /// <exception cref="FileNotFoundException">Thrown intentionally after creating the default file to force the user to configure the application.</exception>
+    /// <param name="targetFilePath">The destination path where the configuration file should reside.</param>
+    /// <param name="resourceName">The fully qualified embedded resource name (e.g., "ProjectNamespace.config.yaml").</param>
+    /// <param name="exitApplication">
+    /// If set to <see langword="true"/>, cleanly halts the process with code 1 after notifying the user;
+    /// otherwise, throws a <see cref="FileNotFoundException"/>.
+    /// </param>
+    /// <exception cref="InvalidOperationException">Thrown when the embedded resource is missing from the assembly.</exception>
+    /// <exception cref="FileNotFoundException">Thrown when <paramref name="exitApplication"/> is false and the config file was newly generated.</exception>
     /// <example>
     /// <code>
     /// YamlConfigBootstrapper.EnsureConfigExists("config.yaml", "BacapGenerator.default_config.yaml");
     /// </code>
     /// </example>
-    public static void EnsureConfigExists(string targetFilePath, string resourceName)
+    public static void EnsureConfigExists(string targetFilePath, string resourceName, bool exitApplication = true)
     {
-        // If the file already exists, we just proceed.
         if (File.Exists(targetFilePath))
             return;
 
-        // Get the current assembly to extract the embedded resource
         var assembly = Assembly.GetExecutingAssembly();
 
         using var resourceStream = assembly.GetManifestResourceStream(resourceName);
-
         if (resourceStream == null)
-        {
             throw new InvalidOperationException(
                 $"Cannot find embedded resource '{resourceName}'. " +
-                $"Make sure it is marked as EmbeddedResource in the .csproj file.");
+                $"Make sure it is marked as <EmbeddedResource> in the .csproj file.");
+
+        // Create directory structure if the path contains nested folders
+        var directory = Path.GetDirectoryName(targetFilePath);
+        if (!string.IsNullOrEmpty(directory) && !Directory.Exists(directory))
+            Directory.CreateDirectory(directory);
+
+        using (FileStream fileStream = new(targetFilePath, FileMode.Create, FileAccess.Write))
+        {
+            resourceStream.CopyTo(fileStream);
         }
 
-        // Create the file on disk and copy the stream content
-        using FileStream fileStream = new(targetFilePath, FileMode.Create, FileAccess.Write);
-        resourceStream.CopyTo(fileStream);
+        var fullPath = Path.GetFullPath(targetFilePath);
+        var escapedPath = Markup.Escape(fullPath);
 
-        // Fail-fast: Stop execution and notify the user to fill the configuration
+        // Render visual feedback
+        TuiTheme.ShowAlert(
+            header: "[bold yellow] Configuration Required [/]",
+            content: $"[yellow]The configuration file was not found.[/]\n\n" +
+                     $"A default template has been generated at:\n" +
+                     $"[bold cyan]{escapedPath}[/]\n\n" +
+                     $"[white]Please edit the file with your desired settings and restart the application.[/]",
+            borderColor: Color.Yellow);
+
+        if (!exitApplication)
+            throw new FileNotFoundException(
+                $"Configuration template created at '{fullPath}'. Please configure it before restarting.",
+                targetFilePath);
+
+        TuiTheme.WaitForKey();
+        Environment.Exit(1);
+
         throw new FileNotFoundException(
-            $"The configuration file '{targetFilePath}' was not found. " +
-            $"A default template has been generated in the application directory. " +
-            $"Please configure it and restart the application.",
+            $"Configuration template created at '{fullPath}'. Please configure it before restarting.",
             targetFilePath);
     }
 }
