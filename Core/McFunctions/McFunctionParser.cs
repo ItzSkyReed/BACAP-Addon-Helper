@@ -53,7 +53,7 @@ public static class McFunctionParser
     private static readonly Parser<char, IMcFunctionLine> LineParser =
         LogicalLine.Select<IMcFunctionLine>(line =>
         {
-            if (string.IsNullOrEmpty(line)) return new EmptyLine();
+            if (string.IsNullOrEmpty(line)) return EmptyLine.Instance;
 
             // Using index access avoids generating short-lived substrings for the StartsWith check
             if (line[0] == '#') return new CommentLine(line[1..]);
