@@ -16,7 +16,7 @@ public record SnbtList(List<ISnbtNode> Items) : ISnbtNode
     }
 
     /// <inheritdoc/>
-    public string ToSnbtString(bool pretty = true, string indent = "")
+    public string ToSnbtString(bool pretty = false, string indent = "")
     {
         if (Items.Count == 0) return "[]";
 

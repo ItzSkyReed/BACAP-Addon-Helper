@@ -28,7 +28,7 @@ public record SnbtCompound(Dictionary<string, ISnbtNode> Tags) : ISnbtNode
     /// <param name="pretty">If <see langword="true"/>, formats the output with indents and line breaks.</param>
     /// <param name="indent">The current indentation prefix for recursive formatting.</param>
     /// <returns>A formatted SNBT string.</returns>
-    public string ToSnbtString(bool pretty = true, string indent = "")
+    public string ToSnbtString(bool pretty = false, string indent = "")
     {
         if (Tags.Count == 0) return "{}";
 
