@@ -1,6 +1,7 @@
 ﻿using BacapGenerator.Datapacks;
 using BacapGenerator.Datapacks.Extensions;
 using BacapGenerator.Generation;
+using BacapGenerator.Io;
 using BacapGenerator.LanguagePacks.Models;
 
 namespace BacapGenerator.LanguagePacks.Services;
@@ -11,7 +12,6 @@ namespace BacapGenerator.LanguagePacks.Services;
 /// </summary>
 public static class TranslationPackSyncService
 {
-
     /// <summary>
     /// Synchronizes translation files and updates base templates across all registered primary addon groups.
     /// </summary>
@@ -20,8 +20,7 @@ public static class TranslationPackSyncService
     /// <exception cref="ArgumentNullException">Thrown when <paramref name="registry"/> is <see langword="null"/>.</exception>
     /// <example>
     /// <code>
-    /// var syncService = new TranslationPackSyncService();
-    /// IReadOnlyList&lt;TranslationPackSyncResult&gt; results = syncService.SyncAll(datapackRegistry);
+    /// IReadOnlyList&lt;TranslationPackSyncResult&gt; results = TranslationPackSyncService.SyncAll(datapackRegistry);
     /// </code>
     /// </example>
     public static IReadOnlyList<TranslationPackSyncResult> SyncAll(DatapackRegistry registry)
@@ -46,11 +45,11 @@ public static class TranslationPackSyncService
                 var allKeys = TranslationKeyDiscoveryService.DiscoverKeys(group.All);
                 var allKeysSet = allKeys.ToHashSet(StringComparer.Ordinal);
 
-                // Generate or overwrite base_translation.json
+                // Generate base_translation.json
                 var baseFile = BaseTranslationGenerator.Generate(group.Primary, group.CompatibilityAddons);
 
-                // Load the language resource pack from disk
-                var pack = LanguagePackLoader.Load(settings.Path);
+                // Load the language resource pack from disk via the IO Manager
+                var pack = LanguagePackIoManager.LoadPack(settings.Path);
 
                 // Find missing keys across language files (syncing dialect variants first)
                 var missingReports = MissingTranslationsFinder.FindMissing(pack, allKeys, syncMajorGroupsFirst: true);
@@ -60,7 +59,7 @@ public static class TranslationPackSyncService
 
                 foreach (var report in missingReports)
                 {
-                    // Detect obsolete keys present in the file but absent from the active datapacks
+                    // Detect obsolete keys present in the file but absent from active datapacks
                     var unusedKeys = report.File.Translations.Keys
                         .Where(k => !allKeysSet.Contains(k) && !settings.IgnoredKeysSet.Contains(k))
                         .ToList();
@@ -69,7 +68,12 @@ public static class TranslationPackSyncService
                     var wasPatched = false;
 
                     if (report.HasMissingKeys || keysToRemove.Count > 0)
-                        wasPatched = LanguageFileUpdateService.UpdateFile(report.File, report.MissingKeys, keysToRemove);
+                    {
+                        wasPatched = LanguagePackIoManager.UpdateLanguageFile(
+                            report.File,
+                            report.MissingKeys,
+                            keysToRemove);
+                    }
 
                     // Sync in-memory translations if keys were removed on disk
                     if (settings.RemoveUnusedKeys && wasPatched)
