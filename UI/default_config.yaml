@@ -5,13 +5,6 @@ registry_base_path: "./registries"
 # Target directory where generated release archives (.zip) will be saved
 release_path: "./releases"
 
-# Optional logging configuration
-#logging:
-#  log_level:
-#    Default: "Debug"
-#  # Leave empty or omit to disable writing logs to disk
-#  file_path: "./logs/generator.log"
-
 # TEMPLATES
 # Define reusable settings for validation and language packs.
 # Datapacks can inherit these configurations using 'template: <name>'
