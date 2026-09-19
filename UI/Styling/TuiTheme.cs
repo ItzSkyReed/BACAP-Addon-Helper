@@ -57,6 +57,31 @@ public static class TuiTheme
 
     public const string BackOptionString = "[grey]Back[/]";
 
+    /// <summary>
+    /// Displays a stylized alert panel with a header, rounded borders, and custom markup content.
+    /// </summary>
+    /// <param name="header">The title displayed on the top panel border (supports Spectre.Console markup).</param>
+    /// <param name="content">The inner markup content of the panel.</param>
+    /// <param name="borderColor">The border color. Defaults to red.</param>
+    /// <example>
+    /// <code>
+    /// TuiTheme.ShowAlert("[bold red]Configuration Required[/]", "Please update settings.");
+    /// </code>
+    /// </example>
+    public static void ShowAlert(string header, string content, Color? borderColor = null)
+    {
+        var panel = new Panel(new Markup(content))
+        {
+            Header = new PanelHeader(header),
+            Border = BoxBorder.Rounded,
+            BorderStyle = new Style(borderColor ?? Color.Red),
+            Padding = new Padding(1, 1, 1, 1)
+        };
+
+        AnsiConsole.Write(panel);
+        AnsiConsole.WriteLine();
+    }
+
     public static void ShowError(string message)
     {
         AnsiConsole.MarkupLine($"[bold red]Error:[/] {message}");
