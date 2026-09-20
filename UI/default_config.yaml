@@ -6,7 +6,7 @@ registry_base_path: "./registries"
 release_path: "./releases"
 
 # TEMPLATES
-# Define reusable settings for validation and language packs.
+# Define reusable settings for validation, language packs, and checklists.
 # Datapacks can inherit these configurations using 'template: <name>'
 # with automatic deep property merging (explicit values override template defaults).
 templates:
@@ -21,7 +21,7 @@ templates:
         severity: info # Available severity levels: info, warning, error
         use_default_minor_words: true
         # Words that stay lowercase unless they are the first or last word of the title
-        minor_words: ["a", "an", "the", "and", "but", "or", "for", "of", "in", "to", "with", "vs"]
+        minor_words: [ "a", "an", "the", "and", "but", "or", "for", "of", "in", "to", "with", "vs" ]
         # Titles that completely bypass Title Case validation
         allowed_titles:
           - "Say NO to Campfires"
@@ -86,12 +86,32 @@ templates:
         Language: Your Language
         Author: Names
 
+  # Reusable checklist template definitions for scan distance, colors, and layout
+  checklist:
+    default:
+      # Default entity search radius around the executing player (in blocks)
+      distance: 64
+
+      # Styling parameters applied to the generated in-game tellraw output
+      style:
+        # Color applied to tracked entities that have been located or verified
+        complete_color: "#00a523"
+
+        # Color applied to tracked entities that are still missing
+        incomplete_color: "#c2c2c2"
+
+        # Color for punctuation and connecting text (e.g., commas, " and ")
+        separator_color: "#c2c2c2"
+
+        # Color for the top and bottom strikethrough divider lines
+        divider_color: "dark_gray"
+
+
 # DATAPACKS
 # Filesystem paths, domains, and settings for each loaded datapack.
 datapacks:
 
   # Base BlazeandCave's Advancements Pack (Read-only reference)
-
   bacap:
     path: "./datapacks/bacap_datapack"
     main_namespace: "blazeandcave"
@@ -135,6 +155,71 @@ datapacks:
     language_pack:
       template: default
       path: "./resourcepacks/Enhanced_Discoveries_Language_Pack"
+
+    # Checklists
+    # Defines interactive checklist systems (/trigger callbacks and advancement validation functions)
+    # used to monitor and display real-time entity completion status.
+    checklists:
+
+      # Mob Universe: Tracks the presence of all dimension-specific mobs in Minecraft
+      - id: "mob_universe"
+        template: default
+        # Command storage resource key used for runtime NBT manipulation
+        storage_name: "bacaped_mob_universe_storage"
+        # Objective name reset after trigger execution (/trigger bacaped_mob_universe)
+        trigger_scoreboard: "bacaped_mob_universe"
+        # Detection radius around the player (in blocks)
+        distance: 128
+        # Output directory relative to data/<namespace>/function/ for *_check.mcfunction files
+        check_subfolder: "mob_universe"
+        # Function filename placed under data/<namespace>/function/triggers_callback/
+        trigger_filename: "mob_universe_trigger.mcfunction"
+        # Header translation key displayed at the top of the chat output
+        header_translate_key: "Mob list for the current dimension of the Mob Universe Advancement"
+        # Sub-groups or dimension-specific tracking lists
+        categories:
+          - name: "overworld"
+            advancement: "bacaped:challenges/mob_universe overworld"
+            # Optional dimension requirement; message only displays if player matches
+            dimension_requirement: "minecraft:overworld"
+            prefix_text: "Overworld: "
+            prefix_color: "green"
+            # Entity identifiers; supports pre-registered preset shortcuts prefixed with '@'
+            entities:
+              - "@all_overworld"
+
+          - name: "nether"
+            advancement: "bacaped:challenges/mob_universe nether"
+            dimension_requirement: "minecraft:the_nether"
+            prefix_text: "Nether: "
+            prefix_color: "red"
+            entities:
+              - "@all_nether"
+
+          - name: "end"
+            advancement: "bacaped:challenges/mob_universe end"
+            dimension_requirement: "minecraft:the_end"
+            prefix_text: "End: "
+            prefix_color: "dark_purple"
+            entities:
+              - "@all_end"
+
+      # Baby Zoo: Tracks all breedable passive baby mob variants
+      - id: "baby_zoo"
+        template: default
+        storage_name: "bacaped_baby_zoo_storage"
+        trigger_scoreboard: "bacaped_baby_zoo"
+        distance: 32
+        # Target selector predicates or tags appended to @e[...] queries (without leading comma)
+        extra_selector: "predicate=bacaped:is_baby"
+        # Omitting check_subfolder writes check functions directly into data/<namespace>/function/
+        trigger_filename: "baby_zoo_trigger.mcfunction"
+        header_translate_key: "Baby Zoo list"
+        categories:
+          - name: "baby_zoo"
+            advancement: "bacaped:animal/baby_zoo"
+            entities:
+              - "@baby_zoo"
 
   # BACAP Enhanced Hardcore Variant (Compatibility addon)
   bacaped_hardcore:

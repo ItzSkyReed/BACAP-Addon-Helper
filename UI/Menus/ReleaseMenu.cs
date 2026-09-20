@@ -1,6 +1,7 @@
 ﻿using System.Text.RegularExpressions;
 using BacapGenerator.Advancements.Models;
 using BacapGenerator.Advancements.Services;
+using BacapGenerator.Checklists;
 using BacapGenerator.Configuration;
 using BacapGenerator.Datapacks;
 using BacapGenerator.Datapacks.Models;
@@ -98,12 +99,16 @@ public partial class ReleaseMenu(DatapackRegistry registry, GlobalConfig config,
             // Process archiving for each member of the family
             foreach (var datapack in releaseFamily)
             {
+                // Todo I dont like this
                 AnsiConsole.MarkupLine($"  [green]•[/] Processing [white]{datapack.ReleaseName}[/] (version [teal]{version}[/])...");
 
                 if (datapack.Settings.Type == DatapackType.Addon)
                 {
+                    // Todo: Better generation information
                     GlobalAdvancementsService.GenerateAndSaveAll(datapack);
                     GlobalFunctionsService.GenerateAndSaveAll(datapack);
+
+                    ChecklistsService.GenerateAndSaveAll(datapack);
 
                     foreach (var advancement in datapack.Advancements.OfType<ValidAdvancement>())
                     {

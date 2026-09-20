@@ -1,4 +1,5 @@
 ﻿using BacapGenerator.Common;
+using BacapGenerator.Datapacks.Models.Settings.Checklists;
 using BacapGenerator.Datapacks.Models.Settings.Validation;
 using JetBrains.Annotations;
 using Microsoft.Extensions.Configuration;
@@ -40,6 +41,10 @@ public sealed class DatapackSettings
     /// </summary>
     [ConfigurationKeyName("type")]
     public DatapackType Type { get; init; } = DatapackType.Reference;
+
+    [PublicAPI]
+    [ConfigurationKeyName("checklists")]
+    public List<ChecklistDefinitionSettings> Checklists { get; init; } = [];
 
     /// <summary>
     /// Gets the precalculated macro command identifier.

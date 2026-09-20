@@ -51,6 +51,10 @@ public static class DatapackDefaults
     public const string PointsScoreboard = "bac_advancements_points";
     public const string CoopBaseScoreboard = "bac_obtained";
 
+    // Dividers in timers, stat triggers etc
+    public const string DefaultDivider = "                                             ";
+    public const string DefaultDividerColor = "dark_gray";
+
 
     internal static readonly AdvancementMessageSettingsEntry AdvancementLegendEntry = new()
     {
