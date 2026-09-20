@@ -1,0 +1,49 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <OutputType>Exe</OutputType>
+        <TargetFramework>net10.0</TargetFramework>
+        <LangVersion>14.0</LangVersion>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+
+        <!-- Sets the output binary name: BACAP_Addon_Helper.exe (on Windows) -->
+        <AssemblyName>BACAP_Addon_Helper</AssemblyName>
+        <!-- Root namespace for newly created classes -->
+        <RootNamespace>UI</RootNamespace>
+
+        <!-- Application metadata -->
+        <Product>BACAP Addon Helper</Product>
+        <Version>1.0.0</Version>
+        <Authors>ItzSkyReed</Authors>
+        <Description>Interactive CLI tool for managing and generating BACAP datapacks and language files.</Description>
+
+        <!-- Code quality & analyzers -->
+        <AnalysisLevel>latest-recommended</AnalysisLevel>
+        <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
+
+        <!-- Ensures correct culture-dependent formatting and UTF-8 handling in TUI -->
+        <InvariantGlobalization>false</InvariantGlobalization>
+
+        <!-- <ApplicationIcon>icon.ico</ApplicationIcon> -->
+    </PropertyGroup>
+
+    <ItemGroup>
+        <EmbeddedResource Include="default_config.yaml" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <ProjectReference Include="..\BacapGenerator\BacapGenerator.csproj" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <PackageReference Include="JetBrains.Annotations" Version="2026.2.0" />
+        <PackageReference Include="Microsoft.Extensions.Configuration" Version="10.0.11" />
+        <PackageReference Include="Microsoft.Extensions.Hosting" Version="10.0.11" />
+        <PackageReference Include="Microsoft.Extensions.Logging" Version="10.0.11" />
+        <PackageReference Include="Microsoft.Extensions.Options" Version="10.0.11" />
+        <PackageReference Include="NetEscapades.Configuration.Yaml" Version="3.1.0" />
+        <PackageReference Include="Spectre.Console" Version="0.57.2" />
+    </ItemGroup>
+
+</Project>

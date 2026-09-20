@@ -10,7 +10,7 @@ public record SummonCommand(string EntityId, Position Position, SnbtCompound? Nb
 {
     protected override string BuildInternal()
     {
-        var nbtStr = Nbt != null ? $" {Nbt.ToSnbtString(false)}" : "";
+        var nbtStr = Nbt != null ? $" {Nbt.ToSnbtString()}" : "";
         return $"summon {EntityId} {Position}{nbtStr}";
     }
 }
