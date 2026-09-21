@@ -1,4 +1,5 @@
-﻿using BacapGenerator.Advancements.Models;
+﻿using System.Globalization;
+using BacapGenerator.Advancements.Models;
 using BacapGenerator.Datapacks;
 using Spectre.Console;
 using UI.Interfaces;
@@ -34,7 +35,7 @@ public class AdvancementStatsAction(DatapackRegistry registry) : IManageAdvancem
                 .ToDictionary(group => group.Key, group => group.Count());
 
             var row = new List<string> { $"[cyan]{id}[/]" };
-            row.AddRange(tiers.Select(tier => tierCounts.GetValueOrDefault(tier, 0)).Select(count => count.ToString()));
+            row.AddRange(tiers.Select(tier => tierCounts.GetValueOrDefault(tier, 0)).Select(count => count.ToString(CultureInfo.InvariantCulture)));
 
             var total = tierCounts.Values.Sum();
             row.Add($"[bold yellow]{total}[/]");

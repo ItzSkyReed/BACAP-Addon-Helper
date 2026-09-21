@@ -59,7 +59,7 @@ public class LoreWizard : IComponentWizard
 
             switch (action)
             {
-                case var act when act.StartsWith("+ Add Text (Auto-wrap"):
+                case var _ when action.StartsWith("+ Add Text (Auto-wrap", StringComparison.OrdinalIgnoreCase):
                     var rawText = AnsiConsole.Prompt(
                         new TextPrompt<string>("Enter text to wrap (supports long paragraphs):")
                     );

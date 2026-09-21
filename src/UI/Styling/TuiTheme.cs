@@ -74,7 +74,7 @@ public static class TuiTheme
         {
             Header = new PanelHeader(header),
             Border = BoxBorder.Rounded,
-            BorderStyle = new Style(borderColor ?? Color.Red),
+            BorderStyle = new Style(borderColor ?? Color.Yellow),
             Padding = new Padding(1, 1, 1, 1)
         };
 

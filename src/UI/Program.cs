@@ -1,32 +1,22 @@
 ﻿using System.Text;
 using BacapGenerator.Configuration;
-using BacapGenerator.Datapacks;
-using BacapGenerator.Datapacks.Models.Settings;
 using BacapGenerator.Datapacks.Services;
-using Core.DataComponents;
-using Core.Registries;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.Options;
-using UI.Actions.Advancements;
-using UI.Actions.Advancements.Debug;
-using UI.Actions.Datapacks;
 using UI.Configuration;
-using UI.Interfaces;
 using UI.Menus;
-using UI.Services;
+using UI.Startup;
 
-const string configFileName = "config.yaml";
-
-const string embeddedConfigResourceName = "UI.default_config.yaml";
-
-// Check config and fail-fast if it was missing
-YamlConfigBootstrapper.EnsureConfigExists(configFileName, embeddedConfigResourceName);
-
+// Environment & Pre-flight Bootstrap
 Console.OutputEncoding = Encoding.UTF8;
 
-// Build the host with DI and Configuration
+const string configFileName = "config.yaml";
+const string embeddedConfigResourceName = "UI.default_config.yaml";
+
+YamlConfigBootstrapper.EnsureConfigExists(configFileName, embeddedConfigResourceName);
+
+// Host Building & Dependency Registration
 var host = Host.CreateDefaultBuilder(args)
     .ConfigureAppConfiguration((_, config) =>
     {
@@ -36,64 +26,17 @@ var host = Host.CreateDefaultBuilder(args)
     })
     .ConfigureServices((context, services) =>
     {
-        // Bind root configuration directly to GeneratorOptions
-        services.AddOptions<GlobalConfig>()
-            .Bind(context.Configuration)
-            .PostConfigure(options => options.Validate())
-            .ValidateOnStart();
-
-        services.AddSingleton(sp => sp.GetRequiredService<IOptions<GlobalConfig>>().Value);
-
-        ComponentRegistry.RegisterAll();
-
-        services.Configure<Dictionary<string, DatapackSettings>>(
-            context.Configuration.GetSection("Datapacks"));
-
-        var registryPath = context.Configuration.GetValue<string>("registry_base_path");
-
-        services.AddSingleton<McRegistryLoader>(_ => new McRegistryLoader(registryPath!));
-        services.AddSingleton<DatapackRegistry>();
-        services.AddSingleton<MinecraftData>();
-
-        services.AddTransient<IDatapackFactory, DatapackFactory>();
-        services.AddTransient<DatapackLoaderService>();
-
-        // UI menus
-        services.AddTransient<MainMenuAction>();
-        services.AddTransient<IMainMenuAction, ManageAdvancementsMenu>();
-        services.AddTransient<IMainMenuAction, ManageDatapacksMenu>();
-        services.AddTransient<IMainMenuAction, ReleaseMenu>();
-        services.AddTransient<ValidationRunnerService>();
-
-
-        // Advancement actions
-        services.AddTransient<IManageAdvancementsAction, AdvancementStatsAction>();
-        services.AddTransient<IManageAdvancementsAction, AdvancementInfoAction>();
-        services.AddTransient<IManageAdvancementsAction, AdvancementEditorAction>();
-        services.AddTransient<IManageAdvancementsAction, AdvancementFunctionsSetupAction>();
-
-        services.AddTransient<IManageAdvancementsAction, AdvancementsFormatAction>();
-        services.AddTransient<IManageAdvancementsAction, AdvancementsRecoverAction>();
-
-        services.AddTransient<IManageAdvancementsAction, GenerateMilestonesAction>();
-        services.AddTransient<IManageAdvancementsAction, DebugAdvancementsMenuAction>();
-
-        // Advancement debug actions
-        services.AddTransient<IDebugAdvancementsAction, ShowTechnicalInvalidAction>();
-        services.AddTransient<IDebugAdvancementsAction, ShowBacapAdvancementsByTierAction>();
-
-
-        // Datapack actions
-        services.AddTransient<IManageDatapacksAction, GenerateDatapackFunctionsAction>();
-        services.AddTransient<IManageDatapacksAction, ValidateDatapacksAction>();
-        services.AddTransient<IManageDatapacksAction, SyncWithTranslationPack>();
-
+        services.AddApplicationConfiguration(context.Configuration)
+            .AddMinecraftRegistries(context.Configuration)
+            .AddDatapackServices()
+            .AddUiActions();
     })
     .Build();
 
-// Resolve the main service and run the application
-var loader = host.Services.GetRequiredService<DatapackLoaderService>();
-loader.LoadAll();
+// Domain Data Warmup
+var datapackLoader = host.Services.GetRequiredService<DatapackLoaderService>();
+datapackLoader.LoadAll();
 
+// Execution Loop
 var mainMenu = host.Services.GetRequiredService<MainMenuAction>();
 await mainMenu.ExecuteAsync();

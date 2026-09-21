@@ -12,13 +12,13 @@ public sealed class GlobalConfig
     /// Gets the filesystem path to the directory containing extracted Minecraft registry JSON files.
     /// </summary>
     [ConfigurationKeyName("registry_base_path")]
-    public string? RegistryBasePath { get; init; }
+    public string RegistryBasePath { get; init; } = null!;
 
     /// <summary>
     /// Gets the target filesystem path where generated release archives will be written.
     /// </summary>
     [ConfigurationKeyName("release_path")]
-    public string? ReleasePath { get; init; }
+    public string ReleasePath { get; init; } = null!;
 
 
     /// <summary>

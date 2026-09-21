@@ -7,8 +7,9 @@
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
 
-        <!-- Sets the output binary name: BACAP_Addon_Helper.exe (on Windows) -->
-        <AssemblyName>BACAP_Addon_Helper</AssemblyName>
+        <!-- Sets the output binary name: BACAP_Addon_Helper.exe  -->
+        <AssemblyName>BACAPAddonHelper</AssemblyName>
+        <TargetName>BACAP_Addon_Helper</TargetName>
         <!-- Root namespace for newly created classes -->
         <RootNamespace>UI</RootNamespace>
 
