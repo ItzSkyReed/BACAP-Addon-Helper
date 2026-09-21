@@ -1,4 +1,5 @@
-﻿using Microsoft.Extensions.Configuration;
+﻿using BacapGenerator.Configuration.Exceptions;
+using Microsoft.Extensions.Configuration;
 
 namespace BacapGenerator.Configuration;
 
@@ -15,11 +16,11 @@ public static class ConfigurationTemplateExpander
     /// <param name="builder">The configuration builder to enhance.</param>
     /// <returns>The same <see cref="IConfigurationBuilder"/> instance for fluent chaining.</returns>
     /// <exception cref="ArgumentNullException">Thrown when <paramref name="builder"/> is <see langword="null"/>.</exception>
-    /// <exception cref="InvalidOperationException">Thrown when a referenced template does not exist.</exception>
+    /// <exception cref="ConfigurationTemplateException">Thrown when a template is missing or contains circular dependencies.</exception>
     /// <example>
     /// <code>
     /// var config = new ConfigurationBuilder()
-    ///     .AddYamlFile("config.yml")
+    ///     .AddYamlFile("config.yaml")
     ///     .ExpandTemplates()
     ///     .Build();
     /// </code>
@@ -38,43 +39,23 @@ public static class ConfigurationTemplateExpander
 
         foreach (var packSection in datapacksSection.GetChildren())
         {
-            foreach (var featureSection in packSection.GetChildren())
+            foreach (var childSection in packSection.GetChildren())
             {
-                var templateName = featureSection["template"];
-                if (string.IsNullOrWhiteSpace(templateName))
-                    continue;
-
-                var featureType = featureSection.Key; // e.g. "validation" or "language_pack"
-                var templatePath = $"templates:{featureType}:{templateName}";
-                var templateSection = tempConfig.GetSection(templatePath);
-
-                if (!templateSection.Exists())
+                // Case 1: Direct feature section (e.g. datapacks:bacaped:validation)
+                if (childSection.GetSection("template").Exists())
                 {
-                    throw new InvalidOperationException(
-                        $"Template '{templateName}' referenced in '{featureSection.Path}' was not found at '{templatePath}'.");
+                    ApplyTemplateInheritance(tempConfig, childSection, childSection.Key, overlays);
                 }
-
-                var templatePrefix = $"{templatePath}:";
-
-                foreach (var (key, value) in tempConfig.AsEnumerable())
+                // Case 2: Array of feature objects (e.g. datapacks:bacaped:checklists:0)
+                else
                 {
-                    if (!key.StartsWith(templatePrefix, StringComparison.OrdinalIgnoreCase) || value is null)
-                        continue;
-
-                    var relativeKey = key[templatePrefix.Length..];
-                    var targetKey = $"{featureSection.Path}:{relativeKey}";
-
-                    // If target already defines elements of this array, do not append remaining template items
-                    if (IsArrayElement(relativeKey, out var arrayParentPath))
+                    foreach (var itemSection in childSection.GetChildren())
                     {
-                        var targetArraySection = featureSection.GetSection(arrayParentPath);
-                        if (targetArraySection.GetChildren().Any())
-                            continue;
+                        if (itemSection.GetSection("template").Exists())
+                        {
+                            ApplyTemplateInheritance(tempConfig, itemSection, childSection.Key, overlays);
+                        }
                     }
-
-                    // Overlay key only if not explicitly defined by the datapack
-                    if (tempConfig[targetKey] is null)
-                        overlays[targetKey] = value;
                 }
             }
         }
@@ -82,13 +63,98 @@ public static class ConfigurationTemplateExpander
         if (overlays.Count > 0)
             builder.AddInMemoryCollection(overlays);
 
-
         return builder;
     }
 
-    /// <summary>
-    /// Checks whether the relative configuration path represents an indexed element of an array.
-    /// </summary>
+    private static void ApplyTemplateInheritance(
+        IConfigurationRoot rootConfig,
+        IConfigurationSection targetSection,
+        string categoryName,
+        Dictionary<string, string?> overlays)
+    {
+        var visited = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        var currentSection = targetSection;
+
+        while (true)
+        {
+            var templateName = currentSection["template"];
+            if (string.IsNullOrWhiteSpace(templateName))
+                break;
+
+            var (templateSection, templatePath) = ResolveTemplateSection(rootConfig, categoryName, templateName, currentSection.Path);
+
+            if (!visited.Add(templatePath))
+            {
+                throw new ConfigurationTemplateException(
+                    $"Circular template dependency detected involving '{templateName}' at path '{templatePath}'.",
+                    ConfigurationTemplateErrorKind.CircularDependency,
+                    templateName,
+                    currentSection.Path,
+                    templatePath);
+            }
+
+            var templatePrefix = $"{templatePath}:";
+
+            foreach (var (key, value) in rootConfig.AsEnumerable())
+            {
+                if (!key.StartsWith(templatePrefix, StringComparison.OrdinalIgnoreCase) || value is null)
+                    continue;
+
+                var relativeKey = key[templatePrefix.Length..];
+                var targetKey = $"{targetSection.Path}:{relativeKey}";
+
+                // If target already defines elements of this array, skip template array defaults
+                if (IsArrayElement(relativeKey, out var arrayParentPath))
+                {
+                    var targetArraySection = targetSection.GetSection(arrayParentPath);
+                    if (targetArraySection.GetChildren().Any())
+                        continue;
+                }
+
+                // Apply template value only if not explicitly overridden
+                if (rootConfig[targetKey] is null && !overlays.ContainsKey(targetKey))
+                {
+                    overlays[targetKey] = value;
+                }
+            }
+
+            // Support chained templates (templates inheriting from other templates)
+            currentSection = templateSection;
+        }
+    }
+
+    private static (IConfigurationSection Section, string Path) ResolveTemplateSection(
+        IConfigurationRoot rootConfig,
+        string category,
+        string templateName,
+        string targetSectionPath)
+    {
+        // Try exact match (e.g. templates:validation:default)
+        var path = $"templates:{category}:{templateName}";
+        var section = rootConfig.GetSection(path);
+
+        if (section.Exists())
+            return (section, path);
+
+        // Try singular/plural normalization fallback (e.g. checklists -> checklist)
+        if (category.EndsWith('s'))
+        {
+            var singularCategory = category[..^1];
+            var singularPath = $"templates:{singularCategory}:{templateName}";
+            var singularSection = rootConfig.GetSection(singularPath);
+
+            if (singularSection.Exists())
+                return (singularSection, singularPath);
+        }
+
+        throw new ConfigurationTemplateException(
+            $"Template '{templateName}' for category '{category}' referenced in '{targetSectionPath}' was not found.",
+            ConfigurationTemplateErrorKind.TemplateNotFound,
+            templateName,
+            targetSectionPath,
+            path);
+    }
+
     private static bool IsArrayElement(string relativeKey, out string arrayParentPath)
     {
         var lastColonIndex = relativeKey.LastIndexOf(':');
