@@ -1,4 +1,5 @@
 ﻿using UI.Actions.Common;
+using UI.Extensions;
 using UI.Interfaces;
 using UI.Styling;
 
@@ -29,7 +30,7 @@ public class MainMenuAction(IEnumerable<IMainMenuAction> menuActions) : ITuiActi
             if (selected is null or BackAction)
                 break;
 
-            await selected.ExecuteAsync();
+            await selected.ExecuteSafelyAsync();
         }
     }
 }

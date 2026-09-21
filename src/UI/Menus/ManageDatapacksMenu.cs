@@ -1,4 +1,5 @@
 ﻿using UI.Actions.Common;
+using UI.Extensions;
 using UI.Interfaces;
 using UI.Styling;
 
@@ -37,7 +38,7 @@ public class ManageDatapacksMenu(IEnumerable<IManageDatapacksAction> actions) : 
             if (selected is null or BackAction)
                 break;
 
-            await selected.ExecuteAsync();
+            await selected.ExecuteSafelyAsync();
         }
     }
 }
