@@ -1,6 +1,7 @@
 ﻿using System.Diagnostics.CodeAnalysis;
 using System.Text;
 using System.Text.Json;
+using BacapGenerator.LanguagePacks.Exceptions;
 using BacapGenerator.LanguagePacks.Models;
 using BacapGenerator.LanguagePacks.Utils;
 using JetBrains.Annotations;
@@ -24,10 +25,11 @@ public static class LanguagePackIoManager
     };
 
     /// <summary>
-    /// Scans and loads all valid language JSON files located under <c>assets/minecraft/lang/</c> in the specified resource pack.
+    /// Scans and loads all language JSON files under <c>assets/minecraft/lang/</c>.
+    /// Quarantines corrupted files into <see cref="LanguagePack.CorruptedFiles"/> to prevent data corruption.
     /// </summary>
     /// <param name="packRootPath">The filesystem path to the language resource pack root folder.</param>
-    /// <returns>A populated <see cref="LanguagePack"/> instance containing loaded language models.</returns>
+    /// <returns>A populated <see cref="LanguagePack"/> instance containing both valid and corrupted file references.</returns>
     /// <exception cref="ArgumentException">Thrown when <paramref name="packRootPath"/> is null or empty.</exception>
     /// <exception cref="DirectoryNotFoundException">Thrown when the target language directory does not exist.</exception>
     /// <example>
@@ -47,6 +49,7 @@ public static class LanguagePackIoManager
             throw new DirectoryNotFoundException($"Language directory not found at '{langDirPath}'.");
 
         var languageFiles = new List<LanguageFile>();
+        var corruptedFiles = new List<CorruptedLanguageFileInfo>();
 
         foreach (var filePath in Directory.EnumerateFiles(langDirPath, "*.json"))
         {
@@ -56,16 +59,26 @@ public static class LanguagePackIoManager
             if (string.Equals(fileName, BaseTranslationFileName, StringComparison.OrdinalIgnoreCase))
                 continue;
 
-            var langFile = LoadLanguageFile(filePath);
-            if (langFile is not null)
-                languageFiles.Add(langFile);
+            try
+            {
+                var langFile = LoadLanguageFile(filePath);
+                if (langFile is not null)
+                    languageFiles.Add(langFile);
+            }
+            catch (CorruptedLanguageFileException ex)
+            {
+                corruptedFiles.Add(new CorruptedLanguageFileInfo(
+                    new FileInfo(filePath),
+                    ex.Message,
+                    ex.LineNumber));
+            }
         }
 
-        return new LanguagePack(rootDir, languageFiles);
+        return new LanguagePack(rootDir, languageFiles, corruptedFiles);
     }
 
     /// <summary>
-    /// Loads and parses an individual language file from disk.
+    /// Loads and strictly parses an individual language file from disk.
     /// </summary>
     /// <param name="filePath">The absolute or relative path to the language JSON file.</param>
     /// <returns>
@@ -73,6 +86,7 @@ public static class LanguagePackIoManager
     /// </returns>
     /// <exception cref="ArgumentException">Thrown when <paramref name="filePath"/> is null or whitespace.</exception>
     /// <exception cref="FileNotFoundException">Thrown when the specified file does not exist on disk.</exception>
+    /// <exception cref="CorruptedLanguageFileException">Thrown when the JSON payload contains syntax errors or is malformed.</exception>
     [PublicAPI]
     public static LanguageFile? LoadLanguageFile(string filePath)
     {
@@ -100,19 +114,13 @@ public static class LanguagePackIoManager
     }
 
     /// <summary>
-    /// Updates a language file on disk by removing obsolete keys and appending missing translation keys
-    /// as commented-out template entries, preserving existing formatting and comments.
+    /// Safely updates a language file on disk by appending missing keys and removing unused ones.
     /// </summary>
-    /// <param name="file">The language file descriptor to patch.</param>
+    /// <param name="file">The language file to patch.</param>
     /// <param name="missingKeys">The collection of missing keys to append.</param>
     /// <param name="unusedKeysToRemove">Optional collection of unused keys to delete from the file.</param>
-    /// <returns><see langword="true"/> if the file was modified on disk; otherwise, <see langword="false"/>.</returns>
-    /// <exception cref="ArgumentNullException">Thrown when <paramref name="file"/> or <paramref name="missingKeys"/> is <see langword="null"/>.</exception>
-    /// <example>
-    /// <code>
-    /// bool modified = LanguagePackIoManager.UpdateLanguageFile(langFile, missingKeys, unusedKeys);
-    /// </code>
-    /// </example>
+    /// <returns><see langword="true"/> if changes were written to disk; otherwise, <see langword="false"/>.</returns>
+    /// <exception cref="CorruptedLanguageFileException">Thrown if the file does not have a valid JSON closing brace.</exception>
     [PublicAPI]
     public static bool UpdateLanguageFile(
         LanguageFile file,
@@ -132,7 +140,11 @@ public static class LanguagePackIoManager
         var closingBraceIndex = FindClosingBraceIndex(rawLines);
 
         if (closingBraceIndex < 0)
-            return false;
+        {
+            throw new CorruptedLanguageFileException(
+                file.File.FullName,
+                $"Cannot patch '{file.File.Name}' because the closing root brace '}}' could not be found.");
+        }
 
         var modified = false;
 
@@ -216,11 +228,11 @@ public static class LanguagePackIoManager
             modified = true;
         }
 
-        if (modified)
-        {
-            File.WriteAllLines(file.File.FullName, rawLines, Utf8NoBom);
-            file.File.Refresh();
-        }
+        if (!modified)
+            return modified;
+
+        File.WriteAllLines(file.File.FullName, rawLines, Utf8NoBom);
+        file.File.Refresh();
 
         return modified;
     }
@@ -293,19 +305,28 @@ public static class LanguagePackIoManager
         {
             using var doc = JsonDocument.Parse(sb.ToString(), JsonOptions);
             if (doc.RootElement.ValueKind != JsonValueKind.Object)
-                return translations;
+            {
+                throw new CorruptedLanguageFileException(
+                    filePath,
+                    $"Root JSON structure in '{Path.GetFileName(filePath)}' must be an object, but found {doc.RootElement.ValueKind}.");
+            }
 
             foreach (var property in doc.RootElement.EnumerateObject())
             {
                 translations[property.Name] = property.Value.GetString() ?? string.Empty;
             }
-        }
-        catch (JsonException)
-        {
-            // Tolerate parse errors by returning partially recovered dictionary
-        }
 
-        return translations;
+            return translations;
+        }
+        catch (JsonException ex)
+        {
+            throw new CorruptedLanguageFileException(
+                filePath,
+                $"JSON syntax error in '{Path.GetFileName(filePath)}' at line {ex.LineNumber}, pos {ex.BytePositionInLine}: {ex.Message}",
+                ex.LineNumber,
+                ex.BytePositionInLine,
+                ex);
+        }
     }
 
     private static bool TryExtractJsonKey(string line, [NotNullWhen(true)] out string? key)

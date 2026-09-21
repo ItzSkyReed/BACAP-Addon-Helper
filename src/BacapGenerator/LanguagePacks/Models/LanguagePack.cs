@@ -1,4 +1,6 @@
-﻿namespace BacapGenerator.LanguagePacks.Models;
+﻿using JetBrains.Annotations;
+
+namespace BacapGenerator.LanguagePacks.Models;
 
 /// <summary>
 /// Represents a loaded Minecraft language resource pack containing all localized translation files.
@@ -20,6 +22,8 @@ public sealed class LanguagePack
     /// </summary>
     public IReadOnlyList<LanguageFile> Files { get; }
 
+    [PublicAPI] public IReadOnlyList<CorruptedLanguageFileInfo>? CorruptedFiles { get; }
+
     /// <summary>
     /// Gets language files grouped by their major language code (e.g., "es" -> [es_ar, es_cl, es_es]).
     /// </summary>
@@ -30,11 +34,17 @@ public sealed class LanguagePack
     /// </summary>
     /// <param name="rootDirectory">The root directory of the language pack.</param>
     /// <param name="files">The loaded language files.</param>
+    /// <param name="corruptedFiles">The collection of files that failed to load.</param>
     /// <exception cref="ArgumentNullException">Thrown when <paramref name="rootDirectory"/> or <paramref name="files"/> is <see langword="null"/>.</exception>
-    public LanguagePack(DirectoryInfo rootDirectory, IEnumerable<LanguageFile> files)
+    public LanguagePack(DirectoryInfo rootDirectory,
+        IEnumerable<LanguageFile> files,
+        IEnumerable<CorruptedLanguageFileInfo>? corruptedFiles = null)
     {
         ArgumentNullException.ThrowIfNull(rootDirectory);
         ArgumentNullException.ThrowIfNull(files);
+
+        if (corruptedFiles is not null)
+            CorruptedFiles = corruptedFiles.ToList().AsReadOnly();
 
         RootDirectory = rootDirectory;
         LangDirectory = new DirectoryInfo(Path.Combine(rootDirectory.FullName, "assets", "minecraft", "lang"));
