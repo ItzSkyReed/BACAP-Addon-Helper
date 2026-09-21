@@ -116,7 +116,7 @@ public partial class ReleaseMenu(DatapackRegistry registry, GlobalConfig config,
                     }
                 }
 
-                await DatapackIoManager.ArchiveDatapackAsync(datapack, version, config.ReleasePath!);
+                await DatapackIoManager.ArchiveDatapackAsync(datapack, version, config.ReleasePath);
             }
         }
 
