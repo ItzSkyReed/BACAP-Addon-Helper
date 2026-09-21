@@ -7,26 +7,23 @@
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
 
-        <!-- Sets the output binary name: BACAP_Addon_Helper.exe  -->
-        <AssemblyName>BACAPAddonHelper</AssemblyName>
-        <TargetName>BACAP_Addon_Helper</TargetName>
-        <!-- Root namespace for newly created classes -->
+        <!-- Final binary name: BACAP_Addon_Helper.exe -->
+        <AssemblyName>BACAP_Addon_Helper</AssemblyName>
         <RootNamespace>UI</RootNamespace>
 
         <!-- Application metadata -->
         <Product>BACAP Addon Helper</Product>
-        <Version>1.0.0</Version>
+        <Version>0.0.1</Version>
         <Authors>ItzSkyReed</Authors>
         <Description>Interactive CLI tool for managing and generating BACAP datapacks and language files.</Description>
 
         <!-- Code quality & analyzers -->
         <AnalysisLevel>latest-recommended</AnalysisLevel>
         <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
+        <!-- Suppress CA1707 (assembly name contains underscores) -->
+        <NoWarn>$(NoWarn);CA1707</NoWarn>
 
-        <!-- Ensures correct culture-dependent formatting and UTF-8 handling in TUI -->
         <InvariantGlobalization>false</InvariantGlobalization>
-
-        <!-- <ApplicationIcon>icon.ico</ApplicationIcon> -->
     </PropertyGroup>
 
     <ItemGroup>
