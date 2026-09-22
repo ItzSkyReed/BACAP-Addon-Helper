@@ -30,7 +30,7 @@ public static class ChecklistsService
     {
         ArgumentNullException.ThrowIfNull(datapack);
 
-        if (datapack.Settings.Type == DatapackType.Reference)
+        if (datapack.Settings.DatapackType == DatapackType.Reference)
         {
             throw new InvalidOperationException(
                 $"Cannot generate checklists for datapack '{datapack.Id}' because its access mode is Reference (read-only).");

@@ -36,7 +36,7 @@ public partial class DatapackLoaderService(
             {
                 settings.Validate(id, minecraftData);
 
-                LogProcessingDatapack(id, settings.Path, settings.Type);
+                LogProcessingDatapack(id, settings.Path, settings.DatapackType);
 
                 var sw = Stopwatch.StartNew();
 

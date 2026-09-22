@@ -47,7 +47,7 @@ public sealed class DatapackSettings
     /// <summary>
     /// Gets the parsed and verified datapack operational type.
     /// </summary>
-    public DatapackType Type { get; private set; }
+    public DatapackType DatapackType { get; private set; }
 
     [PublicAPI]
     [ConfigurationKeyName("checklists")]
@@ -126,13 +126,13 @@ public sealed class DatapackSettings
                 datapackId,
                 DatapackErrorKind.InvalidDatapackType,
                 $"Missing 'type' property for datapack '{datapackId}'. Expected: reference, addon, compatibility_addon.",
-                nameof(Type));
+                nameof(DatapackType));
         }
 
         var normalizedType = RawType.Trim().Replace("_", string.Empty);
         if (Enum.TryParse<DatapackType>(normalizedType, ignoreCase: true, out var parsedType) && Enum.IsDefined(parsedType))
         {
-            Type = parsedType;
+            DatapackType = parsedType;
         }
         else
         {
@@ -161,7 +161,7 @@ public sealed class DatapackSettings
                 nameof(RewardNamespace));
         }
 
-        if (Type == DatapackType.CompatibilityAddon && string.IsNullOrWhiteSpace(ParentDatapackId))
+        if (DatapackType == DatapackType.CompatibilityAddon && string.IsNullOrWhiteSpace(ParentDatapackId))
         {
             throw new DatapackConfigurationException(
                 datapackId,

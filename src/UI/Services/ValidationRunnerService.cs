@@ -29,7 +29,7 @@ public sealed class ValidationRunnerService(DatapackRegistry datapackRegistry)
     {
         ArgumentNullException.ThrowIfNull(datapack);
 
-        if (datapack.Settings.Type == DatapackType.Reference)
+        if (datapack.Settings.DatapackType == DatapackType.Reference)
             return true;
 
         if (!datapack.Settings.Validation.Enabled)

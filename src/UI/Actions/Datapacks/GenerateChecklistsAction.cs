@@ -31,7 +31,7 @@ public class GenerateChecklistsAction(DatapackRegistry registry) : IManageDatapa
         TuiTheme.RenderHeader(Title);
 
         var targetPacks = registry.Values
-            .Where(d => d.Settings.Type != DatapackType.Reference && d.Settings.Checklists.Count > 0)
+            .Where(d => d.Settings.DatapackType != DatapackType.Reference && d.Settings.Checklists.Count > 0)
             .ToArray();
 
         if (targetPacks.Length == 0)

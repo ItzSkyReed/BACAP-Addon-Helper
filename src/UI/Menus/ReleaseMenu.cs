@@ -41,7 +41,7 @@ public partial class ReleaseMenu(DatapackRegistry registry, GlobalConfig config,
         }
 
         var nonReferencePacks = registry.Values
-            .Where(dp => dp.Settings.Type != DatapackType.Reference)
+            .Where(dp => dp.Settings.DatapackType != DatapackType.Reference)
             .ToArray();
 
         // Pre-release Validation
@@ -70,11 +70,11 @@ public partial class ReleaseMenu(DatapackRegistry registry, GlobalConfig config,
 
         // Separate root addons from compatibility addons
         var rootAddons = nonReferencePacks
-            .Where(dp => dp.Settings.Type == DatapackType.Addon)
+            .Where(dp => dp.Settings.DatapackType == DatapackType.Addon)
             .ToArray();
 
         var compatibilityAddons = nonReferencePacks
-            .Where(dp => dp.Settings.Type == DatapackType.CompatibilityAddon)
+            .Where(dp => dp.Settings.DatapackType == DatapackType.CompatibilityAddon)
             .ToArray();
 
         // Iterate through each root addon family
@@ -102,7 +102,7 @@ public partial class ReleaseMenu(DatapackRegistry registry, GlobalConfig config,
                 // Todo I dont like this
                 AnsiConsole.MarkupLine($"  [green]•[/] Processing [white]{datapack.ReleaseName}[/] (version [teal]{version}[/])...");
 
-                if (datapack.Settings.Type == DatapackType.Addon)
+                if (datapack.Settings.DatapackType == DatapackType.Addon)
                 {
                     // Todo: Better generation information
                     GlobalAdvancementsService.GenerateAndSaveAll(datapack);

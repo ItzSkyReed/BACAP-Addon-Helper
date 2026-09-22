@@ -19,7 +19,7 @@ public static class DatapackSettingsExtensions
         public bool IsValidationActive()
         {
             // Reference datapacks should skip validation by default unless explicitly enabled
-            return settings is not { Type: DatapackType.Reference, Validation.Enabled: false } && settings.Validation.Enabled;
+            return settings is not { DatapackType: DatapackType.Reference, Validation.Enabled: false } && settings.Validation.Enabled;
         }
 
         /// <summary>
@@ -40,32 +40,32 @@ public static class DatapackSettingsExtensions
         /// </summary>
         /// <returns><see langword="true"/> if experience rewards are active; otherwise, <see langword="false"/>.</returns>
         public bool SupportsExpRewards() =>
-            settings.Type == DatapackType.Addon
-            || settings is { Type: DatapackType.CompatibilityAddon, CompatibilityAddonSettings.OverrideExpRewards: true };
+            settings.DatapackType == DatapackType.Addon
+            || settings is { DatapackType: DatapackType.CompatibilityAddon, CompatibilityAddonSettings.OverrideExpRewards: true };
 
         /// <summary>
         /// Determines whether item loot rewards are supported and enabled for this datapack.
         /// </summary>
         /// <returns><see langword="true"/> if item loot rewards are active; otherwise, <see langword="false"/>.</returns>
         public bool SupportsItemRewards() =>
-            settings.Type == DatapackType.Addon
-            || settings is { Type: DatapackType.CompatibilityAddon, CompatibilityAddonSettings.OverrideItemRewards: true };
+            settings.DatapackType == DatapackType.Addon
+            || settings is { DatapackType: DatapackType.CompatibilityAddon, CompatibilityAddonSettings.OverrideItemRewards: true };
 
         /// <summary>
         /// Determines whether trophy rewards are supported and enabled for this datapack.
         /// </summary>
         /// <returns><see langword="true"/> if trophy rewards are active; otherwise, <see langword="false"/>.</returns>
         public bool SupportsTrophyRewards() =>
-            settings.Type == DatapackType.Addon
-            || settings is { Type: DatapackType.CompatibilityAddon, CompatibilityAddonSettings.OverrideTrophyRewards: true };
+            settings.DatapackType == DatapackType.Addon
+            || settings is { DatapackType: DatapackType.CompatibilityAddon, CompatibilityAddonSettings.OverrideTrophyRewards: true };
 
         /// <summary>
         /// Determines whether the datapack permits reward modifications on disk.
         /// </summary>
         /// <returns><see langword="true"/> if the datapack is an addon with active reward operations; otherwise, <see langword="false"/>.</returns>
         public bool IsRewardModifiableAddon() =>
-            settings.Type == DatapackType.Addon
-            || settings is { Type: DatapackType.CompatibilityAddon, CompatibilityAddonSettings.HasAnyRewardOverride: true };
+            settings.DatapackType == DatapackType.Addon
+            || settings is { DatapackType: DatapackType.CompatibilityAddon, CompatibilityAddonSettings.HasAnyRewardOverride: true };
 
         /// <summary>
         /// Evaluates whether a specific advancement is strictly required to have an experience reward function file in this datapack.

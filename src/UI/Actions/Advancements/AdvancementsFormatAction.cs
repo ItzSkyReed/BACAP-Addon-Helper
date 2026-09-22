@@ -25,7 +25,7 @@ public class AdvancementsFormatAction(DatapackRegistry registry) : IManageAdvanc
     public Task ExecuteAsync()
     {
         var targetAdvancements = registry.Values
-            .Where(dp => dp.Settings.Type != DatapackType.Reference)
+            .Where(dp => dp.Settings.DatapackType != DatapackType.Reference)
             .SelectMany(dp => dp.Advancements.OfType<ValidAdvancement>())
             .ToList();
 

@@ -49,7 +49,7 @@ public abstract class ManagedAdvancement
     /// <summary>
     /// Gets a value indicating whether this advancement belongs to a reference (immutable) datapack.
     /// </summary>
-    public bool IsReadOnly => Datapack.Settings.Type == DatapackType.Reference;
+    public bool IsReadOnly => Datapack.Settings.DatapackType == DatapackType.Reference;
 
     /// <summary>
     /// Gets or sets a value indicating whether this advancement overrides an existing one from a parent datapack.
@@ -101,7 +101,7 @@ public abstract class ManagedAdvancement
     /// <exception cref="InvalidOperationException">Thrown when the parent datapack is in Reference mode.</exception>
     public void EnsureMutable()
     {
-        if (Datapack.Settings.Type == DatapackType.Reference)
+        if (Datapack.Settings.DatapackType == DatapackType.Reference)
             throw new InvalidOperationException($"Cannot modify {GetType().Name} because its parent datapack is in {DatapackType.Reference} mode.");
     }
 

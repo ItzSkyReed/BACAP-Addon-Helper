@@ -212,7 +212,7 @@ public static partial class TrophyRewardMenu
                         TrophyEditOption.ChangeTitle => $"Change Title [grey]({Markup.Escape(current.Title ?? "None")})[/]",
                         TrophyEditOption.ChangeColor => $"Change Color [{color}]■[/] [grey]({color})[/]",
                         TrophyEditOption.ChangeLore => $"Change Description (Lore) [grey]({lorePreview})[/]",
-                        TrophyEditOption.ToggleDelivery => $"Toggle Delivery Type [grey]({deliveryPreview})[/]",
+                        TrophyEditOption.ToggleDelivery => $"Toggle Delivery DatapackType [grey]({deliveryPreview})[/]",
                         TrophyEditOption.EditComponents => $"Edit Extra Components [grey]({componentCount} active)[/]",
                         TrophyEditOption.Delete => "[red]Delete Trophy[/]",
                         TrophyEditOption.Back => TuiTheme.BackOptionString,

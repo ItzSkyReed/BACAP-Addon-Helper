@@ -40,7 +40,7 @@ public static class DatapackRegistryExtensions
         ArgumentNullException.ThrowIfNull(registry);
 
         var primaryAddons = registry.Values
-            .Where(dp => dp.Settings is { Type: DatapackType.Addon, LanguagePackSettigs: not null } &&
+            .Where(dp => dp.Settings is { DatapackType: DatapackType.Addon, LanguagePackSettigs: not null } &&
                          !string.IsNullOrWhiteSpace(dp.Settings.LanguagePackSettigs.Path))
             .ToList();
 
@@ -48,7 +48,7 @@ public static class DatapackRegistryExtensions
         groups.AddRange(
             from primary in primaryAddons
             let compatAddons = registry.Values.Where(dp =>
-                    dp.Settings.Type == DatapackType.CompatibilityAddon
+                    dp.Settings.DatapackType == DatapackType.CompatibilityAddon
                     && string.Equals(dp.Settings.ParentDatapackId, primary.Id, StringComparison.OrdinalIgnoreCase))
                 .ToList()
             select new AddonGroup(primary, compatAddons));

@@ -20,7 +20,7 @@ public class AdvancementsRecoverAction(
     public Task ExecuteAsync()
     {
         var readWriteDatapacks = registry.Values
-            .Where(dp => dp.Settings.Type != DatapackType.Reference)
+            .Where(dp => dp.Settings.DatapackType != DatapackType.Reference)
             .ToList();
 
         if (readWriteDatapacks.Count == 0)

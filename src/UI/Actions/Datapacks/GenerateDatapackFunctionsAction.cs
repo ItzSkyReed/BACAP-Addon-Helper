@@ -30,7 +30,7 @@ public class GenerateDatapackFunctionsAction(DatapackRegistry registry) : IManag
     {
         TuiTheme.RenderHeader(Title);
 
-        var addons = registry.Values.Where(d => d.Settings.Type == DatapackType.Addon).ToArray();
+        var addons = registry.Values.Where(d => d.Settings.DatapackType == DatapackType.Addon).ToArray();
 
         foreach (var addon in addons)
             GlobalFunctionsService.GenerateAndSaveAll(addon);

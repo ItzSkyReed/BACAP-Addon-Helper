@@ -48,7 +48,7 @@ public class AdvancementEditorAction(DatapackRegistry registry) : IManageAdvance
     public async Task ExecuteAsync()
     {
         var editableAdvancements = registry.Values
-            .Where(dp => dp.Settings.Type != DatapackType.Reference)
+            .Where(dp => dp.Settings.DatapackType != DatapackType.Reference)
             .SelectMany(dp => dp.Advancements.OfType<BacapAdvancement>())
             .ToList();
 

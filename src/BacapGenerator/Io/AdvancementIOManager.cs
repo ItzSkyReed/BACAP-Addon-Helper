@@ -34,7 +34,7 @@ public static class AdvancementIoManager
         advancement.EnsureMutable();
 
         var effectiveSettings = advancement.Datapack.Settings;
-        if (effectiveSettings.Type == DatapackType.Reference)
+        if (effectiveSettings.DatapackType == DatapackType.Reference)
         {
             throw new InvalidOperationException(
                 $"Cannot persist advancement '{advancement.McPath}' because datapack is configured as Reference (read-only).");
@@ -158,7 +158,7 @@ public static class AdvancementIoManager
     /// <param name="settings">The parent datapack settings.</param>
     private static void SynchronizeBacapFunctions(BacapAdvancement advancement, DatapackSettings settings)
     {
-        var isCompatibility = settings.Type == DatapackType.CompatibilityAddon || advancement.IsOverride;
+        var isCompatibility = settings.DatapackType == DatapackType.CompatibilityAddon || advancement.IsOverride;
         var compatSettings = settings.CompatibilityAddonSettings;
 
         var allowMsg = !isCompatibility || (compatSettings?.OverrideMsg ?? true);

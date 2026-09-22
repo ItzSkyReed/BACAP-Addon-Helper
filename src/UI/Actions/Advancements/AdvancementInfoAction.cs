@@ -81,7 +81,7 @@ public class AdvancementInfoAction(DatapackRegistry registry, MinecraftData mine
     /// <param name="bacap">The playable BACAP advancement instance.</param>
     private void RenderBacapDetails(Table table, BacapAdvancement bacap)
     {
-        table.AddRow($"[{TuiTheme.TablePropertyColor}]Type[/]", "[green]Playable BACAP Advancement[/]");
+        table.AddRow($"[{TuiTheme.TablePropertyColor}]DatapackType[/]", "[green]Playable BACAP Advancement[/]");
         table.AddRow($"[{TuiTheme.TablePropertyColor}]Title[/]", $"[white]{Markup.Escape(bacap.TitleText)}[/]");
 
         var descText = !string.IsNullOrWhiteSpace(bacap.CleanDescriptionText)
@@ -147,7 +147,7 @@ public class AdvancementInfoAction(DatapackRegistry registry, MinecraftData mine
     /// <param name="adv">The technical advancement instance.</param>
     private static void RenderTechnicalDetails(Table table, ValidAdvancement adv)
     {
-        table.AddRow($"[{TuiTheme.TablePropertyColor}]Type[/]", "[grey]Technical Trigger (No Display / Rewards)[/]");
+        table.AddRow($"[{TuiTheme.TablePropertyColor}]DatapackType[/]", "[grey]Technical Trigger (No Display / Rewards)[/]");
 
         var criteriaCount = adv.Advancement.Criteria.Count;
         var criteriaDisplay = criteriaCount > 0

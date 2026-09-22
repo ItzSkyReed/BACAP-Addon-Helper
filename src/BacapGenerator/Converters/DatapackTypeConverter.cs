@@ -9,8 +9,6 @@ namespace BacapGenerator.Converters;
 /// </summary>
 public sealed class DatapackTypeConverter : TypeConverter
 {
-    private static readonly string[] AllowedNames = ["reference", "addon", "compatibility_addon"];
-
     /// <summary>
     /// Determines whether this converter can convert an object of the given source type to <see cref="DatapackType"/>.
     /// </summary>
@@ -41,16 +39,14 @@ public sealed class DatapackTypeConverter : TypeConverter
 
         var trimmed = text.Trim();
 
-        // Reject empty strings or raw integers to avoid Enum.TryParse creating undefined enum values
-        if (trimmed.Length > 0 && !char.IsAsciiDigit(trimmed[0]))
-        {
-            var normalized = trimmed.Replace("_", string.Empty);
+        if (trimmed.Length <= 0 || char.IsAsciiDigit(trimmed[0]))
+            return (DatapackType)(-1);
 
-            if (Enum.TryParse<DatapackType>(normalized, ignoreCase: true, out var result) && Enum.IsDefined(result))
-                return result;
-        }
+        var normalized = trimmed.Replace("_", string.Empty);
 
-        var allowed = string.Join(", ", AllowedNames);
-        throw new FormatException($"Value '{text}' is not a valid datapack type. Allowed values are: {allowed}.");
+        if (Enum.TryParse<DatapackType>(normalized, ignoreCase: true, out var result) && Enum.IsDefined(result))
+            return result;
+
+        return (DatapackType)(-1);
     }
 }
