@@ -63,26 +63,28 @@ public static partial class ConfigurationErrorHandler
     /// <returns>The first matched exception instance, or <see langword="null"/> if not found.</returns>
     private static T? FindInnerException<T>(Exception? ex) where T : Exception
     {
-        switch (ex)
+        while (true)
         {
-            case null:
-                return null;
-            case T match:
-                return match;
-            case AggregateException agg:
+            switch (ex)
             {
-                foreach (var inner in agg.InnerExceptions)
+                case null:
+                    return null;
+                case T match:
+                    return match;
+                case AggregateException agg:
                 {
-                    var found = FindInnerException<T>(inner);
-                    if (found is not null)
-                        return found;
+                    foreach (var inner in agg.InnerExceptions)
+                    {
+                        var found = FindInnerException<T>(inner);
+                        if (found is not null) return found;
+                    }
+
+                    break;
                 }
-
-                break;
             }
-        }
 
-        return FindInnerException<T>(ex.InnerException);
+            ex = ex.InnerException;
+        }
     }
 
     /// <summary>
