@@ -25,6 +25,8 @@ public class MinecraftData
     public FrozenDictionary<string, PotionRegistryEntry> Potions { get; }
     [PublicAPI]
     public FrozenDictionary<string, DyeColorRegistryEntry> DyeColors { get; }
+    [PublicAPI]
+    public FrozenDictionary<string, EntityRegistryEntry> Entities { get; }
 
     [PublicAPI]
     public FrozenSet<string> Containers { get; }
@@ -49,6 +51,7 @@ public class MinecraftData
         Enchantments = loader.LoadRegistry<int>("enchantments.json");
         Potions = loader.LoadRegistry<PotionRegistryEntry>("potion.json");
         DyeColors = loader.LoadRegistry<DyeColorRegistryEntry>("dye_colors.json");
+        Entities = loader.LoadRegistry<EntityRegistryEntry>("entities.json");
 
 
         // Load flat arrays
