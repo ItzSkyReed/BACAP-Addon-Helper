@@ -1,5 +1,6 @@
 ﻿using System.Diagnostics;
 using BacapGenerator.Datapacks.Models.Settings;
+using Core.Registries;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
@@ -16,7 +17,8 @@ public partial class DatapackLoaderService(
     IOptions<Dictionary<string, DatapackSettings>> options,
     IDatapackFactory datapackFactory,
     DatapackRegistry datapackRegistry,
-    ILogger<DatapackLoaderService> logger)
+    ILogger<DatapackLoaderService> logger,
+    MinecraftData minecraftData)
 {
     private readonly Dictionary<string, DatapackSettings> _datapackConfigs = options.Value;
 
@@ -32,7 +34,7 @@ public partial class DatapackLoaderService(
         {
             try
             {
-                settings.Validate();
+                settings.Validate(id, minecraftData);
 
                 LogProcessingDatapack(id, settings.Path, settings.Type);
 

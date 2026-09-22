@@ -1,6 +1,5 @@
 ﻿using System.Text;
 using BacapGenerator.Configuration;
-using BacapGenerator.Configuration.Exceptions;
 using BacapGenerator.Datapacks.Services;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -16,15 +15,17 @@ Console.OutputEncoding = Encoding.UTF8;
 const string configFileName = "config.yaml";
 const string embeddedConfigResourceName = "UI.default_config.yaml";
 
-// File pre-check
-YamlConfigBootstrapper.EnsureConfigExists(configFileName, embeddedConfigResourceName);
-
-// Host Building & Bootstrap
-IHost host;
+var isVerbose = args.Contains("--verbose", StringComparer.OrdinalIgnoreCase)
+                || args.Contains("-v", StringComparer.OrdinalIgnoreCase)
+                || args.Contains("--debug", StringComparer.OrdinalIgnoreCase);
 
 try
 {
-    host = Host.CreateDefaultBuilder(args)
+    // Ensure configuration file exists on disk
+    YamlConfigBootstrapper.EnsureConfigExists(configFileName, embeddedConfigResourceName);
+
+    // Build host and register dependencies
+    using var host = Host.CreateDefaultBuilder(args)
         .ConfigureAppConfiguration((_, config) =>
         {
             config.Sources.Clear();
@@ -39,26 +40,20 @@ try
                 .AddUiActions();
         })
         .Build();
-}
-catch (ConfigurationTemplateException ex)
-{
-    ConfigurationErrorHandler.RenderTemplateError(ex);
-    TuiTheme.WaitForKey();
-    return;
-}
-catch (Exception ex)
-{
-    ConfigurationErrorHandler.RenderBootstrapError(ex);
-    TuiTheme.WaitForKey();
-    return;
-}
 
-// Warmup & Run
-using (host)
-{
+    // Eagerly load, validate and link all configured datapacks
     var datapackLoader = host.Services.GetRequiredService<DatapackLoaderService>();
     datapackLoader.LoadAll();
 
+    // Launch main interactive menu
     var mainMenu = host.Services.GetRequiredService<MainMenuAction>();
     await mainMenu.ExecuteAsync();
+
+    return 0;
+}
+catch (Exception ex)
+{
+    var exitCode = AppErrorHandler.Handle(ex, showStackTrace: isVerbose);
+    TuiTheme.WaitForKey();
+    return exitCode;
 }

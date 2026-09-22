@@ -69,12 +69,12 @@ public sealed class SyncWithTranslationPack(DatapackRegistry datapackRegistry) :
 
             foreach (var summary in result.FileSummaries.OrderBy(s => s.File.Code))
             {
-                var statusMarkup = (summary.WasPatched, summary.MissingKeysCount, summary.UnusedKeysCount) switch
+                var statusMarkup = (summary.WasPatched, summary.MissedCount, summary.RemovedCount) switch
                 {
                     (false, > 0, _) or (false, _, > 0) => "[bold red]Patch failed[/]",
-                    (_, > 0, > 0) => $"[bold yellow]+{summary.MissingKeysCount}[/] [bold red]-{summary.UnusedKeysCount}[/]",
-                    (_, > 0, 0) => $"[bold yellow]+{summary.MissingKeysCount} added[/]",
-                    (_, 0, > 0) => $"[bold red]-{summary.UnusedKeysCount} removed[/]",
+                    (_, > 0, > 0) => $"[bold yellow]+{summary.MissedCount}[/] [bold red]-{summary.RemovedCount}[/]",
+                    (_, > 0, 0) => $"[bold yellow]+{summary.MissedCount} added[/]",
+                    (_, 0, > 0) => $"[bold red]-{summary.RemovedCount} removed[/]",
                     _ => "[bold green]Up to date[/]"
                 };
 

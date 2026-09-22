@@ -29,7 +29,7 @@ public class DatapackFactory(MinecraftData minecraftData) : IDatapackFactory
     {
         ArgumentNullException.ThrowIfNull(settings);
 
-        settings.Validate();
+        settings.Validate(id, minecraftData);
 
         var datapack = new Datapack(id, settings, minecraftData);
 

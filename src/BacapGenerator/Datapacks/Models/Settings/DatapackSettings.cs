@@ -1,6 +1,8 @@
 ﻿using BacapGenerator.Common;
+using BacapGenerator.Configuration.Exceptions;
 using BacapGenerator.Datapacks.Models.Settings.Checklists;
 using BacapGenerator.Datapacks.Models.Settings.Validation;
+using Core.Registries;
 using JetBrains.Annotations;
 using Microsoft.Extensions.Configuration;
 
@@ -96,26 +98,58 @@ public sealed class DatapackSettings
     public string? ReleaseName { get; init; }
 
     /// <summary>
-    /// Validates the current settings object based on the configured access mode and paths.
+    /// Validates the current datapack settings and verifies its integrity.
     /// </summary>
-    /// <exception cref="InvalidOperationException">Thrown if validation constraints are violated.</exception>
-    public void Validate()
+    /// <param name="datapackId">The key identifier of this datapack in the configuration dictionary.</param>
+    /// <param name="minecraftData">Minecraft data</param>
+    /// <exception cref="DatapackConfigurationException">Thrown when a setting rule is violated.</exception>
+    public void Validate(string datapackId, MinecraftData minecraftData)
     {
         if (string.IsNullOrWhiteSpace(Path))
-            throw new InvalidOperationException($"'{nameof(Path)}' must be provided for the datapack.");
+        {
+            throw new DatapackConfigurationException(
+                datapackId,
+                DatapackErrorKind.MissingPath,
+                $"Path is not defined for datapack '{datapackId}'.",
+                nameof(Path));
+        }
 
         if (string.IsNullOrWhiteSpace(MainNamespace))
-            throw new InvalidOperationException($"'{nameof(MainNamespace)}' must be provided.");
+        {
+            throw new DatapackConfigurationException(
+                datapackId,
+                DatapackErrorKind.MissingNamespace,
+                $"Main namespace is missing for datapack '{datapackId}'.",
+                nameof(MainNamespace));
+        }
 
         if (string.IsNullOrWhiteSpace(RewardNamespace))
-            throw new InvalidOperationException($"'{nameof(RewardNamespace)}' must be provided.");
-
-        if (Type != DatapackType.Addon)
-            return;
+        {
+            throw new DatapackConfigurationException(
+                datapackId,
+                DatapackErrorKind.MissingNamespace,
+                $"Reward namespace is missing for datapack '{datapackId}'.",
+                nameof(RewardNamespace));
+        }
 
         if (Type == DatapackType.CompatibilityAddon && string.IsNullOrWhiteSpace(ParentDatapackId))
         {
-            throw new InvalidOperationException($"'{nameof(ParentDatapackId)}' must be provided when Type is set to CompatibilityAddon.");
+            throw new DatapackConfigurationException(
+                datapackId,
+                DatapackErrorKind.MissingParentDatapack,
+                $"Compatibility addon '{datapackId}' must specify '{nameof(ParentDatapackId)}'.",
+                nameof(ParentDatapackId));
+        }
+
+        // Validate nested language pack settings if configured
+        LanguagePackSettigs?.Validate(datapackId);
+
+        // Validate nested validation settings
+        Validation.Validate(datapackId);
+
+        foreach (var checklist in Checklists)
+        {
+            checklist.Validate(datapackId, minecraftData);
         }
     }
 }

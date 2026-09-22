@@ -52,4 +52,26 @@ public sealed class DatapackValidationSettings
     /// </summary>
     [ConfigurationKeyName("parent_references")]
     public GenericRuleOptions ParentReferences { get; init; } = new() { Severity = ValidationSeverity.Error };
+
+    /// <summary>
+    /// Validates all configured validation rules within this datapack settings set.
+    /// </summary>
+    /// <param name="datapackId">The parent datapack identifier.</param>
+    /// <exception cref="BacapGenerator.Configuration.Exceptions.DatapackConfigurationException">
+    /// Thrown when any underlying rule configuration is invalid.
+    /// </exception>
+    /// <example>
+    /// <code>
+    /// validationSettings.Validate("bacaped");
+    /// </code>
+    /// </example>
+    public void Validate(string datapackId)
+    {
+        // Even if Enabled is false, validate rule declarations to prevent hidden syntax/config bugs
+        TitleCase.Validate(datapackId, "title_case_formatting");
+        WhitespaceTrimming.Validate(datapackId, "whitespace_trimming");
+        PlainTextUsage.Validate(datapackId, "plain_text_usage");
+        RewardPaths.Validate(datapackId, "reward_paths");
+        ParentReferences.Validate(datapackId, "parent_references");
+    }
 }

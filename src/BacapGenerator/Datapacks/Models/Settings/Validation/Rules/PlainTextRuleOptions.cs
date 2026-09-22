@@ -1,4 +1,5 @@
 ﻿using System.Collections.Frozen;
+using BacapGenerator.Configuration.Exceptions;
 using JetBrains.Annotations;
 using Microsoft.Extensions.Configuration;
 
@@ -9,51 +10,59 @@ namespace BacapGenerator.Datapacks.Models.Settings.Validation.Rules;
 /// </summary>
 public sealed class PlainTextRuleOptions : GenericRuleOptions
 {
-    /// <summary>
-    /// The default baseline of widely accepted plain text acronyms and version strings.
-    /// </summary>
     public static readonly string[] DefaultAllowedStrings =
     [
         "/trigger bac_timers", "/trigger bac_progress", "/trigger bac_dragon", "/trigger bac_statistics"
     ];
 
-    /// <summary>
-    /// Gets a value indicating whether the built-in <see cref="DefaultAllowedStrings"/>
-    /// should be automatically included in the allowed list.
-    /// Defaults to <see langword="true"/>.
-    /// </summary>
     [PublicAPI]
     [ConfigurationKeyName("include_default_strings")]
     public bool IncludeDefaultStrings { get; init; } = true;
 
-    /// <summary>
-    /// Gets the optional list of custom plain text values explicitly permitted in titles and descriptions.
-    /// </summary>
     [PublicAPI]
     [ConfigurationKeyName("allowed_strings")]
     public List<string>? AllowedStrings { get; init; }
 
-    /// <summary>
-    /// Gets an immutable frozen set lookup for case-insensitive checks against allowed plain text literals.
-    /// Automatically merges defaults with user-defined strings based on configuration.
-    /// </summary>
     [PublicAPI]
     public FrozenSet<string> AllowedStringsSet => field ??= BuildAllowedStringsSet();
 
+    /// <summary>
+    /// Validates plain text rule options ensuring no empty bypass strings are registered.
+    /// </summary>
+    /// <param name="datapackId">The parent datapack identifier.</param>
+    /// <param name="ruleName">The configuration key of this rule.</param>
+    /// <exception cref="DatapackConfigurationException">Thrown when allowed strings contain null or whitespace-only elements.</exception>
+    /// <example>
+    /// <code>
+    /// plainTextOptions.Validate("bacaped", "plain_text_usage");
+    /// </code>
+    /// </example>
+    public override void Validate(string datapackId, string ruleName)
+    {
+        base.Validate(datapackId, ruleName);
+
+        if (AllowedStrings is not null && AllowedStrings.Any(string.IsNullOrWhiteSpace))
+        {
+            throw new DatapackConfigurationException(
+                datapackId,
+                DatapackErrorKind.InvalidValidationRuleConfiguration,
+                $"Rule '{ruleName}' in datapack '{datapackId}' contains empty or whitespace entries in '{nameof(AllowedStrings)}'.",
+                nameof(AllowedStrings));
+        }
+    }
+
     private FrozenSet<string> BuildAllowedStringsSet()
     {
-        // Using a HashSet first ensures no duplicates when merging the two lists
         var combined = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
         if (IncludeDefaultStrings)
-        {
             combined.UnionWith(DefaultAllowedStrings);
-        }
 
-        if (AllowedStrings is { Count: > 0 })
-        {
-            combined.UnionWith(AllowedStrings);
-        }
+        if (AllowedStrings is not { Count: > 0 })
+            return combined.ToFrozenSet(StringComparer.OrdinalIgnoreCase);
+
+        foreach (var str in AllowedStrings.Where(str => !string.IsNullOrWhiteSpace(str)))
+            combined.Add(str.Trim());
 
         return combined.ToFrozenSet(StringComparer.OrdinalIgnoreCase);
     }

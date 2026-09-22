@@ -28,7 +28,7 @@ public sealed class GlobalConfig
     public void Validate()
     {
         if (string.IsNullOrWhiteSpace(RegistryBasePath))
-            throw new InvalidOperationException($"'{nameof(RegistryBasePath)}' must be provided.");
+            throw new InvalidOperationException($"'{nameof(RegistryBasePath)}' must be provided in config.yaml.");
 
         if (string.IsNullOrWhiteSpace(ReleasePath))
             throw new InvalidOperationException($"'{nameof(ReleasePath)}' must be provided.");
