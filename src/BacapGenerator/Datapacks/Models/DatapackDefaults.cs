@@ -56,49 +56,49 @@ public static class DatapackDefaults
     public const string DefaultDividerColor = "dark_gray";
 
 
-    internal static readonly AdvancementMessageSettingsEntry AdvancementLegendEntry = new()
+    private static readonly AdvancementMessageSettingsEntry AdvancementLegendEntry = new()
     {
         TranslationKey = "%1$s has completed every advancement in the %2$s tab, earning them the advancement %3$s%4$s%5$s",
         TitleColor = "gold",
         DescriptionColor = "gold"
     };
 
-    internal static readonly AdvancementMessageSettingsEntry MilestoneEntry = new()
+    private static readonly AdvancementMessageSettingsEntry MilestoneEntry = new()
     {
         TranslationKey = "%1$s has completed every advancement in the %2$s tab, earning them the advancement %3$s%4$s%5$s",
         TitleColor = "yellow",
         DescriptionColor = "#E5E74F"
     };
 
-    internal static readonly AdvancementMessageSettingsEntry SuperChallengeEntry = new()
+    private static readonly AdvancementMessageSettingsEntry SuperChallengeEntry = new()
     {
         TranslationKey = "%1$s has completed the super challenge %2$s%3$s%4$s",
         TitleColor = "#FF2A2A",
         DescriptionColor = "#DC2727"
     };
 
-    internal static readonly AdvancementMessageSettingsEntry HiddenEntry = new()
+    private static readonly AdvancementMessageSettingsEntry HiddenEntry = new()
     {
         TranslationKey = "%1$s has found the hidden advancement %2$s%3$s%4$s",
         TitleColor = "light_purple",
         DescriptionColor = "#DE4ADC"
     };
 
-    internal static readonly AdvancementMessageSettingsEntry ChallengeEntry = new()
+    private static readonly AdvancementMessageSettingsEntry ChallengeEntry = new()
     {
         TranslationKey = "%1$s has completed the challenge %2$s%3$s%4$s",
         TitleColor = "dark_purple",
         DescriptionColor = "#C900C7"
     };
 
-    internal static readonly AdvancementMessageSettingsEntry GoalEntry = new()
+    private static readonly AdvancementMessageSettingsEntry GoalEntry = new()
     {
         TranslationKey = "%1$s has reached the goal %2$s%3$s%4$s",
         TitleColor = "#75E1FF",
         DescriptionColor = "#63BDD7"
     };
 
-    internal static readonly AdvancementMessageSettingsEntry TaskEntry = new()
+    private static readonly AdvancementMessageSettingsEntry TaskEntry = new()
     {
         TranslationKey = "%1$s has made the advancement %2$s%3$s%4$s",
         TitleColor = "green",
@@ -128,13 +128,23 @@ public static class DatapackDefaults
         _ => throw new ArgumentOutOfRangeException(nameof(tier), tier, "Unsupported advancement tier.")
     };
 
+    public static IReadOnlyList<AdvancementMessageSettingsEntry> MessageSettingsEntiries = new List<AdvancementMessageSettingsEntry>
+    {
+        AdvancementLegendEntry,
+        MilestoneEntry,
+        SuperChallengeEntry,
+        HiddenEntry,
+        ChallengeEntry,
+        GoalEntry,
+        TaskEntry
+    };
+
 
     private static readonly BacapTierProfile AdvancementLegendTierProfile = new()
     {
         Frame = AdvancementFrame.Challenge,
         DescriptionColor = "gold",
         RequiredTab = BacapTab.Bacap
-
     };
 
     private static readonly BacapTierProfile MilestoneTierProfile = new()
@@ -142,7 +152,6 @@ public static class DatapackDefaults
         Frame = AdvancementFrame.Challenge,
         DescriptionColor = "yellow",
         RequiredTab = BacapTab.Bacap
-
     };
 
     private static readonly BacapTierProfile SuperChallengeTierProfile = new()
@@ -150,7 +159,6 @@ public static class DatapackDefaults
         Frame = AdvancementFrame.Challenge,
         DescriptionColor = "#FF2A2A",
         RequiredTab = BacapTab.Challenges
-
     };
 
     private static readonly BacapTierProfile HiddenTierProfile = new()

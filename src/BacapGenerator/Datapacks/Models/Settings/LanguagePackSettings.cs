@@ -153,18 +153,10 @@ public class LanguagePackSettings
             "Experience"
         };
 
-        var entryFields = typeof(DatapackDefaults)
-            .GetFields(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static)
-            .Where(f => typeof(AdvancementMessageSettingsEntry).IsAssignableFrom(f.FieldType));
+        var entryFields = DatapackDefaults.MessageSettingsEntiries;
 
         foreach (var field in entryFields)
-        {
-            if (field.GetValue(null) is AdvancementMessageSettingsEntry { TranslationKey: { } translationKey } &&
-                !string.IsNullOrWhiteSpace(translationKey))
-            {
-                keys.Add(translationKey.Trim());
-            }
-        }
+            keys.Add(field.TranslationKey.Trim());
 
         foreach (var key in BacapTab.All)
         {
