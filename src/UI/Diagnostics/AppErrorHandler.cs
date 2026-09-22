@@ -50,6 +50,11 @@ public static class AppErrorHandler
                 ConfigurationErrorHandler.RenderBootstrapError(exception);
                 break;
 
+            // Binders throw InvalidOperationException containing FormatException on bad TypeConverter conversion
+            case InvalidOperationException { InnerException: FormatException } invEx:
+                ConfigurationErrorHandler.RenderBindingError(invEx);
+                break;
+
             case FileNotFoundException fnfEx:
                 RenderFileNotFoundError(fnfEx);
                 break;
@@ -109,6 +114,10 @@ public static class AppErrorHandler
             DatapackErrorKind.InvalidValidationRuleConfiguration => (
                 $"Invalid validation rule configuration in [bold yellow]'{escapedId}'[/]: [bold red]{escapedDetail}[/].",
                 "Verify rule severity names and ensure allowed string lists do not contain empty items."
+            ),
+            DatapackErrorKind.InvalidDatapackType => (
+                $"Datapack [bold yellow]'{escapedId}'[/] has an invalid [yellow]type[/] setting.",
+                "Supported types are: [cyan]reference[/], [cyan]addon[/], [cyan]compatibility_addon[/]."
             ),
             _ => (Markup.Escape(ex.Message), "Check datapack definitions in config.yaml.")
         };

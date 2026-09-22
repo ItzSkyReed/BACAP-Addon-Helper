@@ -6,6 +6,7 @@
 public enum DatapackErrorKind
 {
     MissingPath,
+    InvalidDatapackType,
     DirectoryNotFound,
     MissingNamespace,
     MissingParentDatapack,

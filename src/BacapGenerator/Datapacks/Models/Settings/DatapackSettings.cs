@@ -39,10 +39,15 @@ public sealed class DatapackSettings
     public string RewardNamespace { get; init; } = string.Empty;
 
     /// <summary>
-    /// Gets the access permission mode determining whether file modifications are permitted.
+    /// Gets the raw string representation of the datapack type as defined in config.yaml.
     /// </summary>
     [ConfigurationKeyName("type")]
-    public DatapackType Type { get; init; } = DatapackType.Reference;
+    public string? RawType { get; init; }
+
+    /// <summary>
+    /// Gets the parsed and verified datapack operational type.
+    /// </summary>
+    public DatapackType Type { get; private set; }
 
     [PublicAPI]
     [ConfigurationKeyName("checklists")]
@@ -112,6 +117,30 @@ public sealed class DatapackSettings
                 DatapackErrorKind.MissingPath,
                 $"Path is not defined for datapack '{datapackId}'.",
                 nameof(Path));
+        }
+
+        // Validate and parse type explicitly so bad YAML values don't get silently dropped
+        if (string.IsNullOrWhiteSpace(RawType))
+        {
+            throw new DatapackConfigurationException(
+                datapackId,
+                DatapackErrorKind.InvalidDatapackType,
+                $"Missing 'type' property for datapack '{datapackId}'. Expected: reference, addon, compatibility_addon.",
+                nameof(Type));
+        }
+
+        var normalizedType = RawType.Trim().Replace("_", string.Empty);
+        if (Enum.TryParse<DatapackType>(normalizedType, ignoreCase: true, out var parsedType) && Enum.IsDefined(parsedType))
+        {
+            Type = parsedType;
+        }
+        else
+        {
+            throw new DatapackConfigurationException(
+                datapackId,
+                DatapackErrorKind.InvalidDatapackType,
+                $"Invalid datapack type '{RawType}' in '{datapackId}'. Allowed values: reference, addon, compatibility_addon.",
+                RawType);
         }
 
         if (string.IsNullOrWhiteSpace(MainNamespace))

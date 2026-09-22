@@ -1,4 +1,5 @@
-﻿using BacapGenerator.Configuration.Exceptions;
+﻿using System.Text.RegularExpressions;
+using BacapGenerator.Configuration.Exceptions;
 using Microsoft.Extensions.Options;
 using Spectre.Console;
 using UI.Styling;
@@ -8,8 +9,82 @@ namespace UI.Diagnostics;
 /// <summary>
 /// Helper class for rendering user-friendly error alerts for configuration and template bootstrap failures.
 /// </summary>
-public static class ConfigurationErrorHandler
+public static partial class ConfigurationErrorHandler
 {
+    [GeneratedRegex("at '([^']+)'")]
+    private static partial Regex ConfigPathRegex();
+
+    /// <summary>
+    /// Displays a styled TUI alert when a configuration value fails type conversion or binding.
+    /// </summary>
+    /// <param name="ex">The binding exception thrown by the configuration binder.</param>
+    /// <example>
+    /// <code>
+    /// ConfigurationErrorHandler.RenderBindingError(invalidOpEx);
+    /// </code>
+    /// </example>
+    public static void RenderBindingError(InvalidOperationException ex)
+    {
+        // Extract inner FormatException or fallback to the root message
+        var formatException = FindInnerException<FormatException>(ex);
+        var rawMessage = formatException?.Message ?? ex.Message;
+
+        // Attempt to extract the configuration key; fallback to a generic placeholder if missing
+        var match = ConfigPathRegex().Match(ex.Message);
+        var configKey = match.Success ? match.Groups[1].Value : null;
+
+        var locationText = configKey is not null
+            ? $"at [yellow]'{Markup.Escape(configKey)}'[/]"
+            : "in configuration";
+
+        var tipText = configKey is not null
+            ? $"Check [white]config.yaml[/] at [yellow]'{Markup.Escape(configKey)}'[/] and set a valid value."
+            : "Check [white]config.yaml[/] and ensure all values match their expected types.";
+
+        var content = $"""
+                       Invalid configuration value {locationText}:
+
+                       [bold red]{Markup.Escape(rawMessage)}[/]
+
+                       [bold white]Tip:[/] {tipText}
+                       """;
+
+        TuiTheme.ShowAlert(
+            header: "[bold red] Configuration Value Error [/]",
+            content: content,
+            borderColor: Color.Red);
+    }
+
+    /// <summary>
+    /// Traverses the exception hierarchy (including aggregate branches) to find an exception of type <typeparamref name="T"/>.
+    /// </summary>
+    /// <typeparam name="T">The specific exception type to search for.</typeparam>
+    /// <param name="ex">The root exception to inspect.</param>
+    /// <returns>The first matched exception instance, or <see langword="null"/> if not found.</returns>
+    private static T? FindInnerException<T>(Exception? ex) where T : Exception
+    {
+        switch (ex)
+        {
+            case null:
+                return null;
+            case T match:
+                return match;
+            case AggregateException agg:
+            {
+                foreach (var inner in agg.InnerExceptions)
+                {
+                    var found = FindInnerException<T>(inner);
+                    if (found is not null)
+                        return found;
+                }
+
+                break;
+            }
+        }
+
+        return FindInnerException<T>(ex.InnerException);
+    }
+
     /// <summary>
     /// Displays a styled TUI alert for template resolution errors.
     /// </summary>
