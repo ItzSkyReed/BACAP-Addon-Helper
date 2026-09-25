@@ -145,7 +145,6 @@ public class LanguagePackSettings
     {
         var keys = new HashSet<string>(StringComparer.Ordinal)
         {
-            "GitHub", "Modrinth", "Discord", "CurseForge", "YouTube", "Twitter", // Social media
             // Lines from BACAP
             "To view progress, run:", "Awarded for achieving", "Animals", "Challenges",
             // Rewards
