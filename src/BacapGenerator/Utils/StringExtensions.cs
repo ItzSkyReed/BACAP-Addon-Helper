@@ -11,7 +11,7 @@ public static class StringExtensions
     {
         "a", "an", "the",
         "and", "but", "or", "nor", "for", "yet", "so", "vs",
-        "as", "at", "by", "in", "of", "off", "on", "per", "to", "up", "via", "with", "from", "into"
+        "as", "at", "by", "in", "of", "off", "on", "per", "to", "via", "with", "from", "into"
     }.ToFrozenSet(StringComparer.OrdinalIgnoreCase);
 
     /// <summary>
