@@ -33,12 +33,9 @@ public static class AdvancementIoManager
 
         advancement.EnsureMutable();
 
-        var effectiveSettings = advancement.Datapack.Settings;
-        if (effectiveSettings.DatapackType == DatapackType.Reference)
-        {
+        if (advancement.Datapack.Settings.DatapackType == DatapackType.Reference)
             throw new InvalidOperationException(
                 $"Cannot persist advancement '{advancement.McPath}' because datapack is configured as Reference (read-only).");
-        }
 
         // If it's a BacapAdvancement, ensure in-memory function ASTs are synchronized before disk write
         if (advancement is BacapAdvancement bacap)
@@ -49,7 +46,7 @@ public static class AdvancementIoManager
 
         // Persist and synchronize attached functions if this is a playable BACAP advancement
         if (advancement is BacapAdvancement bacapAdv)
-            SynchronizeBacapFunctions(bacapAdv, effectiveSettings);
+            SynchronizeBacapFunctions(bacapAdv);
     }
 
     /// <summary>
@@ -155,17 +152,16 @@ public static class AdvancementIoManager
     /// Synchronizes all five BACAP function files according to datapack capabilities and override rules.
     /// </summary>
     /// <param name="advancement">The BACAP advancement owning the functions.</param>
-    /// <param name="settings">The parent datapack settings.</param>
-    private static void SynchronizeBacapFunctions(BacapAdvancement advancement, DatapackSettings settings)
+    private static void SynchronizeBacapFunctions(BacapAdvancement advancement)
     {
+        var settings = advancement.Datapack.Settings;
         var isCompatibility = settings.DatapackType == DatapackType.CompatibilityAddon || advancement.IsOverride;
-        var compatSettings = settings.CompatibilityAddonSettings;
 
-        var allowMsg = !isCompatibility || (compatSettings?.OverrideMsg ?? true);
+        var allowMsg = !isCompatibility || settings.CompatibilityAddonSettings.OverrideMsg;
         var allowMacro = !isCompatibility;
-        var allowExp = !isCompatibility || (compatSettings?.OverrideExpRewards ?? false);
-        var allowItems = !isCompatibility || (compatSettings?.OverrideItemRewards ?? false);
-        var allowTrophies = !isCompatibility || (compatSettings?.OverrideTrophyRewards ?? false);
+        var allowExp = !isCompatibility || settings.CompatibilityAddonSettings.OverrideExpRewards;
+        var allowItems = !isCompatibility || settings.CompatibilityAddonSettings.OverrideItemRewards;
+        var allowTrophies = !isCompatibility || settings.CompatibilityAddonSettings.OverrideTrophyRewards;
 
         // Core execution and announcement functions
         SynchronizeFunction(advancement.MsgFunction, isEnabled: allowMsg, requireExistingOnDisk: false);

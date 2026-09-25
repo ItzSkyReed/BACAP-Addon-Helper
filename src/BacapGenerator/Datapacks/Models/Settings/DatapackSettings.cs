@@ -81,7 +81,7 @@ public sealed class DatapackSettings
 
     [PublicAPI]
     [ConfigurationKeyName("compatibility_addon_settings")]
-    public CompatibilityAddonSettings? CompatibilityAddonSettings { get; init; }
+    public CompatibilityAddonSettings CompatibilityAddonSettings { get; init; } = new();
 
     /// <summary>
     /// Gets the validation rules and thresholds configured for this specific datapack.

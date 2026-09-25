@@ -7,7 +7,6 @@ namespace BacapGenerator.Validation.Models;
 /// </summary>
 public enum ValidationSeverity
 {
-    Ignore,
     Info,
     Warning,
     Error

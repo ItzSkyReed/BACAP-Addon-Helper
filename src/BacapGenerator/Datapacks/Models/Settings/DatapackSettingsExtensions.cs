@@ -78,7 +78,7 @@ public static class DatapackSettingsExtensions
             if (advancement.Tier == BacapAdvancementTier.Root || !settings.SupportsExpRewards())
                 return false;
 
-            return !advancement.IsOverride || (settings.CompatibilityAddonSettings?.OverrideExpRewards ?? false);
+            return !advancement.IsOverride || settings.CompatibilityAddonSettings.OverrideExpRewards;
         }
 
         /// <summary>
@@ -91,7 +91,7 @@ public static class DatapackSettingsExtensions
             if (advancement.Tier == BacapAdvancementTier.Root || !settings.SupportsItemRewards())
                 return false;
 
-            return !advancement.IsOverride || (settings.CompatibilityAddonSettings?.OverrideItemRewards ?? false);
+            return !advancement.IsOverride || settings.CompatibilityAddonSettings.OverrideItemRewards;
         }
 
         /// <summary>
@@ -104,7 +104,7 @@ public static class DatapackSettingsExtensions
             if (advancement.Tier == BacapAdvancementTier.Root || !settings.SupportsTrophyRewards())
                 return false;
 
-            return !advancement.IsOverride || (settings.CompatibilityAddonSettings?.OverrideTrophyRewards ?? false);
+            return !advancement.IsOverride || settings.CompatibilityAddonSettings.OverrideTrophyRewards;
         }
 
         /// <summary>

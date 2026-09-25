@@ -25,9 +25,6 @@ public static class ValidationReportingExtensions
         ManagedAdvancement? advancement = null,
         string? propertyPath = null)
     {
-        if (rule.Severity == ValidationSeverity.Ignore)
-            return;
-
         context.Report(new ValidationIssue(
             rule.RuleId,
             rule.Severity,
