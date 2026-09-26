@@ -7,17 +7,39 @@ using JetBrains.Annotations;
 namespace Core.SNBT.Nodes;
 
 /// <summary>
-/// Represents a compound tag containing a dictionary of named <see cref="ISnbtNode"/> instances.
+/// Represents an SNBT compound tag containing key-value pairs enclosed in curly braces.
 /// </summary>
-/// <param name="Tags">The underlying dictionary containing key-node pairs.</param>
-public record SnbtCompound(Dictionary<string, ISnbtNode> Tags) : ISnbtNode
+public sealed record SnbtCompound : ISnbtNode
 {
+    /// <summary>
+    /// Gets the underlying dictionary containing tag names and their associated nodes.
+    /// </summary>
+    public Dictionary<string, ISnbtNode> Tags { get; init; }
+
     /// <summary>
     /// Initializes a new empty instance of the <see cref="SnbtCompound"/> record.
     /// </summary>
     [PublicAPI]
     public SnbtCompound() : this(new Dictionary<string, ISnbtNode>())
     {
+    }
+
+    /// <summary>
+    /// Initializes a new instance of the <see cref="SnbtCompound"/> record.
+    /// </summary>
+    /// <param name="tags">The dictionary containing key-node pairs.</param>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="tags"/> or any of its keys or values is null.</exception>
+    public SnbtCompound(Dictionary<string, ISnbtNode> tags)
+    {
+        ArgumentNullException.ThrowIfNull(tags);
+
+        foreach (var (key, value) in tags)
+        {
+            ArgumentNullException.ThrowIfNull(key, nameof(tags));
+            ArgumentNullException.ThrowIfNull(value, $"{nameof(tags)}[{key}]");
+        }
+
+        Tags = tags;
     }
 
     #region Serialization
@@ -27,40 +49,127 @@ public record SnbtCompound(Dictionary<string, ISnbtNode> Tags) : ISnbtNode
     /// </summary>
     /// <param name="pretty">If <see langword="true"/>, formats the output with indents and line breaks.</param>
     /// <param name="indent">The current indentation prefix for recursive formatting.</param>
-    /// <returns>A formatted SNBT string.</returns>
+    /// <returns>A formatted SNBT compound string.</returns>
+    /// <example>
+    /// <code>
+    /// var compound = new SnbtCompound();
+    /// string snbt = compound.ToSnbtString(); // returns "{}"
+    /// </code>
+    /// </example>
     public string ToSnbtString(bool pretty = false, string indent = "")
     {
-        if (Tags.Count == 0) return "{}";
+        if (Tags.Count == 0)
+            return "{}";
 
         if (!pretty)
         {
-            var pairs = Tags.Select(kv => $"{FormatKey(kv.Key)}:{kv.Value.ToSnbtString()}");
-            return "{" + string.Join(",", pairs) + "}";
+            var sb = new StringBuilder("{");
+            var isFirst = true;
+
+            foreach (var (key, value) in Tags)
+            {
+                if (!isFirst)
+                    sb.Append(',');
+
+                sb.Append(FormatKey(key));
+                sb.Append(':');
+                sb.Append(value.ToSnbtString(pretty: false, indent: string.Empty));
+                isFirst = false;
+            }
+
+            sb.Append('}');
+            return sb.ToString();
         }
 
-        var sb = new StringBuilder();
-        sb.AppendLine("{");
+        var prettySb = new StringBuilder();
+        prettySb.AppendLine("{");
         var nextIndent = indent + "  ";
         var count = 0;
 
-        foreach (var kvp in Tags)
+        foreach (var (key, value) in Tags)
         {
-            sb.Append($"{nextIndent}{FormatKey(kvp.Key)}: {kvp.Value.ToSnbtString(true, nextIndent)}");
-            if (++count < Tags.Count) sb.AppendLine(",");
-            else sb.AppendLine();
+            prettySb.Append(nextIndent);
+            prettySb.Append(FormatKey(key));
+            prettySb.Append(": ");
+            prettySb.Append(value.ToSnbtString(pretty: true, indent: nextIndent));
+
+            if (++count < Tags.Count)
+                prettySb.AppendLine(",");
+            else
+                prettySb.AppendLine();
         }
 
-        sb.Append(indent + "}");
-        return sb.ToString();
+        prettySb.Append(indent);
+        prettySb.Append('}');
+        return prettySb.ToString();
     }
 
-    private static string FormatKey(string key)
+    /// <summary>
+    /// Formats an SNBT key according to Minecraft specification rules.
+    /// Keys containing only [a-zA-Z0-9_\-\.\+] and not starting with [0-9\-\.\+] can remain unquoted.
+    /// </summary>
+    /// <param name="key">The raw tag name.</param>
+    /// <returns>A properly escaped and quoted string if required; otherwise, the raw key.</returns>
+    public static string FormatKey(string key)
     {
         if (string.IsNullOrEmpty(key))
+        {
             return "\"\"";
+        }
 
-        var needsQuotes = key.Any(c => !char.IsLetterOrDigit(c) && c is not ('_' or '-' or '.'));
-        return needsQuotes ? $"\"{key}\"" : key;
+        // The key must not begin with 0-9, -, ., or +
+        var first = key[0];
+        if (char.IsAsciiDigit(first) || first is '-' or '.' or '+')
+            return QuoteAndEscapeString(key);
+
+        // Quote enclosure is optional if the string contains only 0-9, A-Z, a-z, _, -, ., and +
+        foreach (var c in key)
+        {
+            if (!char.IsAsciiLetterOrDigit(c) && c is not ('_' or '-' or '.' or '+'))
+                return QuoteAndEscapeString(key);
+        }
+
+        return key;
+    }
+
+    private static string QuoteAndEscapeString(string value)
+    {
+        var sb = new StringBuilder(value.Length + 4);
+        sb.Append('"');
+
+        foreach (var c in value)
+        {
+            switch (c)
+            {
+                case '\\':
+                    sb.Append(@"\\");
+                    break;
+                case '"':
+                    sb.Append("\\\"");
+                    break;
+                case '\b':
+                    sb.Append("\\b");
+                    break;
+                case '\f':
+                    sb.Append("\\f");
+                    break;
+                case '\n':
+                    sb.Append("\\n");
+                    break;
+                case '\r':
+                    sb.Append("\\r");
+                    break;
+                case '\t':
+                    sb.Append("\\t");
+                    break;
+                default:
+                    sb.Append(c);
+                    break;
+            }
+        }
+
+        sb.Append('"');
+        return sb.ToString();
     }
 
     #endregion
@@ -77,6 +186,7 @@ public record SnbtCompound(Dictionary<string, ISnbtNode> Tags) : ISnbtNode
     /// <summary>
     /// Indexer to retrieve a raw child node by key.
     /// </summary>
+    /// <param name="key">The tag name.</param>
     public ISnbtNode? this[string key] => GetNode(key);
 
     #endregion
@@ -124,20 +234,20 @@ public record SnbtCompound(Dictionary<string, ISnbtNode> Tags) : ISnbtNode
     /// <typeparam name="T">The target primitive type, string, or <see cref="ISnbtNode"/> implementation.</typeparam>
     /// <param name="key">The tag name.</param>
     /// <returns>The converted value if found; otherwise, <see langword="null"/>.</returns>
-    public T? GetOptional<T>(string key) =>
-        TryGet<T>(key, out var value) ? value : default;
+    public T? GetOptional<T>(string key) where T : struct =>
+        TryGet<T>(key, out var value) ? value : null;
 
     #endregion
 
-    #region Specific Getters (Reusing Generic Core)
+    #region Specific Getters
 
     /// <summary>
-    /// Gets a boolean value by key, checking if the byte value is non-zero.
+    /// Gets a boolean value by key, converting byte values to boolean (non-zero is true).
     /// </summary>
     public bool GetBool(string key, bool defaultValue = false) => Get(key, defaultValue);
 
     /// <summary>
-    /// Gets a 32-bit floating-point value, automatically coercing numeric node types.
+    /// Gets a 32-bit floating-point value, automatically widening numeric node types.
     /// </summary>
     public float GetFloat(string key, float defaultValue = 0f) => Get(key, defaultValue);
 
@@ -159,99 +269,43 @@ public record SnbtCompound(Dictionary<string, ISnbtNode> Tags) : ISnbtNode
     /// <summary>
     /// Gets a string value by key.
     /// </summary>
-    public string GetString(string key, string defaultValue = "") => Get(key, defaultValue);
+    public string GetString(string key, string defaultValue = "") =>
+        TryGet<string>(key, out var value) ? value : defaultValue;
 
     #endregion
 
-    #region Specific Nullable Getters (Reusing Generic Core)
+    #region Specific Nullable Getters
 
     /// <summary>
     /// Gets a boolean value if present and valid; otherwise returns <see langword="null"/>.
     /// </summary>
-    public bool? GetOptionalBool(string key)
-    {
-        var node = GetNode(key);
-
-        if (node is SnbtBool snbtBool)
-            return snbtBool.Value;
-
-        return null;
-    }
+    public bool? GetOptionalBool(string key) => GetOptional<bool>(key);
 
     /// <summary>
     /// Gets a float value if present and numeric; otherwise returns <see langword="null"/>.
     /// </summary>
-    public float? GetOptionalFloat(string key)
-    {
-        return GetNode(key) switch
-        {
-            SnbtFloat f => f.Value,
-            SnbtDouble d => (float)d.Value,
-            SnbtInt i => i.Value,
-            SnbtByte b => b.Value,
-            SnbtShort s => s.Value,
-            _ => null
-        };
-    }
+    public float? GetOptionalFloat(string key) => GetOptional<float>(key);
 
     /// <summary>
     /// Gets an integer value if present and compatible; otherwise returns <see langword="null"/>.
     /// </summary>
-    public int? GetOptionalInt(string key)
-    {
-        return GetNode(key) switch
-        {
-            SnbtInt i => i.Value,
-            SnbtByte b => b.Value,
-            SnbtShort s => s.Value,
-            SnbtLong l => (int)l.Value,
-            SnbtFloat f => (int)f.Value,
-            SnbtDouble d => (int)d.Value,
-            _ => null
-        };
-    }
+    public int? GetOptionalInt(string key) => GetOptional<int>(key);
 
     /// <summary>
     /// Gets a long value if present and compatible; otherwise returns <see langword="null"/>.
     /// </summary>
-    public long? GetOptionalLong(string key)
-    {
-        return GetNode(key) switch
-        {
-            SnbtLong l => l.Value,
-            SnbtInt i => i.Value,
-            SnbtByte b => b.Value,
-            SnbtShort s => s.Value,
-            SnbtFloat f => (long)f.Value,
-            SnbtDouble d => (long)d.Value,
-            _ => null
-        };
-    }
+    public long? GetOptionalLong(string key) => GetOptional<long>(key);
 
     /// <summary>
     /// Gets a double value if present and numeric; otherwise returns <see langword="null"/>.
     /// </summary>
-    public double? GetOptionalDouble(string key)
-    {
-        return GetNode(key) switch
-        {
-            SnbtDouble d => d.Value,
-            SnbtFloat f => f.Value,
-            SnbtLong l => l.Value,
-            SnbtInt i => i.Value,
-            SnbtByte b => b.Value,
-            SnbtShort s => s.Value,
-            _ => null
-        };
-    }
+    public double? GetOptionalDouble(string key) => GetOptional<double>(key);
 
     /// <summary>
     /// Gets a string value if present; otherwise returns <see langword="null"/>.
     /// </summary>
-    public string? GetOptionalString(string key)
-    {
-        return GetNode(key) is SnbtString str ? str.Value : null;
-    }
+    public string? GetOptionalString(string key) =>
+        TryGet<string>(key, out var str) ? str : null;
 
     #endregion
 
@@ -356,14 +410,58 @@ public record SnbtCompound(Dictionary<string, ISnbtNode> Tags) : ISnbtNode
         }
         else if (typeof(T) == typeof(string))
         {
-            if (node is not SnbtString str)
-                return false;
+            if (node is not SnbtString str) return false;
 
             Unsafe.As<T, string?>(ref value!) = str.Value;
             return true;
         }
 
         return false;
+    }
+
+    #endregion
+
+    #region Equality
+
+    /// <summary>
+    /// Determines whether the specified compound contains identical key-node pairs.
+    /// </summary>
+    /// <param name="other">The other compound to compare with.</param>
+    /// <returns><see langword="true"/> if both compounds contain equal key-value pairs; otherwise, <see langword="false"/>.</returns>
+    public bool Equals(SnbtCompound? other)
+    {
+        if (other is null) return false;
+        if (ReferenceEquals(this, other)) return true;
+
+        if (Tags.Count != other.Tags.Count)
+            return false;
+
+        foreach (var (key, value) in Tags)
+        {
+            if (!other.Tags.TryGetValue(key, out var otherValue))
+                return false;
+
+            if (!EqualityComparer<ISnbtNode>.Default.Equals(value, otherValue))
+                return false;
+        }
+
+        return true;
+    }
+
+    /// <summary>
+    /// Computes a hash code based on the compound's key-value pairs in order-independent fashion.
+    /// </summary>
+    /// <returns>An integer hash code.</returns>
+    public override int GetHashCode()
+    {
+        var hash = 0;
+        foreach (var (key, value) in Tags)
+        {
+            var entryHash = HashCode.Combine(key, value);
+            hash ^= entryHash; // XOR provides order-independent combination
+        }
+
+        return hash;
     }
 
     #endregion
