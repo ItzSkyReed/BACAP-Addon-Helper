@@ -285,32 +285,38 @@ public sealed record SnbtCompound : ISnbtNode
     /// <summary>
     /// Gets a boolean value if present and valid; otherwise returns <see langword="null"/>.
     /// </summary>
-    public bool? GetOptionalBool(string key) => GetOptional<bool>(key);
+    public bool? GetOptionalBool(string key) =>
+        TryGet<bool>(key, out var value) ? value : null;
 
     /// <summary>
     /// Gets a float value if present and numeric; otherwise returns <see langword="null"/>.
     /// </summary>
-    public float? GetOptionalFloat(string key) => GetOptional<float>(key);
+    public float? GetOptionalFloat(string key) =>
+        TryGet<float>(key, out var value) ? value : null;
 
     /// <summary>
     /// Gets an integer value if present and compatible; otherwise returns <see langword="null"/>.
     /// </summary>
-    public int? GetOptionalInt(string key) => GetOptional<int>(key);
+    public int? GetOptionalInt(string key) =>
+        TryGet<int>(key, out var value) ? value : null;
 
     /// <summary>
     /// Gets a long value if present and compatible; otherwise returns <see langword="null"/>.
     /// </summary>
-    public long? GetOptionalLong(string key) => GetOptional<long>(key);
+    public long? GetOptionalLong(string key) =>
+        TryGet<long>(key, out var value) ? value : null;
 
     /// <summary>
     /// Gets a double value if present and numeric; otherwise returns <see langword="null"/>.
     /// </summary>
-    public double? GetOptionalDouble(string key) => GetOptional<double>(key);
+    public double? GetOptionalDouble(string key) =>
+        TryGet<double>(key, out var value) ? value : null;
 
     /// <summary>
     /// Gets a string value if present; otherwise returns <see langword="null"/>.
     /// </summary>
-    public string? GetOptionalString(string key) => GetOptional<string>(key);
+    public string? GetOptionalString(string key) =>
+        TryGet<string>(key, out var value) ? value : null;
 
     #endregion
 
