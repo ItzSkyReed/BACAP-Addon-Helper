@@ -1,4 +1,5 @@
-﻿using System.Text;
+﻿using System.Buffers;
+using System.Text;
 using Core.SNBT.Interfaces;
 
 namespace Core.SNBT.Nodes;
@@ -8,6 +9,9 @@ namespace Core.SNBT.Nodes;
 /// </summary>
 public sealed record SnbtString : ISnbtNode
 {
+    private static readonly SearchValues<char> EscapableChars =
+        SearchValues.Create('\\', '"', '\b', '\f', '\n', '\r', '\t');
+
     /// <summary>
     /// Gets the unescaped underlying string value.
     /// </summary>
@@ -39,19 +43,9 @@ public sealed record SnbtString : ISnbtNode
     public string ToSnbtString(bool pretty = false, string indent = "")
     {
         if (Value.Length == 0)
-        {
             return "\"\"";
-        }
 
-        var needsEscaping = false;
-        foreach (var t in Value)
-        {
-            if (t is '\\' or '"' or '\b' or '\f' or '\n' or '\r' or '\t')
-                needsEscaping = true;
-            break;
-        }
-
-        if (!needsEscaping)
+        if (!Value.AsSpan().ContainsAny(EscapableChars))
             return $"\"{Value}\"";
 
         var sb = new StringBuilder(Value.Length + 16);
