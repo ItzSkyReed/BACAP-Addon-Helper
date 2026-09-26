@@ -63,7 +63,7 @@ public record FireworksComponent(
     public ISnbtNode ToSnbt()
     {
         var builder = Snbt.Compound()
-            .PutOptional("flight_duration", FlightDuration, 1);
+            .PutOptional("flight_duration", FlightDuration, (sbyte)1);
 
         if (Explosions is { Count: > 0 })
         {
