@@ -7,7 +7,7 @@ namespace Core.SNBT.Nodes;
 /// <summary>
 /// Represents the abstract base record for SNBT array nodes ([B;...], [I;...], [L;...]).
 /// </summary>
-public abstract record SnbtArrayNode : ISnbtNode, IEquatable<SnbtArrayNode>
+public abstract record SnbtArrayNode : ISnbtNode
 {
     /// <summary>
     /// Gets the SNBT array prefix character ('B', 'I', or 'L').
