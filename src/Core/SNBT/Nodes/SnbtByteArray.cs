@@ -1,4 +1,5 @@
-﻿using System.Text;
+﻿using System.Runtime.InteropServices;
+using System.Text;
 using Core.SNBT.Interfaces;
 
 namespace Core.SNBT.Nodes;
@@ -6,26 +7,28 @@ namespace Core.SNBT.Nodes;
 /// <summary>
 /// Represents an SNBT byte array node formatted as [B; &lt;items&gt;].
 /// </summary>
-public sealed record SnbtByteArray : ISnbtNode, IEquatable<SnbtByteArray>
+public sealed record SnbtByteArray : ISnbtNode
 {
     /// <summary>
-    /// Gets the ordered collection of byte tags contained within the array.
+    /// Gets the list of byte tags contained within the array.
+    /// Compatible with <see cref="CollectionsMarshal.AsSpan{T}"/>.
     /// </summary>
-    public IReadOnlyList<ISnbtNode> Items { get; }
+    public List<ISnbtNode> Items { get; init; }
 
     /// <summary>
     /// Initializes a new instance of the <see cref="SnbtByteArray"/> record.
     /// </summary>
-    /// <param name="items">The collection of byte nodes. Booleans and non-byte nodes are not allowed by the SNBT specification.</param>
+    /// <param name="items">The list of byte nodes. Booleans and non-byte nodes are not allowed by the SNBT specification.</param>
     /// <exception cref="ArgumentNullException">Thrown when <paramref name="items"/> or any of its elements is null.</exception>
     /// <exception cref="ArgumentException">Thrown when an item in <paramref name="items"/> is not a valid <see cref="SnbtByte"/>.</exception>
-    public SnbtByteArray(IReadOnlyList<ISnbtNode> items)
+    public SnbtByteArray(List<ISnbtNode> items)
     {
         ArgumentNullException.ThrowIfNull(items);
 
-        for (var i = 0; i < items.Count; i++)
+        var span = CollectionsMarshal.AsSpan(items);
+        for (var i = 0; i < span.Length; i++)
         {
-            var item = items[i];
+            var item = span[i];
             ArgumentNullException.ThrowIfNull(item, $"{nameof(items)}[{i}]");
 
             if (item is not SnbtByte)
@@ -44,7 +47,7 @@ public sealed record SnbtByteArray : ISnbtNode, IEquatable<SnbtByteArray>
     /// </summary>
     /// <param name="pretty">Indicates whether formatting with spaces is enabled.</param>
     /// <param name="indent">The indentation prefix for nested structures.</param>
-    /// <returns>A string representation in the format [B;1b,2b] or [B; 1b, 2b] when pretty is true.</returns>
+    /// <returns>A string formatted as [B;1b,2b] or [B; 1b, 2b] when pretty is true.</returns>
     /// <example>
     /// <code>
     /// var array = new SnbtByteArray([new SnbtByte(1), new SnbtByte(2)]);
@@ -53,7 +56,8 @@ public sealed record SnbtByteArray : ISnbtNode, IEquatable<SnbtByteArray>
     /// </example>
     public string ToSnbtString(bool pretty = false, string indent = "")
     {
-        if (Items.Count == 0)
+        var span = CollectionsMarshal.AsSpan(Items);
+        if (span.Length == 0)
         {
             return "[B;]";
         }
@@ -62,14 +66,12 @@ public sealed record SnbtByteArray : ISnbtNode, IEquatable<SnbtByteArray>
         var separator = pretty ? ", " : ",";
 
         var builder = new StringBuilder(prefix);
-        for (var i = 0; i < Items.Count; i++)
+        for (var i = 0; i < span.Length; i++)
         {
             if (i > 0)
-            {
                 builder.Append(separator);
-            }
 
-            builder.Append(Items[i].ToSnbtString(pretty, indent));
+            builder.Append(span[i].ToSnbtString(pretty, indent));
         }
 
         builder.Append(']');
@@ -84,7 +86,21 @@ public sealed record SnbtByteArray : ISnbtNode, IEquatable<SnbtByteArray>
     public bool Equals(SnbtByteArray? other)
     {
         if (other is null) return false;
-        return ReferenceEquals(this, other) || Items.SequenceEqual(other.Items);
+        if (ReferenceEquals(this, other)) return true;
+
+        var thisSpan = CollectionsMarshal.AsSpan(Items);
+        var otherSpan = CollectionsMarshal.AsSpan(other.Items);
+
+        if (thisSpan.Length != otherSpan.Length)
+            return false;
+
+        for (var i = 0; i < thisSpan.Length; i++)
+        {
+            if (!EqualityComparer<ISnbtNode>.Default.Equals(thisSpan[i], otherSpan[i]))
+                return false;
+        }
+
+        return true;
     }
 
     /// <summary>
@@ -94,10 +110,9 @@ public sealed record SnbtByteArray : ISnbtNode, IEquatable<SnbtByteArray>
     public override int GetHashCode()
     {
         var hash = new HashCode();
-        foreach (var item in Items)
-        {
-            hash.Add(item);
-        }
+        var span = CollectionsMarshal.AsSpan(Items);
+        foreach (var t in span)
+            hash.Add(t);
 
         return hash.ToHashCode();
     }
