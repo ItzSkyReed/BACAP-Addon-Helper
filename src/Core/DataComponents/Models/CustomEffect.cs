@@ -49,7 +49,7 @@ public record CustomEffect(
     /// <returns>An <see cref="ISnbtNode"/> representing the effect compound.</returns>
     public ISnbtNode ToSnbt() => Snbt.Compound()
         .Put("id", Id)
-        .PutOptional("amplifier", Amplifier, 0)
+        .PutOptional("amplifier", Amplifier, (sbyte)0)
         .PutOptional("duration", Duration, 1)
         .PutOptional("ambient", Ambient, false)
         .PutOptional("show_particles", ShowParticles, true)
