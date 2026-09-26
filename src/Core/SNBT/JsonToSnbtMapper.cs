@@ -68,12 +68,12 @@ public static class JsonToSnbtMapper
     /// Parses a JSON number into the tightest fitting SNBT numeric type.
     /// </summary>
     /// <param name="element">The JSON number element.</param>
-    /// <returns>An instance of <see cref="SnbtInt"/>, <see cref="SnbtLong"/>, or <see cref="SnbtDouble"/>.</returns>
+    /// <returns>An instance of <see cref="SnbtInt"/>, <see cref="SnbtLong"/>, <see cref="SnbtDouble"/>, or <see cref="SnbtString"/> fallback.</returns>
     private static ISnbtNode ParseJsonNumber(JsonElement element)
     {
         if (element.TryGetInt32(out var i)) return new SnbtInt(i);
         if (element.TryGetInt64(out var l)) return new SnbtLong(l);
-        if (element.TryGetDouble(out var d)) return new SnbtDouble(d);
+        if (element.TryGetDouble(out var d) && double.IsFinite(d)) return new SnbtDouble(d);
 
         return new SnbtString(element.GetRawText());
     }
