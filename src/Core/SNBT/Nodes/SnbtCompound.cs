@@ -234,8 +234,14 @@ public sealed record SnbtCompound : ISnbtNode
     /// <typeparam name="T">The target primitive type, string, or <see cref="ISnbtNode"/> implementation.</typeparam>
     /// <param name="key">The tag name.</param>
     /// <returns>The converted value if found; otherwise, <see langword="null"/>.</returns>
-    public T? GetOptional<T>(string key) where T : struct =>
-        TryGet<T>(key, out var value) ? value : null;
+    /// <example>
+    /// <code>
+    /// int? count = compound.GetOptional&lt;int&gt;("count");
+    /// string? text = compound.GetOptional&lt;string&gt;("text");
+    /// </code>
+    /// </example>
+    public T? GetOptional<T>(string key) =>
+        TryGet<T>(key, out var value) ? value : default;
 
     #endregion
 
@@ -304,8 +310,7 @@ public sealed record SnbtCompound : ISnbtNode
     /// <summary>
     /// Gets a string value if present; otherwise returns <see langword="null"/>.
     /// </summary>
-    public string? GetOptionalString(string key) =>
-        TryGet<string>(key, out var str) ? str : null;
+    public string? GetOptionalString(string key) => GetOptional<string>(key);
 
     #endregion
 
