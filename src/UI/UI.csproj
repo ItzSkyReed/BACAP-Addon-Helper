@@ -13,7 +13,7 @@
 
         <!-- Application metadata -->
         <Product>BACAP Addon Helper</Product>
-        <Version>0.0.1</Version>
+        <Version>0.0.2+mc26.3</Version>
         <Authors>ItzSkyReed</Authors>
         <Description>Interactive CLI tool for managing and generating BACAP datapacks and language files.</Description>
 
