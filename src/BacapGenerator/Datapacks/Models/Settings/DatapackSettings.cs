@@ -66,6 +66,13 @@ public sealed class DatapackSettings
     public string? ParentDatapackId { get; init; }
 
     /// <summary>
+    /// Gets the optional identifier of the parent datapack when acting as an override addon.
+    /// </summary>
+    [PublicAPI]
+    [ConfigurationKeyName("checklist_triggers_folder")]
+    public string ChecklistTriggersFolder { get; init; } = string.Empty;
+
+    /// <summary>
     /// Gets the mapping of advancement tabs to their milestone advancement Minecraft paths.
     /// </summary>
     [PublicAPI]
@@ -168,6 +175,15 @@ public sealed class DatapackSettings
                 DatapackErrorKind.MissingParentDatapack,
                 $"Compatibility addon '{datapackId}' must specify '{nameof(ParentDatapackId)}'.",
                 nameof(ParentDatapackId));
+        }
+
+        if (Checklists.Count > 0 && string.IsNullOrWhiteSpace(ChecklistTriggersFolder))
+        {
+            throw new DatapackConfigurationException(
+                datapackId,
+                DatapackErrorKind.MissingPath,
+                $"Checklist triggers folder must be defined for datapack '{datapackId}' because checklists are present.",
+                nameof(ChecklistTriggersFolder));
         }
 
         // Validate nested language pack settings if configured

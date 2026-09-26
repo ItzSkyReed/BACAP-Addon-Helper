@@ -127,7 +127,7 @@ datapacks:
     fanpacks_namespace: "bacaped_fanpacks"
     type: "addon"
     release_name: "Enhanced Discoveries"
-
+    checklist_triggers_folder: "triggers_callback"
     # Reward & milestone advancements
     advancement_legend_mc_path: "bacaped:bacap/enhanced_legend"
     milestone_mc_paths:
@@ -156,6 +156,7 @@ datapacks:
       template: default
       path: "./resourcepacks/Enhanced_Discoveries_Language_Pack"
 
+
     # Checklists
     # Defines interactive checklist systems (/trigger callbacks and advancement validation functions)
     # used to monitor and display real-time entity completion status.
@@ -172,7 +173,7 @@ datapacks:
         distance: 128
         # Output directory relative to data/<namespace>/function/ for *_check.mcfunction files
         check_subfolder: "mob_universe"
-        # Function filename placed under data/<namespace>/function/triggers_callback/
+        # Function filename placed under data/<namespace>/function/{checklist_triggers_folder}/
         trigger_filename: "mob_universe_trigger.mcfunction"
         # Header translation key displayed at the top of the chat output
         header_translate_key: "Mob list for the current dimension of the Mob Universe Advancement"

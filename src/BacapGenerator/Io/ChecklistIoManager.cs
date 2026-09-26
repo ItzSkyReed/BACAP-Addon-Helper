@@ -36,8 +36,8 @@ public static class ChecklistIoManager
 
         var functionsRoot = Path.Combine(datapack.DatapackDataPath.FullName, targetNamespace, "function");
 
-        // Generate and save trigger callback: data/{namespace}/function/triggers_callback/{filename}
-        var triggerDirectory = Path.Combine(functionsRoot, "triggers_callback");
+        // Generate and save trigger callback: data/{namespace}/function/{checklist_triggers_folder}/{filename}
+        var triggerDirectory = Path.Combine(functionsRoot, datapack.Settings.ChecklistTriggersFolder);
         Directory.CreateDirectory(triggerDirectory);
 
         var triggerCallbackPath = Path.Combine(triggerDirectory, definition.TriggerFilename);

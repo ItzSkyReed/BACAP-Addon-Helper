@@ -69,7 +69,7 @@ public sealed class ChecklistDefinitionSettings
 
     /// <summary>
     /// Gets the filename for the callback function (e.g. "mob_universe_trigger.mcfunction").
-    /// Located inside data/{namespace}/function/triggers_callback/.
+    /// Located inside data/{namespace}/function/{checklist_triggers_folder}/.
     /// </summary>
     [PublicAPI]
     [ConfigurationKeyName("trigger_filename")]
