@@ -139,6 +139,6 @@ public class SnbtByteArrayTests
         var array = new SnbtByteArray([]);
 
         // Assert
-        Assert.IsAssignableFrom<ISnbtNode>(array);
+        Assert.IsType<ISnbtNode>(array, exactMatch: false);
     }
 }

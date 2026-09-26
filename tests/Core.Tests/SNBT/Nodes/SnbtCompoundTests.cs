@@ -383,7 +383,7 @@ public class SnbtCompoundTests
         var compound = new SnbtCompound();
 
         // Assert
-        Assert.IsAssignableFrom<ISnbtNode>(compound);
+        Assert.IsType<ISnbtNode>(compound, exactMatch: false);
     }
 
     #endregion

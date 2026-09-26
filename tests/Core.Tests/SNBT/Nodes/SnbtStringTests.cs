@@ -149,7 +149,7 @@ public class SnbtStringTests
         var node = new SnbtString("test");
 
         // Assert
-        Assert.IsAssignableFrom<ISnbtNode>(node);
+        Assert.IsType<ISnbtNode>(node, exactMatch: false);
     }
 
     /// <summary>

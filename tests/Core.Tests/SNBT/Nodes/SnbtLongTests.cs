@@ -97,7 +97,7 @@ public class SnbtLongTests
         var node = new SnbtLong(100L);
 
         // Assert
-        Assert.IsAssignableFrom<ISnbtNode>(node);
+        Assert.IsType<ISnbtNode>(node, exactMatch: false);
     }
 
     /// <summary>

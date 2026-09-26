@@ -169,6 +169,6 @@ public class SnbtListTests
         var list = new SnbtList();
 
         // Assert
-        Assert.IsAssignableFrom<ISnbtNode>(list);
+        Assert.IsType<ISnbtNode>(list, exactMatch: false);
     }
 }
