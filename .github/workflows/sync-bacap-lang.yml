@@ -21,16 +21,16 @@ jobs:
         run: |
           INTERNAL_ZIP_PATH="assets/minecraft/lang/base_language_file.json"
           DESTINATION_PATH="src/BacapGenerator/Resources/base_language_file.json"
-
+          
           mkdir -p "$(dirname "$DESTINATION_PATH")"
-
+          
           API_RES=$(curl -s "https://api.modrinth.com/v2/project/bacap-language-pack/version")
           DOWNLOAD_URL=$(echo "$API_RES" | jq -r '.[0].files[0].url')
           VERSION_NUM=$(echo "$API_RES" | jq -r '.[0].version_number')
 
           echo "Latest Modrinth version: $VERSION_NUM"
           echo "latest_version=$VERSION_NUM" >> $GITHUB_OUTPUT
-
+          
           TMP_ZIP=$(mktemp)
           TMP_EXTRACTED=$(mktemp)
           curl -sL "$DOWNLOAD_URL" -o "$TMP_ZIP"
@@ -40,27 +40,19 @@ jobs:
             rm -f "$TMP_ZIP" "$TMP_EXTRACTED"
             exit 1
           fi
-
-          SHOULD_UPDATE="false"
-          if [ ! -f "$DESTINATION_PATH" ]; then
-            echo "Local file not found. Creating..."
-            cp "$TMP_EXTRACTED" "$DESTINATION_PATH"
-            SHOULD_UPDATE="true"
-          else
-            CURRENT_HASH=$(sha256sum "$DESTINATION_PATH" | cut -d ' ' -f 1)
-            NEW_HASH=$(sha256sum "$TMP_EXTRACTED" | cut -d ' ' -f 1)
-
-            if [ "$CURRENT_HASH" != "$NEW_HASH" ]; then
-              echo "Hash mismatch detected. Updating file..."
-              cp "$TMP_EXTRACTED" "$DESTINATION_PATH"
-              SHOULD_UPDATE="true"
-            else
-              echo "Hash matched. File is up to date."
-            fi
-          fi
-
+          
+          sed -i 's/\r$//' "$TMP_EXTRACTED"
+          
+          cp "$TMP_EXTRACTED" "$DESTINATION_PATH"
           rm -f "$TMP_ZIP" "$TMP_EXTRACTED"
-          echo "should_update=$SHOULD_UPDATE" >> $GITHUB_OUTPUT
+          
+          if git diff --quiet "$DESTINATION_PATH"; then
+            echo "No semantic changes detected."
+            echo "should_update=false" >> $GITHUB_OUTPUT
+          else
+            echo "File changed. Update required."
+            echo "should_update=true" >> $GITHUB_OUTPUT
+          fi
 
       - name: Create Pull Request
         if: steps.process_file.outputs.should_update == 'true'
