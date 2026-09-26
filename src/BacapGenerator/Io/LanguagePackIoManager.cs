@@ -15,6 +15,7 @@ namespace BacapGenerator.Io;
 public static class LanguagePackIoManager
 {
     private const string BaseTranslationFileName = "base_translation.json";
+    private const string EmbeddedBaseLanguageResource = "BacapGenerator.Resources.base_language_file.json";
     private const string DontForgetComment = " // <---  dont forget \",\"";
     private static readonly UTF8Encoding Utf8NoBom = new(encoderShouldEmitUTF8Identifier: false);
 
@@ -23,6 +24,31 @@ public static class LanguagePackIoManager
         CommentHandling = JsonCommentHandling.Skip,
         AllowTrailingCommas = true
     };
+
+    /// <summary>
+    /// Reads and extracts all translation keys declared in the embedded BACAP base language template file.
+    /// </summary>
+    /// <returns>A read-only collection of translation keys defined in the embedded resource.</returns>
+    /// <exception cref="InvalidOperationException">Thrown when the embedded resource is missing from the assembly.</exception>
+    /// <exception cref="CorruptedLanguageFileException">Thrown when the resource contains syntax errors or invalid JSON structure.</exception>
+    [PublicAPI]
+    public static IReadOnlyCollection<string> LoadEmbeddedBaseLanguageKeys()
+    {
+        var assembly = typeof(LanguagePackIoManager).Assembly;
+        using var stream = assembly.GetManifestResourceStream(EmbeddedBaseLanguageResource);
+
+        if (stream is null)
+        {
+            throw new InvalidOperationException(
+                $"Embedded resource '{EmbeddedBaseLanguageResource}' was not found. " +
+                "Ensure that 'Resources/base_language_file.json' is configured as an <EmbeddedResource> in the project file.");
+        }
+
+        using var reader = new StreamReader(stream, Encoding.UTF8);
+        var translations = ParseTranslations(reader, EmbeddedBaseLanguageResource);
+        return translations.Keys;
+    }
+
 
     /// <summary>
     /// Scans and loads all language JSON files under <c>assets/minecraft/lang/</c>.
@@ -286,10 +312,22 @@ public static class LanguagePackIoManager
 
     private static Dictionary<string, string> ParseTranslations(string filePath)
     {
-        var lines = File.ReadAllLines(filePath, Encoding.UTF8);
+        using var reader = new StreamReader(filePath, Encoding.UTF8);
+        return ParseTranslations(reader, Path.GetFileName(filePath));
+    }
+
+    /// <summary>
+    /// Parses translations from a stream reader, sanitizing '#' comments to '//' for System.Text.Json compatibility.
+    /// </summary>
+    /// <param name="reader">The text reader providing the JSON payload.</param>
+    /// <param name="sourceIdentifier">File name or resource identifier used for error reporting.</param>
+    /// <returns>A dictionary containing translation key-value mappings.</returns>
+    /// <exception cref="CorruptedLanguageFileException">Thrown when the JSON payload is malformed or not a root object.</exception>
+    private static Dictionary<string, string> ParseTranslations(TextReader reader, string sourceIdentifier)
+    {
         var sb = new StringBuilder();
 
-        foreach (var line in lines)
+        while (reader.ReadLine() is { } line)
         {
             var trimmed = line.TrimStart();
             // Normalize '#' comments to '//' for JsonCommentHandling.Skip
@@ -307,8 +345,8 @@ public static class LanguagePackIoManager
             if (doc.RootElement.ValueKind != JsonValueKind.Object)
             {
                 throw new CorruptedLanguageFileException(
-                    filePath,
-                    $"Root JSON structure in '{Path.GetFileName(filePath)}' must be an object, but found {doc.RootElement.ValueKind}.");
+                    sourceIdentifier,
+                    $"Root JSON structure in '{sourceIdentifier}' must be an object, but found {doc.RootElement.ValueKind}.");
             }
 
             foreach (var property in doc.RootElement.EnumerateObject())
@@ -321,8 +359,8 @@ public static class LanguagePackIoManager
         catch (JsonException ex)
         {
             throw new CorruptedLanguageFileException(
-                filePath,
-                $"JSON syntax error in '{Path.GetFileName(filePath)}' at line {ex.LineNumber}, pos {ex.BytePositionInLine}: {ex.Message}",
+                sourceIdentifier,
+                $"JSON syntax error in '{sourceIdentifier}' at line {ex.LineNumber}, pos {ex.BytePositionInLine}: {ex.Message}",
                 ex.LineNumber,
                 ex.BytePositionInLine,
                 ex);

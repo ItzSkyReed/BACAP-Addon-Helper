@@ -1,0 +1,76 @@
+﻿name: Sync BACAP Base Language
+
+on:
+  schedule:
+    - cron: '0 6 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  sync-lang-file:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Fetch and verify base language file
+        id: process_file
+        run: |
+          INTERNAL_ZIP_PATH="assets/minecraft/lang/base_language_file.json"
+          DESTINATION_PATH="src/BacapGenerator/Resources/base_language_file.json"
+
+          mkdir -p "$(dirname "$DESTINATION_PATH")"
+
+          API_RES=$(curl -s "https://api.modrinth.com/v2/project/bacap-language-pack/version")
+          DOWNLOAD_URL=$(echo "$API_RES" | jq -r '.[0].files[0].url')
+          VERSION_NUM=$(echo "$API_RES" | jq -r '.[0].version_number')
+
+          echo "Latest Modrinth version: $VERSION_NUM"
+          echo "latest_version=$VERSION_NUM" >> $GITHUB_OUTPUT
+
+          TMP_ZIP=$(mktemp)
+          TMP_EXTRACTED=$(mktemp)
+          curl -sL "$DOWNLOAD_URL" -o "$TMP_ZIP"
+
+          if ! unzip -p "$TMP_ZIP" "$INTERNAL_ZIP_PATH" > "$TMP_EXTRACTED"; then
+            echo "::error::File $INTERNAL_ZIP_PATH not found in download archive"
+            rm -f "$TMP_ZIP" "$TMP_EXTRACTED"
+            exit 1
+          fi
+
+          SHOULD_UPDATE="false"
+          if [ ! -f "$DESTINATION_PATH" ]; then
+            echo "Local file not found. Creating..."
+            cp "$TMP_EXTRACTED" "$DESTINATION_PATH"
+            SHOULD_UPDATE="true"
+          else
+            CURRENT_HASH=$(sha256sum "$DESTINATION_PATH" | cut -d ' ' -f 1)
+            NEW_HASH=$(sha256sum "$TMP_EXTRACTED" | cut -d ' ' -f 1)
+
+            if [ "$CURRENT_HASH" != "$NEW_HASH" ]; then
+              echo "Hash mismatch detected. Updating file..."
+              cp "$TMP_EXTRACTED" "$DESTINATION_PATH"
+              SHOULD_UPDATE="true"
+            else
+              echo "Hash matched. File is up to date."
+            fi
+          fi
+
+          rm -f "$TMP_ZIP" "$TMP_EXTRACTED"
+          echo "should_update=$SHOULD_UPDATE" >> $GITHUB_OUTPUT
+
+      - name: Create Pull Request
+        if: steps.process_file.outputs.should_update == 'true'
+        uses: peter-evans/create-pull-request@v6
+        with:
+          commit-message: "chore(i18n): update base_language_file.json from BACAP ${{ steps.process_file.outputs.latest_version }}"
+          title: "Update base_language_file.json (BACAP ${{ steps.process_file.outputs.latest_version }})"
+          body: |
+            Found updates in `base_language_file.json` from **BACAP Language Pack** (`${{ steps.process_file.outputs.latest_version }}`).
+            
+            Target: `src/BacapGenerator/Resources/base_language_file.json`
+          branch: "chore/update-bacap-base-lang"
+          delete-branch: true

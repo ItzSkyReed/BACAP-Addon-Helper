@@ -1,6 +1,7 @@
 ﻿using System.Collections.Frozen;
 using BacapGenerator.Common;
 using BacapGenerator.Configuration.Exceptions;
+using BacapGenerator.Io;
 using JetBrains.Annotations;
 using Microsoft.Extensions.Configuration;
 
@@ -120,46 +121,35 @@ public class LanguagePackSettings
     /// <returns>An immutable <see cref="FrozenSet{T}"/> containing all active ignored keys.</returns>
     private FrozenSet<string> BuildIgnoredKeysSet()
     {
-        var combined = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        var combined = new HashSet<string>(StringComparer.Ordinal);
 
         if (UseDefaultIgnoredKeys)
             combined.UnionWith(DefaultIgnoredKeys);
 
         if (IgnoredKeys is not { Count: > 0 })
-            return combined.ToFrozenSet(StringComparer.OrdinalIgnoreCase);
+            return combined.ToFrozenSet(StringComparer.Ordinal);
 
         foreach (var key in IgnoredKeys.Where(key => !string.IsNullOrWhiteSpace(key)))
         {
             combined.Add(key.Trim());
         }
 
-        return combined.ToFrozenSet(StringComparer.OrdinalIgnoreCase);
+        return combined.ToFrozenSet(StringComparer.Ordinal);
     }
 
     /// <summary>
-    /// Discovers default keys by scanning <see cref="DatapackDefaults"/> for message format entries
-    /// and pairing them with default external branding tokens.
+    /// Discovers default keys by scanning <see cref="DatapackDefaults"/>, tab names,
+    /// and all base keys declared in the embedded BACAP base language template.
     /// </summary>
     /// <returns>An immutable <see cref="FrozenSet{T}"/> of standard ignored tokens.</returns>
     private static FrozenSet<string> BuildDefaultIgnoredKeys()
     {
-        var keys = new HashSet<string>(StringComparer.Ordinal)
-        {
-            // Lines from BACAP
-            "To view progress, run:", "Awarded for achieving", "Animals", "Challenges",
-            // Rewards
-            "Experience"
-        };
+        var keys = new HashSet<string>(StringComparer.Ordinal);
 
-        var entryFields = DatapackDefaults.MessageSettingsEntiries;
-
-        foreach (var field in entryFields)
-            keys.Add(field.TranslationKey.Trim());
-
-        foreach (var key in BacapTab.All)
-        {
-            keys.Add(key.DisplayName);
-        }
+        // Merge all translation keys from the embedded base_language_file.json
+        var embeddedKeys = LanguagePackIoManager.LoadEmbeddedBaseLanguageKeys();
+        foreach (var key in embeddedKeys)
+            keys.Add(key);
 
         return keys.ToFrozenSet(StringComparer.Ordinal);
     }
