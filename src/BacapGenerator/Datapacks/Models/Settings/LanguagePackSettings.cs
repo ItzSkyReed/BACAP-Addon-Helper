@@ -1,5 +1,4 @@
 ﻿using System.Collections.Frozen;
-using BacapGenerator.Common;
 using BacapGenerator.Configuration.Exceptions;
 using BacapGenerator.Io;
 using JetBrains.Annotations;
