@@ -13,7 +13,7 @@ An interactive TUI (Terminal User Interface) automation and validation toolkit f
 - **Datapack Validation Engine**: Statically validates advancement trees, namespace consistency, milestone paths, and formatting rules (Title Case, plain text checks, whitespace sanitization).
 - **Functions & Reward Automation**: Automatically sets up advancement execution commands, macro calls, XP rewards, custom items (with Data Components/NBT support), and trophy rewards.
 - **Milestones**: Generates advancement milestone tracking and tab completion functions.
-- **Checlists**: Generates checklists like [/trigger bacaped_mob_universe](https://github.com/Komaru-cats/BACAP-Enhanced-Discoveries/blob/main/BACAP_Enhanced_Discoveries/data/bacaped/function/triggers_callback/mob_universe_trigger.mcfunction)
+- **Checklists**: Generates checklists like [/trigger bacaped_mob_universe](https://github.com/Komaru-cats/BACAP-Enhanced-Discoveries/blob/main/BACAP_Enhanced_Discoveries/data/bacaped/function/triggers_callback/mob_universe_trigger.mcfunction).
 - **Language Pack Synchronization**:
     - Discovers all translatable text components across advancements and `.mcfunction` files.
     - Automatically generates and refreshes `base_translation.json`.
@@ -40,12 +40,50 @@ Download the latest standalone executable for your operating system from the **[
    ./BACAP_Addon_Helper-win-x64.exe
    ```
 3. On the first launch, the tool will automatically generate a template `config.yaml` in the directory.
-4. Configure config for you datapacks.
+4. Configure config for your datapacks.
 
-## 📖 Detailed Configuration Guide:
+## 📖 Detailed Configuration Guide
 Check out our full configuration schema and examples on the Project Wiki.
 
-# Building From Source
+---
+
+## Developer SDK & NuGet Packages
+
+The core validation and generation logic is decoupled from the terminal interface and published as independent packages on **GitHub Packages**. You can consume them to build alternative frontends (such as desktop GUI apps via Avalonia/WPF, web dashboards, Discord bots, or custom CI scripts).
+
+### Published Packages
+- **`BACAP-Addon-Helper.BacapGenerator`**: Automation engine, file synchronization pipelines, and configuration orchestration.
+- **`BACAP-Addon-Helper.Core`**: Domain models, Minecraft raw JSON text component serialization, SNBT/Data components parsers, and base validation rules.
+
+### Consuming via GitHub Packages
+
+1. Create a `nuget.config` in your project root:
+   ```xml
+   <?xml version="1.0" encoding="utf-8"?>
+   <configuration>
+     <packageSources>
+       <clear />
+       <add key="nuget.org" value="[https://api.nuget.org/v3/index.json](https://api.nuget.org/v3/index.json)" />
+       <add key="GitHub" value="[https://nuget.pkg.github.com/ItzSkyReed/index.json](https://nuget.pkg.github.com/ItzSkyReed/index.json)" />
+     </packageSources>
+     <packageSourceCredentials>
+       <GitHub>
+         <add key="Username" value="YOUR_GITHUB_USERNAME" />
+         <add key="ClearTextPassword" value="%GH_PACKAGES_TOKEN%" />
+       </GitHub>
+     </packageSourceCredentials>
+   </configuration>
+   ```
+   *(Ensure `%GH_PACKAGES_TOKEN%` has the `read:packages` scope).*
+
+2. Add the dependency to your project:
+   ```bash
+   dotnet add package BACAP-Addon-Helper.BacapGenerator
+   ```
+
+---
+
+## Building From Source
 Prerequisites: .NET 10 SDK
 
 ```bash
@@ -59,5 +97,8 @@ dotnet run --project src/UI/UI.csproj
 # Run tests
 dotnet test
 ```
+
+---
+
 ## License
 This project is licensed under the terms of the [Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International Public License](LICENSE.md).
