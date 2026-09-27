@@ -79,51 +79,60 @@ public static class AppErrorHandler
     /// <summary>
     /// Displays a styled TUI alert for datapack structural configuration errors.
     /// </summary>
-    /// <param name="ex">The datapack configuration exception.</param>
+    /// <param name="ex">The datapack configuration exception containing error details and kind.</param>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="ex"/> is <see langword="null"/>.</exception>
+    /// <example>
+    /// <code>
+    /// try
+    /// {
+    ///     datapack.Validate(datapackId, minecraftData);
+    /// }
+    /// catch (DatapackConfigurationException ex)
+    /// {
+    ///     RenderDatapackError(ex);
+    /// }
+    /// </code>
+    /// </example>
     private static void RenderDatapackError(DatapackConfigurationException ex)
     {
-        var escapedId = Markup.Escape(ex.DatapackId);
-        var escapedDetail = ex.Detail is not null ? Markup.Escape(ex.Detail) : "N/A";
+        ArgumentNullException.ThrowIfNull(ex);
 
-        var (description, tip) = ex.Kind switch
+        var description = Markup.Escape(ex.Message);
+
+        var tip = ex.Kind switch
         {
-            DatapackErrorKind.MissingPath => (
-                $"Datapack [bold yellow]'{escapedId}'[/] is missing the [yellow]path[/] attribute.",
-                "Specify a relative or absolute filesystem directory in [white]config.yaml[/]."
-            ),
-            DatapackErrorKind.MissingNamespace => (
-                $"Datapack [bold yellow]'{escapedId}'[/] requires both [yellow]main_namespace[/] and [yellow]reward_namespace[/].",
-                "Ensure both namespaces are defined without colons (e.g. 'bacaped', 'bacaped_rewards')."
-            ),
-            DatapackErrorKind.MissingParentDatapack => (
-                $"Compatibility addon [bold yellow]'{escapedId}'[/] references unknown parent: [bold red]'{escapedDetail}'[/].",
-                "Check that the parent datapack key exists under the [yellow]datapacks[/] section."
-            ),
-            DatapackErrorKind.InvalidChecklistConfiguration => (
-                $"Checklist validation failed for [bold yellow]'{escapedId}'[/] (entry: [bold cyan]'{escapedDetail}'[/]).",
-                "Verify that [yellow]id[/], [yellow]trigger_scoreboard[/], and [yellow]storage_name[/] are specified."
-            ),
-            DatapackErrorKind.MissingLanguagePackPath => (
-                $"Language pack for [bold yellow]'{escapedId}'[/] is missing the [yellow]path[/] attribute.",
-                "Specify [yellow]language_pack.path[/] in [white]config.yaml[/] pointing to the resource pack root."
-            ),
-            DatapackErrorKind.InvalidLanguagePackConfiguration => (
-                $"Invalid language pack configuration for [bold yellow]'{escapedId}'[/]: [bold red]{escapedDetail}[/].",
-                "Ensure path contains valid characters and [yellow]ignored_keys[/] does not contain empty values."
-            ),
-            DatapackErrorKind.InvalidValidationRuleConfiguration => (
-                $"Invalid validation rule configuration in [bold yellow]'{escapedId}'[/]: [bold red]{escapedDetail}[/].",
-                "Verify rule severity names and ensure allowed string lists do not contain empty items."
-            ),
-            DatapackErrorKind.InvalidDatapackType => (
-                $"Datapack [bold yellow]'{escapedId}'[/] has an invalid [yellow]type[/] setting.",
-                "Supported types are: [cyan]reference[/], [cyan]addon[/], [cyan]compatibility_addon[/]."
-            ),
-            _ => (Markup.Escape(ex.Message), "Check datapack definitions in config.yaml.")
+            DatapackErrorKind.MissingPath =>
+                "Specify a relative or absolute filesystem directory in [white]config.yaml[/].",
+
+            DatapackErrorKind.MissingNamespace =>
+                "Ensure both [yellow]main_namespace[/] and [yellow]reward_namespace[/] are defined without colons (e.g. 'bacaped', 'bacaped_rewards').",
+
+            DatapackErrorKind.MissingParentDatapack =>
+                "Check that the parent datapack key exists under the [yellow]datapacks[/] section.",
+
+            DatapackErrorKind.InvalidChecklistConfiguration =>
+                "Verify that [yellow]id[/], [yellow]trigger_scoreboard[/], and [yellow]storage_name[/] are specified correctly in [yellow]checklists[/].",
+
+            DatapackErrorKind.MissingLanguagePackPath =>
+                "Specify [yellow]language_pack.path[/] in [white]config.yaml[/] pointing to the resource pack root directory.",
+
+            DatapackErrorKind.InvalidLanguagePackConfiguration =>
+                "Ensure the path exists, contains valid characters, and [yellow]ignored_keys[/] has no empty entries.",
+
+            DatapackErrorKind.InvalidValidationRuleConfiguration =>
+                "Verify rule severity names (info, warning, error) and ensure allowed strings lists have no empty entries.",
+
+            DatapackErrorKind.InvalidDatapackType =>
+                "Supported datapack types are: [cyan]reference[/], [cyan]addon[/], [cyan]compatibility_addon[/].",
+
+            DatapackErrorKind.InvalidScoreConfiguration =>
+                "Check [yellow]custom_scores[/] and [yellow]custom_points[/] sections in [white]config.yaml[/]. Ensure valid [cyan]id[/], [cyan]scoreboard[/], [cyan]file_path[/] (.mcfunction), and filter options.",
+
+            _ => "Check datapack definitions in [white]config.yaml[/]."
         };
 
         var content = $"{description}\n\n[bold white]Tip:[/] {tip}";
-        TuiTheme.ShowAlert($"[bold red] Datapack Settings Error [/]", content, Color.Red);
+        TuiTheme.ShowAlert("[bold red] Datapack Settings Error [/]", content, Color.Red);
     }
 
     /// <summary>
@@ -175,7 +184,8 @@ public static class AppErrorHandler
 
         while (current != null)
         {
-            var node = tree.AddNode($"[bold yellow]{Markup.Escape(current.GetType().FullName ?? current.GetType().Name)}[/]: {Markup.Escape(current.Message)}");
+            var node = tree.AddNode(
+                $"[bold yellow]{Markup.Escape(current.GetType().FullName ?? current.GetType().Name)}[/]: {Markup.Escape(current.Message)}");
 
             if (!string.IsNullOrWhiteSpace(current.StackTrace))
             {
