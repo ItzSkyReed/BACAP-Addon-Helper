@@ -4,15 +4,14 @@
         <TargetFramework>net10.0</TargetFramework>
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
+        <!-- Enables XML documentation generation so Core.xml exists for packaging -->
+        <GenerateDocumentationFile>true</GenerateDocumentationFile>
     </PropertyGroup>
 
     <ItemGroup>
-      <PackageReference Include="JetBrains.Annotations" Version="2026.2.0" />
-      <PackageReference Include="Pidgin" Version="3.5.1" />
-    </ItemGroup>
-
-    <ItemGroup>
-      <Folder Include="TextComponents\Serialization\" />
+        <!-- Development-only dependency, not needed in runtime/package -->
+        <PackageReference Include="JetBrains.Annotations" Version="2026.2.0" PrivateAssets="all" />
+        <PackageReference Include="Pidgin" Version="3.5.1" />
     </ItemGroup>
 
     <ItemGroup>

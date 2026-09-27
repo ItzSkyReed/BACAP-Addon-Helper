@@ -4,20 +4,49 @@
         <TargetFramework>net10.0</TargetFramework>
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
+
+        <!-- NuGet Package Metadata -->
+        <PackageId>BACAP-Addon-Helper.BacapGenerator</PackageId>
+        <Authors>ItzSkyReed</Authors>
+        <Description>Core functionality to work with BACAP Addon Helper</Description>
+        <RepositoryUrl>https://github.com/ItzSkyReed/BACAP-Addon-Helper</RepositoryUrl>
+        <PackageLicenseExpression>CC-BY-NC-SA-4.0</PackageLicenseExpression>
+
+        <!-- Embed PDBs into the main nupkg instead of separate snupkg (GitHub Packages requirement) -->
+        <AllowedOutputExtensionsInPackageBuildOutputFolder>$(AllowedOutputExtensionsInPackageBuildOutputFolder);.pdb</AllowedOutputExtensionsInPackageBuildOutputFolder>
+
+        <!-- Register custom target to bundle Core assembly output into nupkg -->
+        <TargetsForTfmSpecificBuildOutput>$(TargetsForTfmSpecificBuildOutput);IncludeCoreInPackage</TargetsForTfmSpecificBuildOutput>
     </PropertyGroup>
 
+    <!-- Bundle Core.dll and symbols directly into lib/net10.0/ -->
+    <Target Name="IncludeCoreInPackage">
+        <ItemGroup>
+            <BuildOutputProjectOutputs Include="$(OutputPath)Core.dll" />
+            <BuildOutputProjectOutputs Include="$(OutputPath)Core.pdb" Condition="Exists('$(OutputPath)Core.pdb')" />
+            <BuildOutputProjectOutputs Include="$(OutputPath)Core.xml" Condition="Exists('$(OutputPath)Core.xml')" />
+        </ItemGroup>
+    </Target>
+
     <ItemGroup>
-      <ProjectReference Include="..\Core\Core.csproj" />
+        <!-- Single ProjectReference with PrivateAssets="all" -->
+        <ProjectReference Include="..\Core\Core.csproj">
+            <PrivateAssets>all</PrivateAssets>
+        </ProjectReference>
     </ItemGroup>
 
     <ItemGroup>
         <EmbeddedResource Include="Resources\base_language_file.json" />
     </ItemGroup>
-    
+
     <ItemGroup>
-      <PackageReference Include="Microsoft.Extensions.Configuration" Version="10.0.11" />
-      <PackageReference Include="Microsoft.Extensions.Logging" Version="10.0.11" />
-      <PackageReference Include="Microsoft.Extensions.Options" Version="10.0.11" />
+        <!-- BacapGenerator dependencies -->
+        <PackageReference Include="Microsoft.Extensions.Configuration" Version="10.0.11" />
+        <PackageReference Include="Microsoft.Extensions.Logging" Version="10.0.11" />
+        <PackageReference Include="Microsoft.Extensions.Options" Version="10.0.11" />
+
+        <!-- Transitive runtime dependency required by bundled Core.dll -->
+        <PackageReference Include="Pidgin" Version="3.5.1" />
     </ItemGroup>
 
 </Project>
