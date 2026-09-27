@@ -14,7 +14,8 @@ namespace BacapGenerator.Datapacks.Services;
 public static class GlobalFunctionsService
 {
     /// <summary>
-    /// Generates standard and custom datapack functions (scores, points, coop, trophies) and writes them to disk along with their tags.
+    /// Generates standard and custom datapack functions (scores, points, coop, trophies) and writes them to disk,
+    /// grouping score and point functions into their respective fanpack tags.
     /// </summary>
     /// <param name="datapack">The target datapack to generate functions for.</param>
     /// <param name="allAdvancementsPool">
@@ -24,11 +25,7 @@ public static class GlobalFunctionsService
     /// <exception cref="ArgumentNullException">Thrown when <paramref name="datapack"/> is <see langword="null"/>.</exception>
     /// <example>
     /// <code>
-    /// // Generate using only local advancements:
-    /// GlobalFunctionsService.GenerateAndSaveAll(datapack);
-    ///
-    /// // Or with a cross-datapack pool:
-    /// GlobalFunctionsService.GenerateAndSaveAll(datapack, allLoadedAdvancements);
+    /// GlobalFunctionsService.GenerateAndSaveAll(datapack, allAdvancements);
     /// </code>
     /// </example>
     public static void GenerateAndSaveAll(Datapack datapack, IReadOnlyList<BacapAdvancement>? allAdvancementsPool = null)
@@ -43,58 +40,94 @@ public static class GlobalFunctionsService
 
         var settings = datapack.Settings;
 
-        var fanpacksTags = Path.Combine(datapack.DatapackDataPath.FullName, "bacap_fanpacks", "tags", "function");
+        var fanpacksTags = Path.Combine(datapack.DatapackDataPath.FullName, DatapackDefaults.BacapFanpacksNamespace, "tags", "function");
         var rewardFuncPath = Path.Combine(datapack.DatapackDataPath.FullName, settings.RewardNamespace, "function");
 
         var configTags = Path.Combine(fanpacksTags, "config");
         var configFuncPath = Path.Combine(datapack.DatapackDataPath.FullName, settings.MainNamespace, "function", "config");
 
-        // Built-in standard functions
-        Save(DatapackFunctionsGenerator.GenerateUpdateScore(scoreAdvancements),
-            rewardFuncPath, "update_score", fanpacksTags, $"{settings.RewardNamespace}:update_score");
+        // Process Scores (Base + Custom) -> All merged into DatapackDefaults.UpdateScoreFileName tag
+        var scoreCallPaths = new List<string> { $"{settings.RewardNamespace}:{DatapackDefaults.UpdateScoreFileName}" };
 
-        Save(DatapackFunctionsGenerator.GenerateUpdatePoints(localAdvancements),
-            rewardFuncPath, "update_points", fanpacksTags, $"{settings.RewardNamespace}:update_points");
+        SaveFunction(
+            DatapackFunctionsGenerator.GenerateUpdateScore(scoreAdvancements),
+            rewardFuncPath,
+            DatapackDefaults.UpdateScoreFileName);
 
-        Save(DatapackFunctionsGenerator.GenerateUpdateCoop(localAdvancements),
-            configFuncPath, "coop_update", configTags, $"{settings.MainNamespace}:config/coop_update");
-
-        Save(DatapackFunctionsGenerator.GenerateGrantTrophies(trophyAdvancements),
-            configFuncPath, "grant_trophies", configTags, $"{settings.MainNamespace}:config/grant_trophies");
-
-        foreach (var team in BacapTeam.All)
-        {
-            var name = $"coop_update_team_{team.Color}";
-            Save(DatapackFunctionsGenerator.GenerateUpdateCoopTeam(localAdvancements, team),
-                configFuncPath, name, configTags, $"{settings.MainNamespace}:config/{name}");
-        }
-
-        // Custom score counters defined in datapack configuration
         foreach (var customScore in settings.CustomScores)
         {
             var functionName = GetNormalizedFunctionName(customScore.FilePath);
             var function = DatapackFunctionsGenerator.GenerateUpdateScore(advancementPool, customScore, datapack.Id);
 
-            Save(function, rewardFuncPath, functionName, fanpacksTags, $"{settings.RewardNamespace}:{functionName}");
+            SaveFunction(function, rewardFuncPath, functionName);
+            scoreCallPaths.Add($"{settings.RewardNamespace}:{functionName}");
         }
 
-        // Custom point counters defined in datapack configuration
+        SaveTag(fanpacksTags, DatapackDefaults.UpdateScoreFileName, scoreCallPaths);
+
+        // Process Points (Base + Custom) -> All merged into DatapackDefaults.UpdatePointsFileName tag
+        var pointsCallPaths = new List<string> { $"{settings.RewardNamespace}:{DatapackDefaults.UpdatePointsFileName}" };
+
+        SaveFunction(
+            DatapackFunctionsGenerator.GenerateUpdatePoints(localAdvancements),
+            rewardFuncPath,
+            DatapackDefaults.UpdatePointsFileName);
+
         foreach (var customPoint in settings.CustomPoints)
         {
             var functionName = GetNormalizedFunctionName(customPoint.FilePath);
             var function = DatapackFunctionsGenerator.GenerateUpdatePoints(advancementPool, customPoint, datapack.Id);
 
-            Save(function, rewardFuncPath, functionName, fanpacksTags, $"{settings.RewardNamespace}:{functionName}");
+            SaveFunction(function, rewardFuncPath, functionName);
+            pointsCallPaths.Add($"{settings.RewardNamespace}:{functionName}");
+        }
+
+        SaveTag(fanpacksTags, DatapackDefaults.UpdatePointsFileName, pointsCallPaths);
+
+        // Process Coop and Trophy functions (1-to-1 function and tag)
+        SaveFunctionAndTag(
+            DatapackFunctionsGenerator.GenerateUpdateCoop(localAdvancements),
+            configFuncPath,
+            DatapackDefaults.CoopUpdateFileName,
+            configTags,
+            $"{settings.MainNamespace}:config/{DatapackDefaults.CoopUpdateFileName}");
+
+        SaveFunctionAndTag(
+            DatapackFunctionsGenerator.GenerateGrantTrophies(trophyAdvancements),
+            configFuncPath,
+            DatapackDefaults.GrandTrophiesFileName,
+            configTags,
+            $"{settings.MainNamespace}:config/{DatapackDefaults.GrandTrophiesFileName}");
+
+        foreach (var team in BacapTeam.All)
+        {
+            var name = $"{DatapackDefaults.CoopTeamUpdateFileName}_{team.Color}";
+            SaveFunctionAndTag(
+                DatapackFunctionsGenerator.GenerateUpdateCoopTeam(localAdvancements, team),
+                configFuncPath,
+                name,
+                configTags,
+                $"{settings.MainNamespace}:config/{name}");
         }
 
         return;
 
-        void Save(McFunction function, string funcDir, string fileName, string tagDir, string callPath)
+        void SaveFunction(McFunction function, string funcDir, string fileName)
         {
             var funcFile = new FileInfo(Path.Combine(funcDir, $"{fileName}.mcfunction"));
-            var tagFile = new FileInfo(Path.Combine(tagDir, $"{fileName}.json"));
+            DatapackIoManager.WriteFunction(function, funcFile);
+        }
 
-            DatapackIoManager.WriteFunctionAndTag(function, funcFile, tagFile, callPath);
+        void SaveTag(string tagDir, string tagName, IReadOnlyList<string> callPaths)
+        {
+            var tagFile = new FileInfo(Path.Combine(tagDir, $"{tagName}.json"));
+            DatapackIoManager.WriteTag(tagFile, callPaths);
+        }
+
+        void SaveFunctionAndTag(McFunction function, string funcDir, string fileName, string tagDir, string callPath)
+        {
+            SaveFunction(function, funcDir, fileName);
+            SaveTag(tagDir, fileName, [callPath]);
         }
 
         static string GetNormalizedFunctionName(string filePath)

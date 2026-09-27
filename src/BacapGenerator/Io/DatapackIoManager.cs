@@ -12,34 +12,39 @@ namespace BacapGenerator.Io;
 public static class DatapackIoManager
 {
     /// <summary>
-    /// Writes a generated function to the disk and optionally creates a function tag for it.
+    /// Writes a Minecraft function instance to disk.
     /// </summary>
-    /// <param name="function">The AST model of the function.</param>
-    /// <param name="functionFile">The target FileInfo where the .mcfunction will be saved.</param>
-    /// <param name="tagFile">Optional. The target FileInfo where the .json tag will be saved.</param>
-    /// <param name="functionCallPath">The namespace path to put inside the tag (e.g. "namespace:update_score").</param>
-    public static void WriteFunctionAndTag(
-        McFunction function,
-        FileInfo functionFile,
-        FileInfo? tagFile = null,
-        string? functionCallPath = null)
+    /// <param name="function">The function model to serialize.</param>
+    /// <param name="file">The target file path info.</param>
+    public static void WriteFunction(McFunction function, FileInfo file)
     {
-        functionFile.Directory?.Create();
-        File.WriteAllText(functionFile.FullName, function.Build());
+        ArgumentNullException.ThrowIfNull(function);
+        ArgumentNullException.ThrowIfNull(file);
 
-        if (tagFile == null || string.IsNullOrWhiteSpace(functionCallPath))
-            return;
-        tagFile.Directory?.Create();
+        file.Directory?.Create();
+        File.WriteAllLines(file.FullName, function.Lines.Select(line => line.Build()));
+    }
 
-        var tagContent = new
+    /// <summary>
+    /// Writes a Minecraft function tag JSON file with multiple function entries.
+    /// </summary>
+    /// <param name="file">The target JSON file path info.</param>
+    /// <param name="values">The collection of function resource identifiers.</param>
+    public static void WriteTag(FileInfo file, IReadOnlyList<string> values)
+    {
+        ArgumentNullException.ThrowIfNull(file);
+        ArgumentNullException.ThrowIfNull(values);
+
+        file.Directory?.Create();
+
+        var tagModel = new
         {
             replace = false,
-            values = new[] { functionCallPath }
+            values
         };
 
-        var jsonString = JsonSerializer.Serialize(tagContent, MinecraftDatapackJsonOptions.Default);
-
-        File.WriteAllText(tagFile.FullName, jsonString);
+        var json = JsonSerializer.Serialize(tagModel, new JsonSerializerOptions { WriteIndented = true });
+        File.WriteAllText(file.FullName, json);
     }
 
 
