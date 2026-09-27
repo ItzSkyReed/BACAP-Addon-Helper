@@ -27,7 +27,7 @@ public sealed record McFunction(List<IMcFunctionLine> Lines)
     /// </code>
     /// </example>
     [PublicAPI]
-    public string Build(int? maxLineLength = 65536)
+    public string Build(int maxLineLength = 65536)
     {
         var sb = new StringBuilder();
 
@@ -37,7 +37,7 @@ public sealed record McFunction(List<IMcFunctionLine> Lines)
 
             // Skip wrapping if disabled, line is short enough, or if it's a comment
             // (Minecraft does not support line continuations for comments)
-            if (maxLineLength is null or <= 0 || builtLine.Length <= maxLineLength || builtLine.StartsWith('#'))
+            if (maxLineLength <= 0 || builtLine.Length <= maxLineLength || builtLine.StartsWith('#'))
                 sb.Append(builtLine);
             else
             {
@@ -46,17 +46,17 @@ public sealed record McFunction(List<IMcFunctionLine> Lines)
 
                 while (span.Length > 0)
                 {
-                    if (span.Length <= maxLineLength.Value)
+                    if (span.Length <= maxLineLength)
                     {
                         sb.Append(span);
                         break;
                     }
 
-                    var chunk = span[..maxLineLength.Value];
+                    var chunk = span[..maxLineLength];
                     sb.Append(chunk).AppendLine(@"\");
 
                     // Slice the remaining part of the span
-                    span = span[maxLineLength.Value..];
+                    span = span[maxLineLength..];
                 }
             }
 
