@@ -6,7 +6,7 @@ namespace BacapGenerator.Datapacks.Models.Settings;
 /// <summary>
 /// Defines the file system access permissions for a loaded datapack or function.
 /// </summary>
-[TypeConverter(typeof(DatapackTypeConverter))]
+[TypeConverter(typeof(SnakeCaseEnumConverter))]
 public enum DatapackType
 {
     /// <summary>
