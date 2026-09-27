@@ -29,7 +29,7 @@ public sealed class ScoreboardPointUpdateSettings
     /// </summary>
     [PublicAPI]
     [ConfigurationKeyName("source_scoreboard")]
-    public string SourceScoreboard { get; init; } = "bac_points";
+    public string SourceScoreboard { get; init; } = DatapackDefaults.PointsValuesScoreboard;
 
     /// <summary>
     /// Gets the scoreboard operation applied (e.g. "+=").

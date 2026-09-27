@@ -62,10 +62,10 @@ public static class TranslationKeyDiscoveryService
 
         foreach (var datapack in datapacks)
         {
-            ArgumentNullException.ThrowIfNull(datapack.Settings.LanguagePackSettigs);
+            ArgumentNullException.ThrowIfNull(datapack.Settings.LanguagePackSettings);
 
-            ScanAdvancements(datapack.Advancements.OfType<BacapAdvancement>(), keyMap, datapack.Settings.LanguagePackSettigs);
-            ScanDiskFunctions(datapack, keyMap, datapack.Settings.LanguagePackSettigs);
+            ScanAdvancements(datapack.Advancements.OfType<BacapAdvancement>(), keyMap, datapack.Settings.LanguagePackSettings);
+            ScanDiskFunctions(datapack, keyMap, datapack.Settings.LanguagePackSettings);
         }
 
         return keyMap.Keys;

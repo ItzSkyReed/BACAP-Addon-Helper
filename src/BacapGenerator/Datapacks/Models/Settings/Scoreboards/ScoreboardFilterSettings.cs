@@ -1,9 +1,11 @@
 ﻿using BacapGenerator.Advancements.Models;
+using BacapGenerator.Configuration;
 using BacapGenerator.Configuration.Exceptions;
 using JetBrains.Annotations;
 using Microsoft.Extensions.Configuration;
 
 namespace BacapGenerator.Datapacks.Models.Settings.Scoreboards;
+
 /// <summary>
 /// Encapsulates filtering rules used to select specific advancements for scoreboard and point generation.
 /// </summary>
@@ -18,20 +20,35 @@ public sealed class ScoreboardFilterSettings
     public List<string>? Datapacks { get; init; }
 
     /// <summary>
-    /// Gets the filter mode for hidden advancements.
-    /// Defaults to <see cref="ScoreboardHiddenFilter.Exclude"/>.
+    /// Gets the raw string representation of the hidden filter as defined in configuration.
     /// </summary>
     [PublicAPI]
     [ConfigurationKeyName("hidden")]
-    public ScoreboardHiddenFilter Hidden { get; init; } = ScoreboardHiddenFilter.Exclude;
+    public string? RawHidden { get; init; }
 
     /// <summary>
-    /// Gets a value indicating whether root advancements (<see cref="BacapAdvancementTier.Root"/>) should be excluded.
-    /// Defaults to <see langword="true"/>.
+    /// Gets the parsed filter mode for hidden advancements.
+    /// Defaults to <see cref="ScoreboardHiddenFilter.Exclude"/>.
+    /// </summary>
+    public ScoreboardHiddenFilter HiddenFilter { get; private set; } = ScoreboardHiddenFilter.Exclude;
+
+    /// <summary>
+    /// Compatibility alias for <see cref="HiddenFilter"/>.
+    /// </summary>
+    public ScoreboardHiddenFilter Hidden => HiddenFilter;
+
+    /// <summary>
+    /// Gets the raw string representation of the root advancement exclusion toggle.
     /// </summary>
     [PublicAPI]
     [ConfigurationKeyName("exclude_root")]
-    public bool ExcludeRoot { get; init; } = false;
+    public string? RawExcludeRoot { get; init; }
+
+    /// <summary>
+    /// Gets a value indicating whether root advancements (<see cref="BacapAdvancementTier.Root"/>) should be excluded.
+    /// Defaults to <see langword="false"/>.
+    /// </summary>
+    public bool ExcludeRoot { get; private set; }
 
     /// <summary>
     /// Gets the optional whitelist of specific advancement tiers to match.
@@ -39,7 +56,8 @@ public sealed class ScoreboardFilterSettings
     [PublicAPI]
     [ConfigurationKeyName("tiers")]
     public List<BacapAdvancementTier>? Tiers { get; init; }
-/// <summary>
+
+    /// <summary>
     /// Determines whether the given advancement satisfies all configured filter rules.
     /// If no explicit datapacks are specified, only advancements from <paramref name="ownerDatapackId"/> are matched.
     /// </summary>
@@ -69,13 +87,12 @@ public sealed class ScoreboardFilterSettings
         }
         else
         {
-            // Fallback to the owning datapack if not explicitly specified
             if (!string.Equals(advancement.Datapack.Id, ownerDatapackId, StringComparison.OrdinalIgnoreCase))
                 return false;
         }
 
         var isHidden = advancement.Tier == BacapAdvancementTier.Hidden;
-        switch (Hidden)
+        switch (HiddenFilter)
         {
             case ScoreboardHiddenFilter.Exclude when isHidden:
             case ScoreboardHiddenFilter.Only when !isHidden:
@@ -89,29 +106,37 @@ public sealed class ScoreboardFilterSettings
     }
 
     /// <summary>
-    /// Validates filter configuration settings.
+    /// Validates filter configuration settings and explicitly parses filter options.
     /// </summary>
     /// <param name="datapackId">The parent datapack identifier.</param>
     /// <param name="counterId">The owning counter configuration identifier.</param>
-    /// <exception cref="DatapackConfigurationException">Thrown when validation constraints are violated.</exception>
+    /// <exception cref="DatapackConfigurationException">Thrown when filter constraints or formats are invalid.</exception>
+    /// <example>
+    /// <code>
+    /// filterSettings.Validate("bacaped", "ed_advancements");
+    /// </code>
+    /// </example>
     public void Validate(string datapackId, string counterId)
     {
         if (Datapacks is not null && Datapacks.Any(string.IsNullOrWhiteSpace))
-        {
             throw new DatapackConfigurationException(
                 datapackId,
                 DatapackErrorKind.InvalidScoreConfiguration,
                 $"Filter in counter '{counterId}' of datapack '{datapackId}' contains empty datapack identifiers.",
                 nameof(Datapacks));
-        }
 
-        if (!Enum.IsDefined(Hidden))
-        {
-            throw new DatapackConfigurationException(
-                datapackId,
-                DatapackErrorKind.InvalidScoreConfiguration,
-                $"Filter in counter '{counterId}' of datapack '{datapackId}' has an undefined '{nameof(Hidden)}' filter value: {(int)Hidden}.",
-                nameof(Hidden));
-        }
+        HiddenFilter = ConfigParser.ParseOptionalEnum(
+            RawHidden,
+            ScoreboardHiddenFilter.Exclude,
+            datapackId,
+            DatapackErrorKind.InvalidScoreConfiguration,
+            $"Filter in counter '{counterId}' of datapack '{datapackId}' has an invalid '{nameof(Hidden)}' filter value: '{RawHidden}'. Allowed values: all, exclude, only.");
+
+        ExcludeRoot = ConfigParser.ParseBool(
+            RawExcludeRoot,
+            defaultValue: false,
+            datapackId,
+            DatapackErrorKind.InvalidScoreConfiguration,
+            $"Filter in counter '{counterId}' of datapack '{datapackId}' has an invalid boolean value '{RawExcludeRoot}' for '{nameof(ExcludeRoot)}'. Expected: true or false.");
     }
 }

@@ -40,8 +40,8 @@ public static class DatapackRegistryExtensions
         ArgumentNullException.ThrowIfNull(registry);
 
         var primaryAddons = registry.Values
-            .Where(dp => dp.Settings is { DatapackType: DatapackType.Addon, LanguagePackSettigs: not null } &&
-                         !string.IsNullOrWhiteSpace(dp.Settings.LanguagePackSettigs.Path))
+            .Where(dp => dp.Settings is { DatapackType: DatapackType.Addon, LanguagePackSettings: not null } &&
+                         !string.IsNullOrWhiteSpace(dp.Settings.LanguagePackSettings.Path))
             .ToList();
 
         var groups = new List<AddonGroup>(primaryAddons.Count);

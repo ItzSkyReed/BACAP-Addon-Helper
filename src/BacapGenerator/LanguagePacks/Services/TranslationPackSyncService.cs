@@ -30,7 +30,7 @@ public static class TranslationPackSyncService
         {
             try
             {
-                var settings = group.Primary.Settings.LanguagePackSettigs;
+                var settings = group.Primary.Settings.LanguagePackSettings;
                 if (settings is null || string.IsNullOrWhiteSpace(settings.Path))
                 {
                     results.Add(new TranslationPackSyncResult(group, null, 0, [], "Language pack settings or path are missing."));

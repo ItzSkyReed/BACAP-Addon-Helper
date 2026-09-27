@@ -32,7 +32,7 @@ public static class BaseTranslationGenerator
     {
         ArgumentNullException.ThrowIfNull(datapack);
 
-        var settings = datapack.Settings.LanguagePackSettigs
+        var settings = datapack.Settings.LanguagePackSettings
             ?? throw new InvalidOperationException($"Datapack '{datapack.ReleaseName}' does not configure language pack settings.");
 
         if (string.IsNullOrWhiteSpace(settings.Path))

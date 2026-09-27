@@ -44,7 +44,7 @@ public static class BacapAdvancementTierExtension
                 BacapAdvancementTier.Root => "Root",
                 BacapAdvancementTier.Milestone => "Milestone",
                 BacapAdvancementTier.AdvancementLegend => "Advancement Legend",
-                BacapAdvancementTier.Hidden => "Hidden",
+                BacapAdvancementTier.Hidden => "HiddenMode",
 
                 _ => throw new ArgumentOutOfRangeException(nameof(tier), tier, null)
             };

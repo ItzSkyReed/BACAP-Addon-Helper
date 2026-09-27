@@ -50,6 +50,7 @@ public static class DatapackDefaults
     public const string AdvancementsScoreboard = "bac_advancements";
     public const string PointsScoreboard = "bac_advancements_points";
     public const string CoopBaseScoreboard = "bac_obtained";
+    public const string PointsValuesScoreboard = "bac_points";
 
     public const string UpdateScoreFileName = "update_score";
     public const string UpdatePointsFileName = "update_points";

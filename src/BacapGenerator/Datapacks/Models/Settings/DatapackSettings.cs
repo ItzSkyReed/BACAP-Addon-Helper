@@ -1,4 +1,5 @@
 ﻿using BacapGenerator.Common;
+using BacapGenerator.Configuration;
 using BacapGenerator.Configuration.Exceptions;
 using BacapGenerator.Datapacks.Models.Settings.Checklists;
 using BacapGenerator.Datapacks.Models.Settings.Scoreboards;
@@ -25,7 +26,7 @@ public sealed class DatapackSettings
     /// Gets the optional language pack settings.
     /// </summary>
     [ConfigurationKeyName("language_pack")]
-    public LanguagePackSettings? LanguagePackSettigs { get; init; }
+    public LanguagePackSettings? LanguagePackSettings { get; init; }
 
     /// <summary>
     /// Gets the primary namespace containing the advancements.
@@ -89,7 +90,7 @@ public sealed class DatapackSettings
     public Dictionary<BacapTab, string>? MilestoneMcPaths { get; init; }
 
     /// <summary>
-    /// Gets  the Minecraft resource path for the advancement legend reward.
+    /// Gets the Minecraft resource path for the advancement legend reward.
     /// </summary>
     [PublicAPI]
     [ConfigurationKeyName("advancement_legend_mc_path")]
@@ -122,8 +123,13 @@ public sealed class DatapackSettings
     /// Validates the current datapack settings and verifies its integrity.
     /// </summary>
     /// <param name="datapackId">The key identifier of this datapack in the configuration dictionary.</param>
-    /// <param name="minecraftData">Minecraft data</param>
+    /// <param name="minecraftData">The registry containing validated Minecraft entity and game data.</param>
     /// <exception cref="DatapackConfigurationException">Thrown when a setting rule is violated.</exception>
+    /// <example>
+    /// <code>
+    /// datapackSettings.Validate("bacaped", minecraftData);
+    /// </code>
+    /// </example>
     public void Validate(string datapackId, MinecraftData minecraftData)
     {
         if (string.IsNullOrWhiteSpace(Path))
@@ -135,29 +141,13 @@ public sealed class DatapackSettings
                 nameof(Path));
         }
 
-        // Validate and parse type explicitly so bad YAML values don't get silently dropped
-        if (string.IsNullOrWhiteSpace(RawType))
-        {
-            throw new DatapackConfigurationException(
-                datapackId,
-                DatapackErrorKind.InvalidDatapackType,
-                $"Missing 'type' property for datapack '{datapackId}'. Expected: reference, addon, compatibility_addon.",
-                nameof(DatapackType));
-        }
-
-        var normalizedType = RawType.Trim().Replace("_", string.Empty);
-        if (Enum.TryParse<DatapackType>(normalizedType, ignoreCase: true, out var parsedType) && Enum.IsDefined(parsedType))
-        {
-            DatapackType = parsedType;
-        }
-        else
-        {
-            throw new DatapackConfigurationException(
-                datapackId,
-                DatapackErrorKind.InvalidDatapackType,
-                $"Invalid datapack type '{RawType}' in '{datapackId}'. Allowed values: reference, addon, compatibility_addon.",
-                RawType);
-        }
+        DatapackType = ConfigParser.ParseRequiredEnum<DatapackType>(
+            RawType,
+            datapackId,
+            DatapackErrorKind.InvalidDatapackType,
+            missingErrorMessage: $"Missing 'type' property for datapack '{datapackId}'. Expected: reference, addon, compatibility_addon.",
+            invalidErrorMessage: $"Invalid datapack type '{RawType}' in '{datapackId}'. Allowed values: reference, addon, compatibility_addon.",
+            propertyName: nameof(DatapackType));
 
         if (string.IsNullOrWhiteSpace(MainNamespace))
         {
@@ -195,10 +185,7 @@ public sealed class DatapackSettings
                 nameof(ChecklistTriggersFolder));
         }
 
-        // Validate nested language pack settings if configured
-        LanguagePackSettigs?.Validate(datapackId);
-
-        // Validate nested validation settings
+        LanguagePackSettings?.Validate(datapackId);
         Validation.Validate(datapackId);
 
         foreach (var checklist in Checklists)
