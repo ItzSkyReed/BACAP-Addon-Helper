@@ -8,7 +8,7 @@ namespace Core.McFunctions.Models;
 /// Represents a parsed Minecraft function (.mcfunction file).
 /// </summary>
 /// <param name="Lines">The ordered collection of lines (commands, comments, empty) in the function.</param>
-public record McFunction(List<IMcFunctionLine> Lines)
+public sealed record McFunction(List<IMcFunctionLine> Lines)
 {
 /// <summary>
     /// Serializes the entire function into a string ready to be written to an .mcfunction file.
