@@ -45,8 +45,9 @@
         <PackageReference Include="Microsoft.Extensions.Logging" Version="10.0.11" />
         <PackageReference Include="Microsoft.Extensions.Options" Version="10.0.11" />
 
-        <!-- Transitive runtime dependency required by bundled Core.dll -->
+        <!-- Transitive runtime dependencies required by bundled Core.dll -->
         <PackageReference Include="Pidgin" Version="3.5.1" />
+        <PackageReference Include="JetBrains.Annotations" Version="2026.2.0" />
     </ItemGroup>
 
 </Project>
