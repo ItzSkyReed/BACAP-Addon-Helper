@@ -1,6 +1,5 @@
 ﻿using Core.Common;
 using Core.DataComponents;
-using Core.DataComponents.Interfaces;
 using Core.SNBT;
 using JetBrains.Annotations;
 using Pidgin;
@@ -8,31 +7,43 @@ using Pidgin;
 namespace Core.Items;
 
 /// <summary>
-/// Provides parsing functionality for modern Minecraft Item Stack syntax (1.20.5+),
-/// supporting resource location identifiers and item data component modifications.
+/// Provides high-performance parsing functionality for modern Minecraft Item Stack syntax (1.20.5+),
+/// supporting namespaced identifiers, bracketed data components, and standalone component operations.
 /// </summary>
 public static class ItemStackParser
 {
     private static readonly Parser<char, Unit> Whitespace = Parser.SkipWhitespaces;
 
     /// <summary>
-    /// Parses component removal operations indicated by an exclamation mark prefix (e.g., "!minecraft:damage").
+    /// Normalizes a component identifier to include the default "minecraft:" namespace if omitted.
+    /// </summary>
+    private static string NormalizeComponentId(string id) =>
+        id.Contains(':') ? id : $"minecraft:{id}";
+
+    /// <summary>
+    /// Matches an opening bracket preceded by optional whitespace, backtracking if the bracket is absent.
+    /// </summary>
+    private static readonly Parser<char, char> OpenBracket =
+        Parser.Try(Whitespace.Then(Parser.Char('[')));
+
+    /// <summary>
+    /// Parses component removal operations indicated by an exclamation mark prefix (e.g., "!minecraft:damage", "!custom_name").
     /// </summary>
     private static readonly Parser<char, Action<DataComponentMap>> ComponentRemoval =
         Parser.Char('!')
+            .Before(Whitespace)
             .Then(ParserParts.IdentifierParser)
-            .Select<Action<DataComponentMap>>(id => map => map.Remove(id));
+            .Select<Action<DataComponentMap>>(id => map => map.Remove(NormalizeComponentId(id)));
 
     /// <summary>
     /// Parses component assignment operations (e.g., "damage=10", "custom_name='Sword'").
-    /// Uses <see cref="ComponentRegistry"/> to convert the parsed SNBT node into a typed <see cref="IParsableComponent{TSelf}"/>.
+    /// Uses <see cref="ComponentRegistry"/> to convert the parsed SNBT node into a typed component.
     /// </summary>
     private static readonly Parser<char, Action<DataComponentMap>> ComponentAddition =
         Parser.Map(
             (id, _, node) => new Action<DataComponentMap>(map =>
             {
-                // Delegate AST node conversion to the component registry
-                var component = ComponentRegistry.Parse(id, node);
+                var component = ComponentRegistry.Parse(NormalizeComponentId(id), node);
                 map.Set(component);
             }),
             ParserParts.IdentifierParser,
@@ -41,16 +52,23 @@ public static class ItemStackParser
         );
 
     /// <summary>
-    /// Matches either a component assignment or removal operation.
+    /// Matches either a component assignment or removal operation, consuming trailing whitespace.
     /// </summary>
     private static readonly Parser<char, Action<DataComponentMap>> ComponentOperation =
-        Parser.OneOf(ComponentRemoval, ComponentAddition);
+        Parser.OneOf(ComponentRemoval, ComponentAddition)
+            .Before(Whitespace);
 
     /// <summary>
-    /// Parses a comma-separated sequence of component operations.
+    /// Parses a comma separator surrounded by optional whitespace with backtracking.
+    /// </summary>
+    private static readonly Parser<char, Unit> Separator =
+        Parser.Try(Parser.Char(',').Between(Whitespace)).IgnoreResult();
+
+    /// <summary>
+    /// Parses a sequence of component operations separated by commas.
     /// </summary>
     private static readonly Parser<char, IEnumerable<Action<DataComponentMap>>> ComponentOperations =
-        ComponentOperation.Separated(Parser.Char(',').Between(Whitespace));
+        ComponentOperation.Separated(Separator);
 
     /// <summary>
     /// Parses a comma-separated block of component operations enclosed in square brackets (e.g., "[damage=10, !custom_name]").
@@ -58,13 +76,11 @@ public static class ItemStackParser
     [PublicAPI]
     public static readonly Parser<char, Action<DataComponentMap>> ComponentsBlock =
         ComponentOperations
-            .Between(Parser.Char('[').Between(Whitespace), Parser.Char(']').Between(Whitespace))
+            .Between(OpenBracket.Before(Whitespace), Parser.Char(']').Before(Whitespace))
             .Select<Action<DataComponentMap>>(operations => map =>
             {
                 foreach (var op in operations)
-                {
                     op(map);
-                }
             });
 
     /// <summary>
@@ -78,9 +94,7 @@ public static class ItemStackParser
             ComponentOperations.Select<Action<DataComponentMap>>(operations => map =>
             {
                 foreach (var op in operations)
-                {
                     op(map);
-                }
             })
         );
 
@@ -94,13 +108,12 @@ public static class ItemStackParser
             {
                 var item = new ItemStack(id);
                 if (opsOpt.HasValue)
-                {
                     opsOpt.Value(item.Components);
-                }
+
                 return item;
             },
             ParserParts.IdentifierParser,
-            Parser.Try(ComponentsBlock).Optional()
+            ComponentsBlock.Optional()
         );
 
     /// <summary>
@@ -108,13 +121,22 @@ public static class ItemStackParser
     /// </summary>
     /// <param name="input">The item string to parse (e.g., "minecraft:diamond_sword[damage=15, !enchantments]").</param>
     /// <returns>A fully configured <see cref="ItemStack"/> instance with applied component modifications.</returns>
-    /// <exception cref="ParseException">Thrown when the input string contains invalid syntax or unknown component tokens.</exception>
+    /// <exception cref="ParseException">Thrown when the input string contains invalid syntax or unparsed tokens.</exception>
     /// <exception cref="ArgumentNullException">Thrown when <paramref name="input"/> is null.</exception>
+    /// <example>
+    /// <code>
+    /// ItemStack stack = ItemStackParser.Parse("minecraft:diamond_sword[damage=10]");
+    /// </code>
+    /// </example>
     [PublicAPI]
     public static ItemStack Parse(string input)
     {
         ArgumentNullException.ThrowIfNull(input);
-        return Item.Before(Whitespace).Before(Parser<char>.End).ParseOrThrow(input.Trim());
+
+        return Item
+            .Before(Whitespace)
+            .Before(Parser<char>.End)
+            .ParseOrThrow(input.Trim());
     }
 
     /// <summary>
@@ -137,9 +159,7 @@ public static class ItemStackParser
 
         var trimmed = input.Trim();
         if (string.IsNullOrWhiteSpace(trimmed))
-        {
             return;
-        }
 
         var applyAction = StandaloneComponents
             .Between(Whitespace, Whitespace)

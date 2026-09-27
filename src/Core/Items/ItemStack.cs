@@ -12,7 +12,7 @@ namespace Core.Items;
 /// </summary>
 /// <param name="Id">The resource location identifier of the item (e.g., "minecraft:diamond_sword").</param>
 /// <param name="Count">The stack size.</param>
-public record ItemStack(
+public sealed record ItemStack(
     string Id,
     int Count = 1
 ) : ICompoundModel<ItemStack>

@@ -15,7 +15,7 @@ namespace Core.DataComponents;
 public class DataComponentMap : ISnbtSerializable, IEnumerable<IDataComponent>
 {
     /// <summary>
-    /// Gets the dictionary of currently active data components mapped by their string identifier.
+    /// Gets the dictionary of currently active data components mapped by their normalized string identifier.
     /// </summary>
     [PublicAPI]
     public Dictionary<string, IDataComponent> Added { get; } = new();
@@ -36,10 +36,13 @@ public class DataComponentMap : ISnbtSerializable, IEnumerable<IDataComponent>
     /// Adds or overwrites a data component in the map.
     /// </summary>
     /// <param name="component">The data component implementation to add.</param>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="component"/> is null.</exception>
     [PublicAPI]
     public void Set(IDataComponent component)
     {
-        var id = component.Id;
+        ArgumentNullException.ThrowIfNull(component);
+
+        var id = NormalizeId(component.Id);
         Removed.Remove(id);
         Added[id] = component;
     }
@@ -71,12 +74,16 @@ public class DataComponentMap : ISnbtSerializable, IEnumerable<IDataComponent>
     /// <summary>
     /// Removes a component from the map by its string identifier.
     /// </summary>
-    /// <param name="componentId">The string identifier of the component to remove (e.g., "minecraft:damage").</param>
+    /// <param name="componentId">The string identifier of the component to remove (e.g., "minecraft:damage" or "damage").</param>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="componentId"/> is null.</exception>
     [PublicAPI]
     public void Remove(string componentId)
     {
-        Added.Remove(componentId);
-        Removed.Add(componentId);
+        ArgumentNullException.ThrowIfNull(componentId);
+
+        var normalized = NormalizeId(componentId);
+        Added.Remove(normalized);
+        Removed.Add(normalized);
     }
 
     /// <summary>
@@ -97,7 +104,7 @@ public class DataComponentMap : ISnbtSerializable, IEnumerable<IDataComponent>
     [PublicAPI]
     public bool Has(string componentId)
     {
-        return Added.ContainsKey(componentId);
+        return !string.IsNullOrEmpty(componentId) && Added.ContainsKey(NormalizeId(componentId));
     }
 
     /// <summary>
@@ -115,10 +122,8 @@ public class DataComponentMap : ISnbtSerializable, IEnumerable<IDataComponent>
     /// <typeparam name="T">The type of the component to check.</typeparam>
     /// <returns><see langword="true"/> if the component is active; otherwise, <see langword="false"/>.</returns>
     [PublicAPI]
-    public bool Has<T>() where T : ITypedComponent<T>
-    {
-        return Added.ContainsKey(T.ComponentId);
-    }
+    public bool Has<T>() where T : ITypedComponent<T> =>
+        Added.ContainsKey(NormalizeId(T.ComponentId));
 
     /// <summary>
     /// Determines whether a strongly-typed component exists in the map.
@@ -137,7 +142,9 @@ public class DataComponentMap : ISnbtSerializable, IEnumerable<IDataComponent>
     [PublicAPI]
     public IDataComponent? Get(string componentId)
     {
-        return Added.GetValueOrDefault(componentId);
+        return string.IsNullOrEmpty(componentId)
+            ? null
+            : Added.GetValueOrDefault(NormalizeId(componentId));
     }
 
     /// <summary>
@@ -146,10 +153,8 @@ public class DataComponentMap : ISnbtSerializable, IEnumerable<IDataComponent>
     /// <typeparam name="T">The type of the component to retrieve.</typeparam>
     /// <returns>The strongly-typed component if found; otherwise, <see langword="null"/>.</returns>
     [PublicAPI]
-    public T? Get<T>() where T : class, ITypedComponent<T>
-    {
-        return Added.TryGetValue(T.ComponentId, out var comp) ? (T)comp : null;
-    }
+    public T? Get<T>() where T : class, ITypedComponent<T> =>
+        Added.TryGetValue(NormalizeId(T.ComponentId), out var comp) ? (T)comp : null;
 
     /// <summary>
     /// Attempts to retrieve a component by its string identifier safely.
@@ -160,7 +165,12 @@ public class DataComponentMap : ISnbtSerializable, IEnumerable<IDataComponent>
     [PublicAPI]
     public bool TryGet(string componentId, [NotNullWhen(true)] out IDataComponent? component)
     {
-        return Added.TryGetValue(componentId, out component);
+        if (!string.IsNullOrEmpty(componentId))
+            return Added.TryGetValue(NormalizeId(componentId), out component);
+
+        component = null;
+        return false;
+
     }
 
     /// <summary>
@@ -172,7 +182,7 @@ public class DataComponentMap : ISnbtSerializable, IEnumerable<IDataComponent>
     [PublicAPI]
     public bool TryGet<T>([NotNullWhen(true)] out T? component) where T : class, ITypedComponent<T>
     {
-        if (Added.TryGetValue(T.ComponentId, out var comp))
+        if (Added.TryGetValue(NormalizeId(T.ComponentId), out var comp))
         {
             component = (T)comp;
             return true;
@@ -207,15 +217,25 @@ public class DataComponentMap : ISnbtSerializable, IEnumerable<IDataComponent>
 
     /// <summary>
     /// Populates this map from a given components SNBT compound using the <see cref="ComponentRegistry"/>.
+    /// Handles both added components and '!' prefixed removal entries.
     /// </summary>
     /// <param name="compound">The SNBT compound node representing item components.</param>
     /// <returns>A new <see cref="DataComponentMap"/> populated with the parsed components.</returns>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="compound"/> is null.</exception>
     [PublicAPI]
     public static DataComponentMap Parse(SnbtCompound compound)
     {
+        ArgumentNullException.ThrowIfNull(compound);
+
         var map = new DataComponentMap();
         foreach (var (compId, valNode) in compound.Tags)
-            map.Set(ComponentRegistry.Parse(compId, valNode));
+        {
+            if (compId.StartsWith('!'))
+                map.Remove(compId[1..]);
+            else
+                map.Set(ComponentRegistry.Parse(compId, valNode));
+        }
+
         return map;
     }
 
@@ -239,12 +259,8 @@ public class DataComponentMap : ISnbtSerializable, IEnumerable<IDataComponent>
         return builder.Build();
     }
 
-    /// <summary>
-    /// Serializes active and explicitly removed components into an SNBT string.
-    /// </summary>
-    /// <returns>An SNBT string representing the serialized components.</returns>
-    public string ToSnbtString()
-    {
-        return ToSnbt().ToSnbtString();
-    }
+    public string ToSnbtString() => ToSnbt().ToSnbtString();
+
+    private static string NormalizeId(string id) =>
+        id.Contains(':') ? id : $"minecraft:{id}";
 }
