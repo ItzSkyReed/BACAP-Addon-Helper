@@ -1,11 +1,13 @@
 ﻿using System.Text.Json.Serialization;
+using JetBrains.Annotations;
 
 namespace Core.Registries.Models;
 
 /// <summary>
 /// Represents the available variants for a specific item type.
 /// </summary>
-public record EntityRegistryEntry
+[UsedImplicitly]
+public sealed record EntityRegistryEntry
 {
     [JsonPropertyName("display_name")] public required string DisplayName { get; init; }
 

@@ -1,11 +1,13 @@
 ﻿using System.Text.Json.Serialization;
+using JetBrains.Annotations;
 
 namespace Core.Registries.Models;
 
 /// <summary>
 /// Represents the hex, argb variant of dye color
 /// </summary>
-public record DyeColorRegistryEntry
+[UsedImplicitly]
+public sealed record DyeColorRegistryEntry
 {
     [JsonPropertyName("hex")] public required string HexVariant { get; init; }
 
