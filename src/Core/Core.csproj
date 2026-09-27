@@ -15,4 +15,7 @@
       <Folder Include="TextComponents\Serialization\" />
     </ItemGroup>
 
+    <ItemGroup>
+        <InternalsVisibleTo Include="Core.Tests" />
+    </ItemGroup>
 </Project>
