@@ -1,6 +1,7 @@
 ﻿using BacapGenerator.Common;
 using BacapGenerator.Configuration.Exceptions;
 using BacapGenerator.Datapacks.Models.Settings.Checklists;
+using BacapGenerator.Datapacks.Models.Settings.Scoreboards;
 using BacapGenerator.Datapacks.Models.Settings.Validation;
 using Core.Registries;
 using JetBrains.Annotations;
@@ -71,6 +72,14 @@ public sealed class DatapackSettings
     [PublicAPI]
     [ConfigurationKeyName("checklist_triggers_folder")]
     public string ChecklistTriggersFolder { get; init; } = string.Empty;
+
+    [PublicAPI]
+    [ConfigurationKeyName("custom_scores")]
+    public List<ScoreboardScoreUpdateSettings> CustomScores { get; init; } = [];
+
+    [PublicAPI]
+    [ConfigurationKeyName("custom_points")]
+    public List<ScoreboardPointUpdateSettings> CustomPoints { get; init; } = [];
 
     /// <summary>
     /// Gets the mapping of advancement tabs to their milestone advancement Minecraft paths.
@@ -195,6 +204,34 @@ public sealed class DatapackSettings
         foreach (var checklist in Checklists)
         {
             checklist.Validate(datapackId, minecraftData);
+        }
+
+        var seenScoreIds = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        foreach (var score in CustomScores)
+        {
+            score.Validate(datapackId);
+            if (!seenScoreIds.Add(score.Id))
+            {
+                throw new DatapackConfigurationException(
+                    datapackId,
+                    DatapackErrorKind.InvalidScoreConfiguration,
+                    $"Duplicate score counter ID '{score.Id}' detected in datapack '{datapackId}'.",
+                    score.Id);
+            }
+        }
+
+        var seenPointIds = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        foreach (var point in CustomPoints)
+        {
+            point.Validate(datapackId);
+            if (!seenPointIds.Add(point.Id))
+            {
+                throw new DatapackConfigurationException(
+                    datapackId,
+                    DatapackErrorKind.InvalidScoreConfiguration,
+                    $"Duplicate point counter ID '{point.Id}' detected in datapack '{datapackId}'.",
+                    point.Id);
+            }
         }
     }
 }

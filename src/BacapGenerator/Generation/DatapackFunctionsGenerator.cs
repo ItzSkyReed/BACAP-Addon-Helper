@@ -1,6 +1,7 @@
 ﻿using BacapGenerator.Advancements.Models;
 using BacapGenerator.Common;
 using BacapGenerator.Datapacks.Models;
+using BacapGenerator.Datapacks.Models.Settings.Scoreboards;
 using BacapGenerator.Utils;
 using Core.Commands.Impl;
 using Core.Commands.Models;
@@ -33,6 +34,43 @@ public static class DatapackFunctionsGenerator
     }
 
     /// <summary>
+    /// Generates a custom function that increments a configured scoreboard objective for matching advancements.
+    /// </summary>
+    /// <param name="advancements">The advancements pool to filter and evaluate.</param>
+    /// <param name="settings">The custom score counter settings.</param>
+    /// <param name="ownerDatapackId">The identifier of the datapack defining this score counter.</param>
+    /// <returns>A configured <see cref="McFunction"/> containing score update commands for matching advancements.</returns>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="advancements"/> or <paramref name="settings"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentException">Thrown when <paramref name="ownerDatapackId"/> is null, empty, or whitespace.</exception>
+    /// <example>
+    /// <code>
+    /// McFunction function = DatapackFunctionsGenerator.GenerateUpdateScore(allAdvancements, scoreSettings, datapack.Id);
+    /// </code>
+    /// </example>
+    public static McFunction GenerateUpdateScore(
+        IReadOnlyList<BacapAdvancement> advancements,
+        ScoreboardScoreUpdateSettings settings,
+        string ownerDatapackId)
+    {
+        ArgumentNullException.ThrowIfNull(advancements);
+        ArgumentNullException.ThrowIfNull(settings);
+        ArgumentException.ThrowIfNullOrWhiteSpace(ownerDatapackId);
+
+        var matchingAdvancements = advancements
+            .Where(advancement => settings.Filter.Matches(advancement, ownerDatapackId))
+            .ToList();
+
+        var scoreboardCommand = new ScoreboardPlayersMathCommand(
+            ScoreboardMathOperation.Add,
+            Selector.SelectedPlayer,
+            settings.Scoreboard,
+            settings.Amount);
+
+        return BuildFunction(matchingAdvancements, advancement =>
+            CreateAdvancementExecuteCommand("@a", advancement.McPath, scoreboardCommand));
+    }
+
+    /// <summary>
     /// Generates a function that adds points to the player based on each completed advancement's tier.
     /// </summary>
     /// <param name="advancements">The list of advancements to calculate points for.</param>
@@ -50,6 +88,46 @@ public static class DatapackFunctionsGenerator
                 "+=",
                 Selector.Custom(advancement.Tier.TechnicalName()),
                 "bac_points");
+
+            return CreateAdvancementExecuteCommand("@a", advancement.McPath, scoreboardCommand);
+        });
+    }
+
+    /// <summary>
+    /// Generates a custom function that updates player points using configured scoreboard operations and tier selectors.
+    /// </summary>
+    /// <param name="advancements">The advancements pool to filter and evaluate.</param>
+    /// <param name="settings">The custom points counter settings.</param>
+    /// <param name="ownerDatapackId">The identifier of the datapack defining this points counter.</param>
+    /// <returns>A configured <see cref="McFunction"/> containing points update commands for matching advancements.</returns>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="advancements"/> or <paramref name="settings"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentException">Thrown when <paramref name="ownerDatapackId"/> is null, empty, or whitespace.</exception>
+    /// <example>
+    /// <code>
+    /// McFunction function = DatapackFunctionsGenerator.GenerateUpdatePoints(allAdvancements, pointSettings, datapack.Id);
+    /// </code>
+    /// </example>
+    public static McFunction GenerateUpdatePoints(
+        IReadOnlyList<BacapAdvancement> advancements,
+        ScoreboardPointUpdateSettings settings,
+        string ownerDatapackId)
+    {
+        ArgumentNullException.ThrowIfNull(advancements);
+        ArgumentNullException.ThrowIfNull(settings);
+        ArgumentException.ThrowIfNullOrWhiteSpace(ownerDatapackId);
+
+        var matchingAdvancements = advancements
+            .Where(advancement => settings.Filter.Matches(advancement, ownerDatapackId))
+            .ToList();
+
+        return BuildFunction(matchingAdvancements, advancement =>
+        {
+            var scoreboardCommand = new ScoreboardPlayersOperationCommand(
+                Selector.SelectedPlayer,
+                settings.Scoreboard,
+                settings.Operation,
+                Selector.Custom(advancement.Tier.TechnicalName()),
+                settings.SourceScoreboard);
 
             return CreateAdvancementExecuteCommand("@a", advancement.McPath, scoreboardCommand);
         });

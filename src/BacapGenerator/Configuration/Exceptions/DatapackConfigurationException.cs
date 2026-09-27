@@ -13,7 +13,8 @@ public enum DatapackErrorKind
     InvalidChecklistConfiguration,
     MissingLanguagePackPath,
     InvalidLanguagePackConfiguration,
-    InvalidValidationRuleConfiguration
+    InvalidValidationRuleConfiguration,
+    InvalidScoreConfiguration
 }
 
 /// <summary>

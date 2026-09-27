@@ -156,6 +156,73 @@ datapacks:
       template: default
       path: "./resourcepacks/Enhanced_Discoveries_Language_Pack"
 
+    # Generates mcfunction files executing:
+    # scoreboard players add @s <scoreboard> <amount>
+    custom_scores:
+      # Total advancement count
+      # Corresponds to this line in advancement made macro: scoreboard players add @s bacaped_all_advancements 1
+      - id: "ed_all_advancements"
+        scoreboard: "bacaped_all_advancements"
+        # Relative file path inside data/<reward_namespace>/function/
+        file_path: "update_bacaped_score_all.mcfunction"
+        # Score increment per completed advancement (defaults to 1)
+        amount: 1
+        filter:
+          # If 'datapacks' is omitted, only advancements from 'bacaped' are counted.
+          # Use ["*"] or ["@all"] to count across every loaded datapack.
+          # Excluding roots is disabled by default
+          # exclude_root: false
+          # Options: all, exclude, only (default: exclude)
+          hidden: all
+
+      # Regular completed advancements (excluding hiddens)
+      # Corresponds to this line in advancement made macro: $execute unless score $(tier) bac_dont_count matches 1 run scoreboard players add @s bacaped_advancements 1
+      - id: "ed_advancements"
+        scoreboard: "bacaped_advancements"
+        file_path: "update_bacaped_score.mcfunction"
+        filter:
+          hidden: exclude
+
+      # Hidden advancements only
+      # Corresponds to this line in advancement made macro: $execute if score $(tier) bacaped_is_hidden matches 1 run scoreboard players add @s bacaped_advancements_only_hiddens 1
+      - id: "ed_advancements_only_hidden"
+        scoreboard: "bacaped_advancements_only_hidden"
+        file_path: "update_bacaped_score_only_hidden.mcfunction"
+        filter:
+          exclude_root: true
+          # Selects strictly hidden advancements
+          hidden: only
+
+      # Cross-datapack example counting specific tiers
+      # - id: "global_challenges"
+      #   scoreboard: "global_challenges_count"
+      #   file_path: "scores/update_global_challenges.mcfunction"
+      #   filter:
+      #     datapacks: ["bacap", "bacaped"]
+      #     exclude_root: true
+      #     hidden: exclude
+      #     tiers: ["challenge", "super_challenge"]
+
+
+    # Generates mcfunction files executing:
+    # scoreboard players operation @s <scoreboard> <operation> <tier> <source_scoreboard>
+    custom_points:
+
+        # Points assignment based on advancement tiers
+        # Corresponds to: $scoreboard players operation @s bac_advancements_points += $(tier) bac_points
+        - id: "ed_points"
+          # Target objective updated on player
+          scoreboard: "bacaped_advancements_points"
+          # Source objective holding points per tier dummy player (defaults to "bac_points")
+          source_scoreboard: "bac_points"
+          # Operation applied to the scoreboard (defaults to "+=")
+          operation: "+="
+          # Relative file path inside data/<reward_namespace>/function/
+          file_path: "update_bacaped_points.mcfunction"
+          filter:
+            # Automatically targets 'bacaped' advancements because 'datapacks' is omitted
+            exclude_root: true
+            hidden: all
 
     # Checklists
     # Defines interactive checklist systems (/trigger callbacks and advancement validation functions)
