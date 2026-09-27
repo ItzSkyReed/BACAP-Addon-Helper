@@ -63,7 +63,7 @@ public record MobVisibilityComponent(
     public static MobVisibilityComponent Parse(SnbtCompound compound)
     {
         var typesNode = compound.GetNode("targeting_entity_types");
-        List<string> entityTypes = typesNode switch
+        var entityTypes = typesNode switch
         {
             SnbtString singleType => [singleType.Value],
             SnbtList typeList => typeList.Items

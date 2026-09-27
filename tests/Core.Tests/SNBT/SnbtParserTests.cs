@@ -1,7 +1,6 @@
 ﻿using Core.SNBT;
 using Core.SNBT.Nodes;
 using Pidgin;
-using Xunit;
 
 namespace Core.Tests.SNBT;
 
