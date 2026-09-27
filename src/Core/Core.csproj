@@ -4,8 +4,13 @@
         <TargetFramework>net10.0</TargetFramework>
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
-        <!-- Enables XML documentation generation so Core.xml exists for packaging -->
-        <GenerateDocumentationFile>true</GenerateDocumentationFile>
+
+        <!-- NuGet Package Metadata -->
+        <PackageId>BACAP-Addon-Helper.Core</PackageId>
+        <Authors>ItzSkyReed</Authors>
+        <Description>Core functionality for BACAP Addon Helper</Description>
+        <RepositoryUrl>https://github.com/ItzSkyReed/BACAP-Addon-Helper</RepositoryUrl>
+        <PackageLicenseExpression>CC-BY-NC-SA-4.0</PackageLicenseExpression>
     </PropertyGroup>
 
     <ItemGroup>
@@ -14,6 +19,11 @@
     </ItemGroup>
 
     <ItemGroup>
+        <Folder Include="TextComponents\Serialization\" />
+    </ItemGroup>
+
+    <ItemGroup>
         <InternalsVisibleTo Include="Core.Tests" />
     </ItemGroup>
+
 </Project>

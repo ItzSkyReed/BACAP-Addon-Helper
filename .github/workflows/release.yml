@@ -135,7 +135,7 @@ jobs:
           prerelease: ${{ contains(github.ref_name, '-') }}
 
   publish-packages:
-    name: Build & Push NuGet Package
+    name: Build & Push NuGet Packages
     runs-on: ubuntu-latest
     if: startsWith(github.ref, 'refs/tags/v')
     steps:
@@ -151,7 +151,11 @@ jobs:
         run: |
           VERSION=${GITHUB_REF_NAME#v}
           
-          # BacapGenerator (Core will be bundled inside it)
+          dotnet pack src/Core/Core.csproj \
+            -c Release \
+            -p:PackageVersion=$VERSION \
+            -o ./nupkgs
+          
           dotnet pack src/BacapGenerator/BacapGenerator.csproj \
             -c Release \
             -p:PackageVersion=$VERSION \

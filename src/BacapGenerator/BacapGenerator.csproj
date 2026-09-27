@@ -11,28 +11,11 @@
         <Description>Core functionality to work with BACAP Addon Helper</Description>
         <RepositoryUrl>https://github.com/ItzSkyReed/BACAP-Addon-Helper</RepositoryUrl>
         <PackageLicenseExpression>CC-BY-NC-SA-4.0</PackageLicenseExpression>
-
-        <!-- Embed PDBs into the main nupkg instead of separate snupkg (GitHub Packages requirement) -->
-        <AllowedOutputExtensionsInPackageBuildOutputFolder>$(AllowedOutputExtensionsInPackageBuildOutputFolder);.pdb</AllowedOutputExtensionsInPackageBuildOutputFolder>
-
-        <!-- Register custom target to bundle Core assembly output into nupkg -->
-        <TargetsForTfmSpecificBuildOutput>$(TargetsForTfmSpecificBuildOutput);IncludeCoreInPackage</TargetsForTfmSpecificBuildOutput>
     </PropertyGroup>
 
-    <!-- Bundle Core.dll and symbols directly into lib/net10.0/ -->
-    <Target Name="IncludeCoreInPackage">
-        <ItemGroup>
-            <BuildOutputProjectOutputs Include="$(OutputPath)Core.dll" />
-            <BuildOutputProjectOutputs Include="$(OutputPath)Core.pdb" Condition="Exists('$(OutputPath)Core.pdb')" />
-            <BuildOutputProjectOutputs Include="$(OutputPath)Core.xml" Condition="Exists('$(OutputPath)Core.xml')" />
-        </ItemGroup>
-    </Target>
-
     <ItemGroup>
-        <!-- Single ProjectReference with PrivateAssets="all" -->
-        <ProjectReference Include="..\Core\Core.csproj">
-            <PrivateAssets>all</PrivateAssets>
-        </ProjectReference>
+        <!-- Обычная проектная ссылка: локально работает как проект, а dotnet pack сам сделает из неё зависимость пакета -->
+        <ProjectReference Include="..\Core\Core.csproj" />
     </ItemGroup>
 
     <ItemGroup>
@@ -40,14 +23,9 @@
     </ItemGroup>
 
     <ItemGroup>
-        <!-- BacapGenerator dependencies -->
         <PackageReference Include="Microsoft.Extensions.Configuration" Version="10.0.11" />
         <PackageReference Include="Microsoft.Extensions.Logging" Version="10.0.11" />
         <PackageReference Include="Microsoft.Extensions.Options" Version="10.0.11" />
-
-        <!-- Transitive runtime dependencies required by bundled Core.dll -->
-        <PackageReference Include="Pidgin" Version="3.5.1" />
-        <PackageReference Include="JetBrains.Annotations" Version="2026.2.0" />
     </ItemGroup>
 
 </Project>
