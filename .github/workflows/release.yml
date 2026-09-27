@@ -8,6 +8,7 @@ on:
 
 permissions:
   contents: write
+  packages: write
 
 jobs:
   build:
@@ -132,3 +133,31 @@ jobs:
           body: ${{ steps.changelog.outputs.body }}
           draft: false
           prerelease: ${{ contains(github.ref_name, '-') }}
+
+  publish-packages:
+    name: Build & Push NuGet Package
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/v')
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup .NET 10
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Pack and Push to GitHub Packages
+        run: |
+          VERSION=${GITHUB_REF_NAME#v}
+          
+          # BacapGenerator (Core will be bundled inside it)
+          dotnet pack src/BacapGenerator/BacapGenerator.csproj \
+            -c Release \
+            -p:PackageVersion=$VERSION \
+            -o ./nupkgs
+          
+          dotnet nuget push "./nupkgs/*.nupkg" \
+            --source "https://nuget.pkg.github.com/${{ github.repository_owner }}/index.json" \
+            --api-key ${{ secrets.GITHUB_TOKEN }} \
+            --skip-duplicate
