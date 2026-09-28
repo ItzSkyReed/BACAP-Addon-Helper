@@ -31,19 +31,19 @@ public static class DatapackValidationEngineFactory
         var validationConfig = settings.Validation;
 
         //  Title format
-        if (validationConfig.TitleCase.Enabled)
+        if (validationConfig.TitleCase.IsEnabled)
             engine.RegisterRule(new TitleCaseRule(validationConfig.TitleCase));
 
         //  Whitespace trimming rules in titles
-        if (validationConfig.WhitespaceTrimming.Enabled)
+        if (validationConfig.WhitespaceTrimming.IsEnabled)
             engine.RegisterRule(new WhitespaceTrimmingRule(validationConfig.WhitespaceTrimming));
 
         //  Plain text in advancements
-        if (validationConfig.PlainTextUsage.Enabled)
+        if (validationConfig.PlainTextUsage.IsEnabled)
             engine.RegisterRule(new PlainTextInAdvancementsRule(validationConfig.PlainTextUsage));
 
         //  Plain text in advancements
-        if (validationConfig.ParentReferences.Enabled)
+        if (validationConfig.ParentReferences.IsEnabled)
             engine.RegisterRule(new AdvancementParentRule(validationConfig.ParentReferences, datapackRegistry));
 
         if (datapack.Settings.ShouldValidateRewardFiles())

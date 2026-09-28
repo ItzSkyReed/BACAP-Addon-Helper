@@ -33,11 +33,6 @@ public sealed class ScoreboardFilterSettings
     public ScoreboardHiddenFilter HiddenFilter { get; private set; } = ScoreboardHiddenFilter.Exclude;
 
     /// <summary>
-    /// Compatibility alias for <see cref="HiddenFilter"/>.
-    /// </summary>
-    public ScoreboardHiddenFilter Hidden => HiddenFilter;
-
-    /// <summary>
     /// Gets the raw string representation of the root advancement exclusion toggle.
     /// </summary>
     [PublicAPI]
@@ -123,20 +118,20 @@ public sealed class ScoreboardFilterSettings
                 datapackId,
                 DatapackErrorKind.InvalidScoreConfiguration,
                 $"Filter in counter '{counterId}' of datapack '{datapackId}' contains empty datapack identifiers.",
-                nameof(Datapacks));
+                "datapacks");
 
         HiddenFilter = ConfigParser.ParseOptionalEnum(
             RawHidden,
             ScoreboardHiddenFilter.Exclude,
             datapackId,
             DatapackErrorKind.InvalidScoreConfiguration,
-            $"Filter in counter '{counterId}' of datapack '{datapackId}' has an invalid '{nameof(Hidden)}' filter value: '{RawHidden}'. Allowed values: all, exclude, only.");
+            $"Filter in counter '{counterId}' of datapack '{datapackId}' has an invalid 'hidden' filter value: '{RawHidden}'. Allowed values: all, exclude, only.");
 
         ExcludeRoot = ConfigParser.ParseBool(
             RawExcludeRoot,
             defaultValue: false,
             datapackId,
             DatapackErrorKind.InvalidScoreConfiguration,
-            $"Filter in counter '{counterId}' of datapack '{datapackId}' has an invalid boolean value '{RawExcludeRoot}' for '{nameof(ExcludeRoot)}'. Expected: true or false.");
+            $"Filter in counter '{counterId}' of datapack '{datapackId}' has an invalid boolean value '{RawExcludeRoot}' for 'exclude_root'. Expected: true or false.");
     }
 }

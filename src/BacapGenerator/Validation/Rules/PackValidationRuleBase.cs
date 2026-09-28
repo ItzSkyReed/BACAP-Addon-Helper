@@ -24,7 +24,7 @@ public abstract class PackValidationRuleBase<TOptions>(TOptions options) : IPack
     public abstract string DisplayName { get; }
 
     /// <inheritdoc/>
-    public ValidationSeverity Severity => Options.Severity;
+    public ValidationSeverity Severity => Options.SeverityLevel;
 
     /// <inheritdoc/>
     public abstract void Validate(ValidationContext context);

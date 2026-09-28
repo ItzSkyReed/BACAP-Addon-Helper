@@ -1,4 +1,5 @@
 ﻿using System.Collections.Frozen;
+using BacapGenerator.Configuration;
 using BacapGenerator.Configuration.Exceptions;
 using BacapGenerator.Utils;
 using JetBrains.Annotations;
@@ -11,9 +12,19 @@ namespace BacapGenerator.Datapacks.Models.Settings.Validation.Rules;
 /// </summary>
 public sealed class TitleFormatRuleOptions : GenericRuleOptions
 {
+    /// <summary>
+    /// Gets the raw string representation indicating whether default minor words should be included in Title Case evaluation.
+    /// </summary>
     [PublicAPI]
     [ConfigurationKeyName("use_default_minor_words")]
-    public bool UseDefaultMinorWords { get; init; } = true;
+    public string? RawUseDefaultMinorWords { get; init; }
+
+    /// <summary>
+    /// Gets a value indicating whether default minor words should be included in Title Case evaluation.
+    /// Defaults to <see langword="true"/>.
+    /// </summary>
+    [PublicAPI]
+    public bool IsDefaultMinorWordsUsed { get; private set; } = true;
 
     [PublicAPI]
     [ConfigurationKeyName("minor_words")]
@@ -30,19 +41,32 @@ public sealed class TitleFormatRuleOptions : GenericRuleOptions
     public FrozenSet<string> AllowedTitlesSet => field ??= BuildAllowedTitlesSet();
 
     /// <summary>
-    /// Validates Title Case rule options ensuring no empty items exist in exclusion lists.
+    /// Validates Title Case rule options, parsing raw boolean values and ensuring no empty items exist in exclusion lists.
     /// </summary>
     /// <param name="datapackId">The parent datapack identifier.</param>
     /// <param name="ruleName">The configuration key of this rule.</param>
-    /// <exception cref="DatapackConfigurationException">Thrown when lists contain null or whitespace-only elements.</exception>
+    /// <exception cref="DatapackConfigurationException">
+    /// Thrown when <see cref="RawUseDefaultMinorWords"/> cannot be parsed as a boolean, or when exclusion lists contain null or whitespace-only elements.
+    /// </exception>
     /// <example>
     /// <code>
+    /// var titleOptions = new TitleFormatRuleOptions
+    /// {
+    ///     RawUseDefaultMinorWords = "false"
+    /// };
     /// titleOptions.Validate("bacaped", "title_case_formatting");
     /// </code>
     /// </example>
     public override void Validate(string datapackId, string ruleName)
     {
         base.Validate(datapackId, ruleName);
+
+        IsDefaultMinorWordsUsed = ConfigParser.ParseBool(
+            RawUseDefaultMinorWords,
+            defaultValue: true,
+            datapackId,
+            DatapackErrorKind.InvalidValidationRuleConfiguration,
+            $"Invalid boolean value '{RawUseDefaultMinorWords}' for 'use_default_minor_words' in rule '{ruleName}' of datapack '{datapackId}'.");
 
         if (MinorWords is not null && MinorWords.Any(string.IsNullOrWhiteSpace))
         {
@@ -67,7 +91,7 @@ public sealed class TitleFormatRuleOptions : GenericRuleOptions
     {
         var combined = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
-        if (UseDefaultMinorWords)
+        if (IsDefaultMinorWordsUsed)
             combined.UnionWith(StringExtensions.DefaultMinorWords);
 
         if (MinorWords is not { Count: > 0 })

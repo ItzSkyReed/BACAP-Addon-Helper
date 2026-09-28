@@ -23,7 +23,7 @@ public sealed class WhitespaceTrimmingRule : ISingleAdvancementRule
     public string DisplayName => "Title Whitespace Trimming";
 
     /// <inheritdoc/>
-    public ValidationSeverity Severity => RuleOptions.Severity;
+    public ValidationSeverity Severity => RuleOptions.SeverityLevel;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="WhitespaceTrimmingRule"/> class.

@@ -68,7 +68,7 @@ public static class TranslationPackSyncService
                             .Where(k => !allKeysSet.Contains(k) && !settings.IgnoredKeysSet.Contains(k))
                             .ToList();
 
-                        var keysToRemove = settings.RemoveUnusedKeys ? unusedKeys : [];
+                        var keysToRemove = settings.RemovedUnusedKeys ? unusedKeys : [];
                         var wasPatched = false;
 
                         if (report.HasMissingKeys || keysToRemove.Count > 0)
@@ -79,7 +79,7 @@ public static class TranslationPackSyncService
                                 keysToRemove);
                         }
 
-                        if (settings.RemoveUnusedKeys && wasPatched)
+                        if (settings.RemovedUnusedKeys && wasPatched)
                         {
                             foreach (var unusedKey in unusedKeys)
                                 report.File.Translations.Remove(unusedKey);

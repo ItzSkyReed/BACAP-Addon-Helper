@@ -11,10 +11,10 @@ public interface IRuleOptions
     /// <summary>
     /// Gets a value indicating whether the rule is active.
     /// </summary>
-    bool Enabled { get; }
+    bool IsEnabled { get; }
 
     /// <summary>
     /// Gets the severity level reported for violations.
     /// </summary>
-    ValidationSeverity Severity { get; }
+    ValidationSeverity SeverityLevel { get; }
 }

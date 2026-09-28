@@ -25,7 +25,7 @@ public abstract class SingleAdvancementRuleBase<TOptions>(TOptions options) : IS
     public abstract string DisplayName { get; }
 
     /// <inheritdoc/>
-    public ValidationSeverity Severity => Options.Severity;
+    public ValidationSeverity Severity => Options.SeverityLevel;
 
     /// <inheritdoc/>
     public abstract void Validate(ManagedAdvancement advancement, ValidationContext context);

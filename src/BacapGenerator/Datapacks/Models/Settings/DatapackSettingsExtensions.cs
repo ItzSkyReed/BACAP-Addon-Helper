@@ -19,7 +19,7 @@ public static class DatapackSettingsExtensions
         public bool IsValidationActive()
         {
             // Reference datapacks should skip validation by default unless explicitly enabled
-            return settings is not { DatapackType: DatapackType.Reference, Validation.Enabled: false } && settings.Validation.Enabled;
+            return settings is not { DatapackType: DatapackType.Reference, Validation.IsEnabled: false } && settings.Validation.IsEnabled;
         }
 
         /// <summary>
@@ -29,7 +29,7 @@ public static class DatapackSettingsExtensions
         /// <returns><see langword="true"/> if missing rewards should be verified.</returns>
         public bool ShouldValidateRewardFiles() =>
             settings.IsValidationActive()
-            && settings.Validation.RewardPaths.Enabled
+            && settings.Validation.RewardPaths.IsEnabled
             && settings.SupportsAnyReward();
 
         private bool SupportsAnyReward() =>
@@ -41,7 +41,7 @@ public static class DatapackSettingsExtensions
         /// <returns><see langword="true"/> if experience rewards are active; otherwise, <see langword="false"/>.</returns>
         public bool SupportsExpRewards() =>
             settings.DatapackType == DatapackType.Addon
-            || settings is { DatapackType: DatapackType.CompatibilityAddon, CompatibilityAddonSettings.OverrideExpRewards: true };
+            || settings is { DatapackType: DatapackType.CompatibilityAddon, CompatibilityAddonSettings.IsOverridedExpRewards: true };
 
         /// <summary>
         /// Determines whether item loot rewards are supported and enabled for this datapack.
@@ -49,7 +49,7 @@ public static class DatapackSettingsExtensions
         /// <returns><see langword="true"/> if item loot rewards are active; otherwise, <see langword="false"/>.</returns>
         public bool SupportsItemRewards() =>
             settings.DatapackType == DatapackType.Addon
-            || settings is { DatapackType: DatapackType.CompatibilityAddon, CompatibilityAddonSettings.OverrideItemRewards: true };
+            || settings is { DatapackType: DatapackType.CompatibilityAddon, CompatibilityAddonSettings.IsOverridedItemRewards: true };
 
         /// <summary>
         /// Determines whether trophy rewards are supported and enabled for this datapack.
@@ -57,7 +57,7 @@ public static class DatapackSettingsExtensions
         /// <returns><see langword="true"/> if trophy rewards are active; otherwise, <see langword="false"/>.</returns>
         public bool SupportsTrophyRewards() =>
             settings.DatapackType == DatapackType.Addon
-            || settings is { DatapackType: DatapackType.CompatibilityAddon, CompatibilityAddonSettings.OverrideTrophyRewards: true };
+            || settings is { DatapackType: DatapackType.CompatibilityAddon, CompatibilityAddonSettings.IsOverridedTrophyRewards: true };
 
         /// <summary>
         /// Determines whether the datapack permits reward modifications on disk.
@@ -78,7 +78,7 @@ public static class DatapackSettingsExtensions
             if (advancement.Tier == BacapAdvancementTier.Root || !settings.SupportsExpRewards())
                 return false;
 
-            return !advancement.IsOverride || settings.CompatibilityAddonSettings.OverrideExpRewards;
+            return !advancement.IsOverride || settings.CompatibilityAddonSettings.IsOverridedExpRewards;
         }
 
         /// <summary>
@@ -91,7 +91,7 @@ public static class DatapackSettingsExtensions
             if (advancement.Tier == BacapAdvancementTier.Root || !settings.SupportsItemRewards())
                 return false;
 
-            return !advancement.IsOverride || settings.CompatibilityAddonSettings.OverrideItemRewards;
+            return !advancement.IsOverride || settings.CompatibilityAddonSettings.IsOverridedItemRewards;
         }
 
         /// <summary>
@@ -104,7 +104,7 @@ public static class DatapackSettingsExtensions
             if (advancement.Tier == BacapAdvancementTier.Root || !settings.SupportsTrophyRewards())
                 return false;
 
-            return !advancement.IsOverride || settings.CompatibilityAddonSettings.OverrideTrophyRewards;
+            return !advancement.IsOverride || settings.CompatibilityAddonSettings.IsOverridedTrophyRewards;
         }
 
         /// <summary>

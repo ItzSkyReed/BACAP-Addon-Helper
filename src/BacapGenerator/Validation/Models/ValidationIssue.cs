@@ -1,10 +1,13 @@
-﻿using BacapGenerator.Advancements.Models;
+﻿using System.ComponentModel;
+using BacapGenerator.Advancements.Models;
+using BacapGenerator.Converters;
 
 namespace BacapGenerator.Validation.Models;
 
 /// <summary>
 /// Specifies the severity level of a validation diagnostic.
 /// </summary>
+[TypeConverter(typeof(SnakeCaseEnumConverter))]
 public enum ValidationSeverity
 {
     Info,

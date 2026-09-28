@@ -157,11 +157,11 @@ public static class AdvancementIoManager
         var settings = advancement.Datapack.Settings;
         var isCompatibility = settings.DatapackType == DatapackType.CompatibilityAddon || advancement.IsOverride;
 
-        var allowMsg = !isCompatibility || settings.CompatibilityAddonSettings.OverrideMsg;
+        var allowMsg = !isCompatibility || settings.CompatibilityAddonSettings.IsOverridedMsg;
         var allowMacro = !isCompatibility;
-        var allowExp = !isCompatibility || settings.CompatibilityAddonSettings.OverrideExpRewards;
-        var allowItems = !isCompatibility || settings.CompatibilityAddonSettings.OverrideItemRewards;
-        var allowTrophies = !isCompatibility || settings.CompatibilityAddonSettings.OverrideTrophyRewards;
+        var allowExp = !isCompatibility || settings.CompatibilityAddonSettings.IsOverridedExpRewards;
+        var allowItems = !isCompatibility || settings.CompatibilityAddonSettings.IsOverridedItemRewards;
+        var allowTrophies = !isCompatibility || settings.CompatibilityAddonSettings.IsOverridedTrophyRewards;
 
         // Core execution and announcement functions
         SynchronizeFunction(advancement.MsgFunction, isEnabled: allowMsg, requireExistingOnDisk: false);

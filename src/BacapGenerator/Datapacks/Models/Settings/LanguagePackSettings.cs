@@ -1,4 +1,5 @@
 ﻿using System.Collections.Frozen;
+using BacapGenerator.Configuration;
 using BacapGenerator.Configuration.Exceptions;
 using BacapGenerator.Io;
 using JetBrains.Annotations;
@@ -48,7 +49,13 @@ public class LanguagePackSettings
     /// </summary>
     [PublicAPI]
     [ConfigurationKeyName("remove_unused_keys")]
-    public bool RemoveUnusedKeys { get; init; }
+    public string? RawRemoveUnusedKeys { get; init; }
+
+    /// <summary>
+    /// Gets a value indicating whether obsolete keys should be removed from translation files during synchronization.
+    /// </summary>
+    [PublicAPI]
+    public bool RemovedUnusedKeys { get; private set; }
 
     /// <summary>
     /// Gets the header text written at the beginning of the base translation file.
@@ -78,6 +85,13 @@ public class LanguagePackSettings
     /// </example>
     public void Validate(string datapackId)
     {
+        RemovedUnusedKeys = ConfigParser.ParseBool(
+            RawRemoveUnusedKeys,
+            defaultValue: true,
+            datapackId,
+            DatapackErrorKind.InvalidLanguagePackConfiguration,
+            $"Invalid boolean value '{RawRemoveUnusedKeys}' for 'remove_unused_keys' in datapack '{datapackId}'.");
+
         if (string.IsNullOrWhiteSpace(Path))
         {
             throw new DatapackConfigurationException(

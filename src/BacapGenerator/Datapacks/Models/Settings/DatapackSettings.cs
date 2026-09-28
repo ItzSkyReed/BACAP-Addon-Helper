@@ -147,7 +147,7 @@ public sealed class DatapackSettings
             DatapackErrorKind.InvalidDatapackType,
             missingErrorMessage: $"Missing 'type' property for datapack '{datapackId}'. Expected: reference, addon, compatibility_addon.",
             invalidErrorMessage: $"Invalid datapack type '{RawType}' in '{datapackId}'. Allowed values: reference, addon, compatibility_addon.",
-            propertyName: nameof(DatapackType));
+            propertyName: "type");
 
         if (string.IsNullOrWhiteSpace(MainNamespace))
         {
@@ -155,7 +155,7 @@ public sealed class DatapackSettings
                 datapackId,
                 DatapackErrorKind.MissingNamespace,
                 $"Main namespace is missing for datapack '{datapackId}'.",
-                nameof(MainNamespace));
+                "main_namespace");
         }
 
         if (string.IsNullOrWhiteSpace(RewardNamespace))
@@ -164,7 +164,7 @@ public sealed class DatapackSettings
                 datapackId,
                 DatapackErrorKind.MissingNamespace,
                 $"Reward namespace is missing for datapack '{datapackId}'.",
-                nameof(RewardNamespace));
+                "reward_namespace");
         }
 
         if (DatapackType == DatapackType.CompatibilityAddon && string.IsNullOrWhiteSpace(ParentDatapackId))
@@ -172,8 +172,8 @@ public sealed class DatapackSettings
             throw new DatapackConfigurationException(
                 datapackId,
                 DatapackErrorKind.MissingParentDatapack,
-                $"Compatibility addon '{datapackId}' must specify '{nameof(ParentDatapackId)}'.",
-                nameof(ParentDatapackId));
+                $"Compatibility addon '{datapackId}' must specify 'parent_datapack_id'.",
+                "parent_datapack_id");
         }
 
         if (Checklists.Count > 0 && string.IsNullOrWhiteSpace(ChecklistTriggersFolder))
@@ -220,5 +220,7 @@ public sealed class DatapackSettings
                     point.Id);
             }
         }
+
+        CompatibilityAddonSettings.Validate(datapackId);
     }
 }

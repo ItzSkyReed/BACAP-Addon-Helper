@@ -126,7 +126,11 @@ public static class AppErrorHandler
                 "Supported datapack types are: [cyan]reference[/], [cyan]addon[/], [cyan]compatibility_addon[/].",
 
             DatapackErrorKind.InvalidScoreConfiguration =>
-                "Check [yellow]custom_scores[/] and [yellow]custom_points[/] sections in [white]config.yaml[/]. Ensure valid [cyan]id[/], [cyan]scoreboard[/], [cyan]file_path[/] (.mcfunction), and filter options.",
+                "Check [yellow]custom_scores[/] and [yellow]custom_points[/] sections in [white]config.yaml[/]. " +
+                "Ensure valid [cyan]id[/], [cyan]scoreboard[/], [cyan]file_path[/] (.mcfunction), and filter options.",
+
+            DatapackErrorKind.InvalidCompatibilityAddonSettings or DatapackErrorKind.InvalidValidationSettings =>
+                "Supported boolean values are [yellow]true[/] and [yellow]false[/]",
 
             _ => "Check datapack definitions in [white]config.yaml[/]."
         };

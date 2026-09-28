@@ -32,7 +32,7 @@ public sealed class ValidationRunnerService(DatapackRegistry datapackRegistry)
         if (datapack.Settings.DatapackType == DatapackType.Reference)
             return true;
 
-        if (!datapack.Settings.Validation.Enabled)
+        if (!datapack.Settings.Validation.IsEnabled)
         {
             TuiTheme.ShowInfo($"Validation is disabled for '{datapack.ReleaseName}'. Skipping.", "darkorange");
             return true;

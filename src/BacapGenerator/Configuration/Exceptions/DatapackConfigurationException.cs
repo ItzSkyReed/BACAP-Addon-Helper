@@ -13,7 +13,9 @@ public enum DatapackErrorKind
     MissingLanguagePackPath,
     InvalidLanguagePackConfiguration,
     InvalidValidationRuleConfiguration,
-    InvalidScoreConfiguration
+    InvalidScoreConfiguration,
+    InvalidValidationSettings,
+    InvalidCompatibilityAddonSettings
 }
 
 /// <summary>
