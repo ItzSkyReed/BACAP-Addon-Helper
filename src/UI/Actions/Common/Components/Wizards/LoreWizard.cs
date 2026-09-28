@@ -34,13 +34,13 @@ public class LoreWizard : IComponentWizard
             TuiTheme.RenderHeader("Lore Configuration");
 
             if (lines.Count == 0)
-                AnsiConsole.MarkupLine("[grey]No lore lines configured.[/]\n");
+                AnsiConsole.MarkupLine("[Gray84]No lore lines configured.[/]\n");
             else
             {
                 for (var i = 0; i < lines.Count; i++)
                 {
                     var width = MeasureVisualWidth(lines[i]);
-                    AnsiConsole.MarkupLine($"[grey]{i + 1,2}:[/] [italic purple]{Markup.Escape(lines[i])}[/] [grey]({width} cols)[/]");
+                    AnsiConsole.MarkupLine($"[Gray84]{i + 1,2}:[/] [italic purple]{Markup.Escape(lines[i])}[/] [grey]({width} cols)[/]");
                 }
                 AnsiConsole.WriteLine();
             }

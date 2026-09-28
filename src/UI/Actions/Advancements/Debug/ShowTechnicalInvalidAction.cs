@@ -72,18 +72,18 @@ public class ShowTechnicalInvalidAction(DatapackRegistry registry) : IDebugAdvan
 
             foreach (var group in grouped)
             {
-                var typeNode = rootTree.AddNode($"[yellow]{group.Key}[/] [grey]({group.Count()})[/]");
+                var typeNode = rootTree.AddNode($"[yellow]{group.Key}[/] [Gray84]({group.Count()})[/]");
 
                 foreach (var adv in group.OrderBy(a => a.File.Name))
                 {
                     if (adv is InvalidAdvancement invalidAdv)
                     {
                         var escapedReason = Markup.Escape(invalidAdv.ErrorReason.ToString());
-                        typeNode.AddNode($"[grey]{adv.File.Name}[/] - [red]{escapedReason}[/]");
+                        typeNode.AddNode($"[Gray84]{adv.File.Name}[/] - [red]{escapedReason}[/]");
                     }
                     else
                     {
-                        typeNode.AddNode($"[grey]{adv.File.Name}[/]");
+                        typeNode.AddNode($"[Gray84]{adv.File.Name}[/]");
                     }
                 }
             }

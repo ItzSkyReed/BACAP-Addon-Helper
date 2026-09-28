@@ -50,7 +50,7 @@ public static class ItemComponentsMenu
                 item => item switch
                 {
                     BackAction nav => nav.Title,
-                    IDataComponent comp => $"[yellow]{comp.Id}[/] [grey]({Markup.Escape(comp.ToSnbt().ToSnbtString())})[/]",
+                    IDataComponent comp => $"[yellow]{comp.Id}[/] [Gray84]({Markup.Escape(comp.ToSnbt().ToSnbtString())})[/]",
                     AddPopularAction pop => pop.Label,
                     PasteRawAction => "[green]+ Paste Raw Components[/]",
                     ClearAllAction => "[red]- Clear All Components[/]",
@@ -99,10 +99,10 @@ public static class ItemComponentsMenu
     private static ItemStack PromptPasteRawComponents(ItemStack stack)
     {
         TuiTheme.RenderHeader("Paste Raw Components");
-        AnsiConsole.MarkupLine("[grey]Supported formats:[/]");
-        AnsiConsole.MarkupLine("[grey]  1. Single: [/][cyan]minecraft:unbreakable={}[/]");
-        AnsiConsole.MarkupLine("[grey]  2. Bracketed: [/][cyan][[minecraft:unbreakable={}, custom_name='{\"text\":\"Excalibur\"}']][/]");
-        AnsiConsole.MarkupLine("[grey]  3. Removal: [/][cyan]!minecraft:damage[/]\n");
+        AnsiConsole.MarkupLine("[Gray84]Supported formats:[/]");
+        AnsiConsole.MarkupLine("[Gray84]  1. Single: [/][cyan]minecraft:unbreakable={}[/]");
+        AnsiConsole.MarkupLine("[Gray84]  2. Bracketed: [/][cyan][[minecraft:unbreakable={}, custom_name='{\"text\":\"Excalibur\"}']][/]");
+        AnsiConsole.MarkupLine("[Gray84]  3. Removal: [/][cyan]!minecraft:damage[/]\n");
 
         var input = AnsiConsole.Prompt(
             new TextPrompt<string>("Enter component string (or leave empty to cancel):")

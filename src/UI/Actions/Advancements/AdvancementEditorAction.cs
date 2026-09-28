@@ -109,16 +109,16 @@ public class AdvancementEditorAction(DatapackRegistry registry) : IManageAdvance
                     .UseConverter(opt => opt switch
                     {
                         AdvancementEditOption.ChangeTitle =>
-                            $"Title [grey]({Markup.Escape(advancement.TitleText)})[/]",
+                            $"Title [Gray84]({Markup.Escape(advancement.TitleText)})[/]",
 
                         AdvancementEditOption.ChangeDescription =>
-                            $"Description [grey]({Markup.Escape(descPreview)})[/]",
+                            $"Description [Gray84]({Markup.Escape(descPreview)})[/]",
 
                         AdvancementEditOption.ChangeTab =>
-                            $"Tab [{advancement.Tab.Color}]■[/] [white]{advancement.Tab.DisplayName}[/] [grey]({advancement.Tab.FolderName})[/]",
+                            $"Tab [{advancement.Tab.Color}]■[/] [white]{advancement.Tab.DisplayName}[/] [Gray84]({advancement.Tab.FolderName})[/]",
 
                         AdvancementEditOption.ChangeParent =>
-                            $"Parent [grey]({Markup.Escape(advancement.Parent ?? "None")})[/]",
+                            $"Parent [Gray84]({Markup.Escape(advancement.Parent ?? "None")})[/]",
 
                         AdvancementEditOption.ChangeTier =>
                             $"Tier [yellow]{advancement.Tier}[/]",
@@ -265,7 +265,7 @@ public class AdvancementEditorAction(DatapackRegistry registry) : IManageAdvance
                 .Title("Select advancement tab:")
                 .EnableSearch()
                 .AddChoices(BacapTab.All)
-                .UseConverter(tab => $"[{tab.Color}]■[/] [white]{tab.DisplayName}[/] [grey]({tab.FolderName})[/]")
+                .UseConverter(tab => $"[{tab.Color}]■[/] [white]{tab.DisplayName}[/] [Gray84]({tab.FolderName})[/]")
         );
 
         TryApplyMutation(
@@ -446,10 +446,10 @@ public class AdvancementEditorAction(DatapackRegistry registry) : IManageAdvance
     {
         // Если это оверрайд и локальный файл награды пока не создан пользователем
         if (advancement is { IsOverride: true, ExpRewardFunction.File.Exists: false })
-            return "[grey]Inherited from parent[/]";
+            return "[Gray84]Inherited from parent[/]";
 
         var exp = advancement.ExpRewardFunction.ExperienceAmount;
-        return exp > 0 ? $"[green]{exp} points[/]" : "[grey]None (Empty)[/]";
+        return exp > 0 ? $"[green]{exp} points[/]" : "[Gray84]None (Empty)[/]";
     }
 
     /// <summary>
@@ -460,7 +460,7 @@ public class AdvancementEditorAction(DatapackRegistry registry) : IManageAdvance
     private static string FormatItemSummary(BacapAdvancement advancement)
     {
         var count = advancement.ItemRewardFunction.RewardItems.Count;
-        return count > 0 ? $"[green]{count} item(s)[/]" : "[grey]None (Empty)[/]";
+        return count > 0 ? $"[green]{count} item(s)[/]" : "[Gray84]None (Empty)[/]";
     }
 
     /// <summary>
@@ -471,7 +471,7 @@ public class AdvancementEditorAction(DatapackRegistry registry) : IManageAdvance
     private static string FormatTrophySummary(BacapAdvancement advancement)
     {
         var count = advancement.TrophyRewardFunction.Trophies.Count;
-        return count > 0 ? $"[green]{count} trophy(ies)[/]" : "[grey]None (Empty)[/]";
+        return count > 0 ? $"[green]{count} trophy(ies)[/]" : "[Gray84]None (Empty)[/]";
     }
 
     /// <summary>

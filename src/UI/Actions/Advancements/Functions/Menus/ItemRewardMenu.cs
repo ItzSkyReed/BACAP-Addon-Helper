@@ -116,9 +116,9 @@ public static class ItemRewardMenu
                     .AddChoices(Enum.GetValues<ItemEditOption>())
                     .UseConverter(opt => opt switch
                     {
-                        ItemEditOption.ChangeId => $"Change ID [grey]({current.Id})[/]",
-                        ItemEditOption.ChangeAmount => $"Change Amount [grey]({current.Count}x)[/]",
-                        ItemEditOption.EditComponents => $"Edit Components [grey]({componentsPreview})[/]",
+                        ItemEditOption.ChangeId => $"Change ID [Gray84]({current.Id})[/]",
+                        ItemEditOption.ChangeAmount => $"Change Amount [Gray84]({current.Count}x)[/]",
+                        ItemEditOption.EditComponents => $"Edit Components [Gray84]({componentsPreview})[/]",
                         ItemEditOption.Delete => "[red]Delete Item[/]",
                         ItemEditOption.Back => TuiTheme.BackOptionString,
                         _ => opt.ToString()

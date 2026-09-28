@@ -45,7 +45,7 @@ public sealed class SyncWithTranslationPack(DatapackRegistry datapackRegistry) :
                 ? $" (Merged addons: {string.Join(", ", result.Group.CompatibilityAddons.Select(a => a.ReleaseName))})"
                 : string.Empty;
 
-            AnsiConsole.MarkupLine($"[bold cyan]{primaryName}[/][grey]{compatNames}[/]");
+            AnsiConsole.MarkupLine($"[bold cyan]{primaryName}[/][Gray84]{compatNames}[/]");
 
             if (!result.IsSuccess)
             {
@@ -55,7 +55,7 @@ public sealed class SyncWithTranslationPack(DatapackRegistry datapackRegistry) :
             }
 
             AnsiConsole.MarkupLine(
-                $"  [green]✓[/] Base template updated: [grey]{Markup.Escape(result.BaseTranslationFile!.Name)}[/] " +
+                $"  [green]✓[/] Base template updated: [Gray84]{Markup.Escape(result.BaseTranslationFile!.Name)}[/] " +
                 $"([bold]{result.TotalRequiredKeys}[/] keys total)");
 
             if (result.FileSummaries.Count == 0)

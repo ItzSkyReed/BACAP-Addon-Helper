@@ -7,7 +7,7 @@ namespace UI.Actions.Common;
 /// A reusable dummy action to represent navigation options like "Back" or "Exit" in menus.
 /// It is meant to be intercepted by the menu loop to break out of it.
 /// </summary>
-/// <param name="title">The display title of the navigation action. Defaults to "[grey]Back[/]".</param>
+/// <param name="title">The display title of the navigation action. Defaults to "[Gray84]Back[/]".</param>
 public class BackAction(string title = TuiTheme.BackOptionString) : ITuiAction
 {
     public string Title { get; } = title;

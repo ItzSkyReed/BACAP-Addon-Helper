@@ -88,7 +88,7 @@ public static class ItemPromptUtils
             : strippedId;
 
         var componentMarker = !item.Components.IsEmpty ? " [cyan](+Components)[/]" : string.Empty;
-        return $"[yellow]{item.Count}x[/] [white]{Markup.Escape(displayName)}[/] [grey]({item.Id})[/]{componentMarker}";
+        return $"[yellow]{item.Count}x[/] [white]{Markup.Escape(displayName)}[/] [Gray84]({item.Id})[/]{componentMarker}";
     }
 
     /// <summary>

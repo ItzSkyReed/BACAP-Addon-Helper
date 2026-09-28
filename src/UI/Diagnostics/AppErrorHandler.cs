@@ -172,7 +172,7 @@ public static class AppErrorHandler
     {
         var content = $"An unexpected error halted execution:\n\n" +
                       $"[bold white]{Markup.Escape(ex.GetType().Name)}:[/] {Markup.Escape(ex.Message)}\n\n" +
-                      $"[grey]Report this issue to the developer[/]";
+                      $"[Gray84]Report this issue to the developer[/]";
 
         TuiTheme.ShowAlert("[bold red] Unexpected Fatal Error [/]", content, Color.Red);
     }
@@ -197,7 +197,7 @@ public static class AppErrorHandler
                 var stackNode = node.AddNode("[grey]Stack Trace[/]");
                 foreach (var line in stackLines)
                 {
-                    stackNode.AddNode($"[grey]{Markup.Escape(line)}[/]");
+                    stackNode.AddNode($"[Gray84]{Markup.Escape(line)}[/]");
                 }
             }
 

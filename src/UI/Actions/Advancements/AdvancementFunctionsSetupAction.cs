@@ -181,7 +181,7 @@ public class AdvancementFunctionsSetupAction(DatapackRegistry registry) : IManag
             return isOverride ? "[green]Overridden[/]" : "[green]Configured[/]";
 
         if (isOverride && !isRequired)
-            return "[grey]Inherited (Parent)[/]";
+            return "[Gray84]Inherited (Parent)[/]";
 
         return "[red]Missing[/]";
     }

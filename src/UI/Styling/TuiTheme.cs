@@ -55,7 +55,7 @@ public static class TuiTheme
         AnsiConsole.WriteLine();
     }
 
-    public const string BackOptionString = "[grey]Back[/]";
+    public const string BackOptionString = "[Gray84]Back[/]";
 
     /// <summary>
     /// Displays a stylized alert panel with a header, rounded borders, and custom markup content.
@@ -105,8 +105,8 @@ public static class TuiTheme
     /// Displays a standardized informational message.
     /// </summary>
     /// <param name="message">The message to display.</param>
-    /// <param name="color">The markup color of the message. Defaults to <c>grey</c>.</param>
-    public static void ShowInfo(string message, string color = "grey")
+    /// <param name="color">The markup color of the message. Defaults to <c>Gray84</c>.</param>
+    public static void ShowInfo(string message, string color = "Gray84")
     {
         AnsiConsole.MarkupLine($"[{color}]{message}[/]");
     }
@@ -196,7 +196,7 @@ public static class TuiTheme
 
     public static void WaitForKey()
     {
-        AnsiConsole.MarkupLine("\n[grey]Press any key to continue...[/]");
+        AnsiConsole.MarkupLine("\n[Gray84]Press any key to continue...[/]");
         Console.ReadKey(true);
     }
 

@@ -207,13 +207,13 @@ public static partial class TrophyRewardMenu
                     .AddChoices(Enum.GetValues<TrophyEditOption>())
                     .UseConverter(opt => opt switch
                     {
-                        TrophyEditOption.ChangeBaseId => $"Change Base Item ID [grey]({current.Item.Id})[/]",
-                        TrophyEditOption.ChangeAmount => $"Change Amount [grey]({current.Item.Count}x)[/]",
-                        TrophyEditOption.ChangeTitle => $"Change Title [grey]({Markup.Escape(current.Title ?? "None")})[/]",
-                        TrophyEditOption.ChangeColor => $"Change Color [{color}]■[/] [grey]({color})[/]",
-                        TrophyEditOption.ChangeLore => $"Change Description (Lore) [grey]({lorePreview})[/]",
-                        TrophyEditOption.ToggleDelivery => $"Toggle Delivery DatapackType [grey]({deliveryPreview})[/]",
-                        TrophyEditOption.EditComponents => $"Edit Extra Components [grey]({componentCount} active)[/]",
+                        TrophyEditOption.ChangeBaseId => $"Change Base Item ID [Gray84]({current.Item.Id})[/]",
+                        TrophyEditOption.ChangeAmount => $"Change Amount [Gray84]({current.Item.Count}x)[/]",
+                        TrophyEditOption.ChangeTitle => $"Change Title [Gray84]({Markup.Escape(current.Title ?? "None")})[/]",
+                        TrophyEditOption.ChangeColor => $"Change Color [{color}]■[/] [Gray84]({color})[/]",
+                        TrophyEditOption.ChangeLore => $"Change Description (Lore) [Gray84]({lorePreview})[/]",
+                        TrophyEditOption.ToggleDelivery => $"Toggle Delivery DatapackType [Gray84]({deliveryPreview})[/]",
+                        TrophyEditOption.EditComponents => $"Edit Extra Components [Gray84]({componentCount} active)[/]",
                         TrophyEditOption.Delete => "[red]Delete Trophy[/]",
                         TrophyEditOption.Back => TuiTheme.BackOptionString,
                         _ => opt.ToString()
@@ -414,7 +414,7 @@ public static partial class TrophyRewardMenu
             ? " [red][[DeathLoc]][/]"
             : string.Empty;
 
-        return $"[{color}]{escapedTitle}[/] [grey]({trophy.Item.Id})[/]{deliveryTag}";
+        return $"[{color}]{escapedTitle}[/] [Gray84]({trophy.Item.Id})[/]{deliveryTag}";
     }
 
     /// <summary>

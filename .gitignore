@@ -33,5 +33,7 @@ $RECYCLE.BIN/
 *.msm
 *.msp
 *.lnk
-.env
 .idea
+.env
+.env.*
+!.env.example

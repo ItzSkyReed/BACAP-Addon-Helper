@@ -139,9 +139,9 @@ public static class AdvancementSearcher
                 var titleText = TryGetTitle(Advancement);
                 var titleDisplay = !string.IsNullOrWhiteSpace(titleText)
                     ? $"[white]{Markup.Escape(titleText)}[/]"
-                    : "[grey][[Technical]][/]";
+                    : "[Gray84][[Technical]][/]";
 
-                return $"{titleDisplay} [cyan]{Markup.Escape(Advancement.Datapack.Id)}[/] | [grey]{Markup.Escape(Advancement.McPath)}[/]";
+                return $"{titleDisplay} [cyan]{Markup.Escape(Advancement.Datapack.Id)}[/] | [Gray84]{Markup.Escape(Advancement.McPath)}[/]";
             }
         }
 

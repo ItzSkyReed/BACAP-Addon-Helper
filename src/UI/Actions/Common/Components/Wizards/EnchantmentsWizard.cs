@@ -28,7 +28,7 @@ public class EnchantmentsWizard : IComponentWizard
             TuiTheme.RenderHeader("Enchantments Configuration");
 
             if (levels.Count == 0)
-                AnsiConsole.MarkupLine("[grey]No enchantments added.[/]\n");
+                AnsiConsole.MarkupLine("[Gray84]No enchantments added.[/]\n");
             else
             {
                 foreach (var (enchId, lvl) in levels)

@@ -38,7 +38,7 @@ public static class TuiActionExtensions
                 header: "[bold red] Action Failed [/]",
                 content: $"An unexpected error occurred while running [yellow]{Markup.Escape(action.Title)}[/]:\n\n" +
                          $"[red]{Markup.Escape(ex.Message)}[/]\n\n" +
-                         $"[grey]Exception: {Markup.Escape(ex.GetType().Name)}[/]",
+                         $"[Gray84]Exception: {Markup.Escape(ex.GetType().Name)}[/]",
                 borderColor: Color.Red);
 
             TuiTheme.WaitForKey();

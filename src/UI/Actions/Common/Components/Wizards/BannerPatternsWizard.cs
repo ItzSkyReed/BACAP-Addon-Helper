@@ -29,11 +29,11 @@ public class BannerPatternsWizard : IComponentWizard
             TuiTheme.RenderHeader("Banner Patterns Configuration");
 
             if (patterns.Count == 0)
-                AnsiConsole.MarkupLine("[grey]No pattern layers configured.[/]\n");
+                AnsiConsole.MarkupLine("[Gray84]No pattern layers configured.[/]\n");
             else
             {
                 for (var i = 0; i < patterns.Count; i++)
-                    AnsiConsole.MarkupLine($"[grey]Layer {i + 1}:[/] [cyan]{patterns[i].ToSnbt().ToSnbtString()}[/]");
+                    AnsiConsole.MarkupLine($"[Gray84]Layer {i + 1}:[/] [cyan]{patterns[i].ToSnbt().ToSnbtString()}[/]");
                 AnsiConsole.WriteLine();
             }
 

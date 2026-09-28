@@ -62,7 +62,7 @@ public sealed class ValidationRunnerService(DatapackRegistry datapackRegistry)
             var ruleGroups = group.GroupBy(i => i.RuleId);
             foreach (var ruleGroup in ruleGroups)
             {
-                var ruleNode = severityNode.AddNode($"[grey]Rule:[/] {ruleGroup.Key}");
+                var ruleNode = severityNode.AddNode($"[Gray84]Rule:[/] {ruleGroup.Key}");
 
                 // Grouping by target advancement and property
                 var targetGroups = ruleGroup.GroupBy(i => new
@@ -77,7 +77,7 @@ public sealed class ValidationRunnerService(DatapackRegistry datapackRegistry)
                         ? $" -> {targetGroup.Key.PropertyPath}"
                         : string.Empty;
 
-                    var targetNode = ruleNode.AddNode($"[white]{targetGroup.Key.Target}[/][grey]{pathSuffix}[/]");
+                    var targetNode = ruleNode.AddNode($"[white]{targetGroup.Key.Target}[/][Gray84]{pathSuffix}[/]");
 
                     foreach (var issue in targetGroup)
                     {
@@ -109,6 +109,6 @@ public sealed class ValidationRunnerService(DatapackRegistry datapackRegistry)
         ValidationSeverity.Error => "bold red",
         ValidationSeverity.Warning => "bold yellow",
         ValidationSeverity.Info => "bold cyan",
-        _ => "grey"
+        _ => "Gray84"
     };
 }

@@ -16,7 +16,7 @@ public class MainMenuAction(IEnumerable<IMainMenuAction> menuActions) : ITuiActi
     {
         // Add a "Quit" option dynamically
         var choices = menuActions.ToList<ITuiAction>();
-        choices.Add(new BackAction("[grey]Exit[/]"));
+        choices.Add(new BackAction("[Gray84]Exit[/]"));
 
         while (true)
         {

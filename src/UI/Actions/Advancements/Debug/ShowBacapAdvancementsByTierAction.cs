@@ -48,7 +48,7 @@ public class ShowBacapAdvancementsByTierAction(DatapackRegistry registry) : IDeb
                 var count = tierCounts.GetValueOrDefault(tier, 0);
                 summaryTable.AddRow(
                     $"[yellow]{tier}[/]",
-                    count > 0 ? $"[green]{count}[/]" : "[grey]0[/]"
+                    count > 0 ? $"[green]{count}[/]" : "[Gray84]0[/]"
                 );
             }
 

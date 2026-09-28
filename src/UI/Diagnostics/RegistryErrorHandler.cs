@@ -43,7 +43,7 @@ public static class RegistryErrorHandler
                 "Extract registries using [yellow]registry-dumper[/] and ensure all files are in place."
             ),
             RegistryErrorKind.InvalidJson => (
-                $"Corrupted JSON format in [bold red]{exception.FileName}[/]:\n[grey]{Markup.Escape(exception.Message)}[/]",
+                $"Corrupted JSON format in [bold red]{exception.FileName}[/]:\n[Gray84]{Markup.Escape(exception.Message)}[/]",
                 "Check the file for trailing commas or syntax errors."
             ),
             RegistryErrorKind.EmptyPayload => (

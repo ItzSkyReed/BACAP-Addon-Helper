@@ -46,7 +46,7 @@ public static class BacapAdvancementTierViewer
 
             foundAny = true;
 
-            var rootTree = TuiTheme.CreateTree($"[bold cyan]{id}[/] [grey]({advancements.Count} total)[/]");
+            var rootTree = TuiTheme.CreateTree($"[bold cyan]{id}[/] [Gray84]({advancements.Count} total)[/]");
 
             var tierGroups = advancements
                 .GroupBy(adv => adv.Tier)
@@ -54,7 +54,7 @@ public static class BacapAdvancementTierViewer
 
             foreach (var tierGroup in tierGroups)
             {
-                var tierNode = rootTree.AddNode($"[bold yellow]{tierGroup.Key}[/] [grey]({tierGroup.Count()})[/]");
+                var tierNode = rootTree.AddNode($"[bold yellow]{tierGroup.Key}[/] [Gray84]({tierGroup.Count()})[/]");
 
                 var tabGroups = tierGroup
                     .GroupBy(adv => adv.Tab)
@@ -62,12 +62,12 @@ public static class BacapAdvancementTierViewer
 
                 foreach (var tabGroup in tabGroups)
                 {
-                    var tabNode = tierNode.AddNode($"[blue]{tabGroup.Key.DisplayName}[/] [grey]({tabGroup.Count()})[/]");
+                    var tabNode = tierNode.AddNode($"[blue]{tabGroup.Key.DisplayName}[/] [Gray84]({tabGroup.Count()})[/]");
 
                     foreach (var adv in tabGroup.OrderBy(a => a.File.Name))
                     {
                         var escapedTitle = Markup.Escape(adv.TitleText);
-                        tabNode.AddNode($"[grey]{adv.File.Name}[/] - [white]{escapedTitle}[/]");
+                        tabNode.AddNode($"[Gray84]{adv.File.Name}[/] - [white]{escapedTitle}[/]");
                     }
                 }
             }
