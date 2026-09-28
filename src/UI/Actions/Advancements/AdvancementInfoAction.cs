@@ -63,7 +63,24 @@ public class AdvancementInfoAction(DatapackRegistry registry, MinecraftData mine
         // Common metadata across all valid advancements
         table.AddRow($"[{TuiTheme.TablePropertyColor}]Datapack[/]", $"[cyan]{Markup.Escape(adv.Datapack.Id)}[/]");
         table.AddRow($"[{TuiTheme.TablePropertyColor}]McPath (File)[/]", $"[white]{Markup.Escape(adv.McPath)}[/]");
-        table.AddRow($"[{TuiTheme.TablePropertyColor}]Parent[/]", $"[grey]{Markup.Escape(adv.Advancement.Parent ?? "None (Root)")}[/]");
+
+        var parentMcPath = adv.Advancement.Parent;
+
+        // Find parent advancement in the datapack to determine its tier color
+        var parentAdvancement = !string.IsNullOrWhiteSpace(parentMcPath)
+            ? adv.Datapack.Advancements
+                .OfType<BacapAdvancement>()
+                .FirstOrDefault(candidate => candidate.McPath == parentMcPath)
+            : null;
+
+        // Resolve color based on parent tier, fallback to default grey
+        var parentColor = parentAdvancement?.Tier.Color() ?? "Grey84";
+        var parentText = Markup.Escape(parentMcPath ?? "None (Root)");
+
+        table.AddRow(
+            $"[{TuiTheme.TablePropertyColor}]Parent[/]",
+            $"[{parentColor}]{parentText}[/]"
+        );
 
         if (adv is BacapAdvancement bacap)
             RenderBacapDetails(table, bacap);
@@ -86,17 +103,17 @@ public class AdvancementInfoAction(DatapackRegistry registry, MinecraftData mine
 
         var descText = !string.IsNullOrWhiteSpace(bacap.CleanDescriptionText)
             ? Markup.Escape(bacap.CleanDescriptionText)
-            : "[grey]None[/]";
+            : "[Gray84]None[/]";
         table.AddRow($"[{TuiTheme.TablePropertyColor}]Description[/]", $"[white]{descText}[/]");
 
-        table.AddRow($"[{TuiTheme.TablePropertyColor}]Tab[/]", $"[{bacap.Tab.Color}]■[/] [{bacap.Tab.Color}]{Markup.Escape(bacap.Tab.DisplayName)}[/] [grey]({bacap.Tab.FolderName})[/]");
+        table.AddRow($"[{TuiTheme.TablePropertyColor}]Tab[/]", $"[{bacap.Tab.Color}]■[/] [{bacap.Tab.Color}]{Markup.Escape(bacap.Tab.DisplayName)}[/] [Gray84]({bacap.Tab.FolderName})[/]");
         table.AddRow($"[{TuiTheme.TablePropertyColor}]Tier[/]", $"[{bacap.Tier.Color()}]{bacap.Tier.DisplayName()}[/]");
 
         // Experience reward
         var expAmount = bacap.ExpRewardFunction.ExperienceAmount;
         var expDisplay = expAmount > 0
             ? $"[green]{expAmount} points[/]"
-            : "[grey]None[/]";
+            : "[Gray84]None[/]";
         table.AddRow($"[{TuiTheme.TablePropertyColor}]Experience Reward[/]", expDisplay);
 
         // Item rewards
@@ -106,9 +123,9 @@ public class AdvancementInfoAction(DatapackRegistry registry, MinecraftData mine
             {
                 var cleanItemId = MinecraftUtils.StripNamespace(item.Id);
                 var displayName = ResolveItemDisplayName(cleanItemId);
-                return $"[green]{item.Count}x[/] [cyan]{Markup.Escape(displayName)}[/] [grey]({cleanItemId})[/]";
+                return $"[green]{item.Count}x[/] [cyan]{Markup.Escape(displayName)}[/] [Gray84]({cleanItemId})[/]";
             }))
-            : "[grey]None[/]";
+            : "[Gray84]None[/]";
         table.AddRow($"[{TuiTheme.TablePropertyColor}]Item Rewards[/]", formattedItems);
 
         // Trophy rewards
@@ -136,7 +153,7 @@ public class AdvancementInfoAction(DatapackRegistry registry, MinecraftData mine
                     ? mainLine
                     : $"{mainLine}\n{string.Join("\n", loreLines)}";
             }))
-            : "[grey]None[/]";
+            : "[Gray84]None[/]";
         table.AddRow($"[{TuiTheme.TablePropertyColor}]Trophies[/]", formattedTrophies);
     }
 
@@ -147,12 +164,12 @@ public class AdvancementInfoAction(DatapackRegistry registry, MinecraftData mine
     /// <param name="adv">The technical advancement instance.</param>
     private static void RenderTechnicalDetails(Table table, ValidAdvancement adv)
     {
-        table.AddRow($"[{TuiTheme.TablePropertyColor}]DatapackType[/]", "[grey]Technical Trigger (No Display / Rewards)[/]");
+        table.AddRow($"[{TuiTheme.TablePropertyColor}]DatapackType[/]", "[Gray84]Technical Trigger (No Display / Rewards)[/]");
 
         var criteriaCount = adv.Advancement.Criteria.Count;
         var criteriaDisplay = criteriaCount > 0
-            ? string.Join(", ", adv.Advancement.Criteria.Keys.Select(k => $"[grey]{Markup.Escape(k)}[/]"))
-            : "[grey]None[/]";
+            ? string.Join(", ", adv.Advancement.Criteria.Keys.Select(k => $"[Gray84]{Markup.Escape(k)}[/]"))
+            : "[Gray84]None[/]";
 
         table.AddRow($"[{TuiTheme.TablePropertyColor}]Criteria ({criteriaCount})[/]", criteriaDisplay);
     }
