@@ -35,6 +35,7 @@ try
         .ConfigureServices((context, services) =>
         {
             services.AddApplicationConfiguration(context.Configuration)
+                .AddUserConfiguration()
                 .AddMinecraftRegistries(context.Configuration)
                 .AddDatapackServices()
                 .AddUiActions();

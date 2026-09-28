@@ -12,6 +12,7 @@ using Microsoft.Extensions.Options;
 using UI.Actions.Advancements;
 using UI.Actions.Advancements.Debug;
 using UI.Actions.Datapacks;
+using UI.Configuration;
 using UI.Interfaces;
 using UI.Menus;
 using UI.Services;
@@ -89,6 +90,24 @@ public static class ServiceCollectionExtensions
         }
 
         /// <summary>
+        /// Loads user-specific settings from environment variables or an optional .env file and registers them as a singleton.
+        /// </summary>
+        /// <param name="envFilePath">The file path to the environment file. Defaults to <c>".env"</c>.</param>
+        /// <returns>The service collection instance for method chaining.</returns>
+        /// <example>
+        /// <code>
+        /// services.AddUserConfiguration();
+        /// </code>
+        /// </example>
+        public IServiceCollection AddUserConfiguration(string envFilePath = ".env")
+        {
+            var userConfig = UserConfigLoader.Load(envFilePath);
+            services.AddSingleton(userConfig);
+
+            return services;
+        }
+
+        /// <summary>
         /// Registers all interactive TUI actions, menus, and submenus.
         /// </summary>
         /// <returns>The service collection instance for method chaining.</returns>
@@ -100,6 +119,7 @@ public static class ServiceCollectionExtensions
             services.AddTransient<IMainMenuAction, ManageAdvancementsMenu>();
             services.AddTransient<IMainMenuAction, ManageDatapacksMenu>();
             services.AddTransient<IMainMenuAction, ReleaseMenu>();
+            services.AddTransient<IMainMenuAction, SyncPacksMenu>();
 
             // Advancement Management Actions
             services.AddTransient<IManageAdvancementsAction, AdvancementStatsAction>();
