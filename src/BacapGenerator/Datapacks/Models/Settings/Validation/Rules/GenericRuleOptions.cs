@@ -66,6 +66,6 @@ public class GenericRuleOptions : IRuleOptions
             datapackId,
             DatapackErrorKind.InvalidValidationRuleConfiguration,
             $"Invalid severity level '{RawSeverity}' in rule '{ruleName}' of datapack '{datapackId}'. " +
-            $"Allowed values: {string.Join(", ", Enum.GetNames<ValidationSeverity>())}.");
+            $"Allowed values: {string.Join(", ", Enum.GetNames<ValidationSeverity>()).ToLowerInvariant()}.");
     }
 }
