@@ -55,15 +55,12 @@ public sealed class SyncPacksMenu(DatapackRegistry registry, UserConfig config) 
         RenderPathStatus("Base World Target", config.WorldDatapacksPath, config.IsWorldDatapacksPathValid);
         RenderPathStatus("Compatibility World Target", config.WorldCompatDatapacksPath, config.IsWorldCompatDatapacksPathValid, isOptional: !hasCompatibilityAddons);
         RenderPathStatus("Resource Packs Target", config.ResourcePacksPath, config.IsResourcePacksPathValid);
-        TuiTheme.Space();
 
         // Synchronize Base Datapacks (No compatibility addons)
         if (config.IsWorldDatapacksPathValid)
             SyncDatapacks("Base World", basePacks, config.WorldDatapacksPath!);
         else
             TuiTheme.ShowWarning("Skipping base datapacks sync: WORLD_DATAPACKS_PATH is not set or does not exist.");
-
-        TuiTheme.Space();
 
         // Synchronize Compatibility World Datapacks (All addons including compatibility)
         if (hasCompatibilityAddons)
@@ -74,7 +71,6 @@ public sealed class SyncPacksMenu(DatapackRegistry registry, UserConfig config) 
             else
                 TuiTheme.ShowWarning("Skipping compatibility world sync: compatibility addons are loaded, but WORLD_COMPAT_DATAPACKS_PATH is not set or does not exist.");
 
-            TuiTheme.Space();
         }
 
         // Synchronize Resource Packs
@@ -83,7 +79,6 @@ public sealed class SyncPacksMenu(DatapackRegistry registry, UserConfig config) 
         else
             TuiTheme.ShowWarning("Skipping resource packs sync: RESOURCE_PACKS_PATH is not set or does not exist.");
 
-        TuiTheme.Space();
         TuiTheme.ShowSuccess("Synchronization finished!");
         TuiTheme.WaitForKey();
 
