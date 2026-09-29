@@ -10,7 +10,7 @@ An interactive TUI (Terminal User Interface) automation and validation toolkit f
 
 ## Features
 
-- **Datapack Validation Engine**: Statically validates advancement trees, namespace consistency, milestone paths, and formatting rules (Title Case, plain text checks, whitespace sanitization).
+- **Datapack Validation**: Statically validates advancement trees, namespace consistency, milestone paths, and formatting rules (Title Case, plain text checks, whitespace sanitization).
 - **Functions & Reward Automation**: Automatically sets up advancement execution commands, macro calls, XP rewards, custom items (with Data Components/NBT support), and trophy rewards.
 - **Milestones**: Generates advancement milestone tracking and tab completion functions.
 - **Checklists**: Generates checklists like [/trigger bacaped_mob_universe](https://github.com/Komaru-cats/BACAP-Enhanced-Discoveries/blob/main/BACAP_Enhanced_Discoveries/data/bacaped/function/triggers_callback/mob_universe_trigger.mcfunction).
@@ -19,7 +19,7 @@ An interactive TUI (Terminal User Interface) automation and validation toolkit f
     - Automatically generates and refreshes `base_translation.json`.
     - Patches target language files (e.g. `es_ar.json`), appending missing keys while protecting against syntax corruption and obsolete entries.
 - **Interactive Component Wizards**: Terminal UI wizards for configuring items with components: custom names, lore, trim, enchantments, banner patterns, and potion effects.
-
+- **Synchronization with the world folder**: Menu for synchronizing the datapack to a specific world folder ([see the wiki for details](https://github.com/ItzSkyReed/BACAP-Addon-Helper/wiki/Environment-Variables))
 ---
 
 ## Installation & Quick Start
@@ -43,7 +43,7 @@ Download the latest standalone executable for your operating system from the **[
 4. Configure config for your datapacks.
 
 ## 📖 Detailed Configuration Guide
-Check out our full configuration schema and examples on the Project Wiki.
+Check out full configuration schema and examples on the [Project Wiki](https://github.com/ItzSkyReed/BACAP-Addon-Helper/wiki/Configuration).
 
 ---
 
