@@ -54,6 +54,7 @@ jobs:
           -p:StripSymbols=true
           -p:DebuggerSupport=false
           -p:EventSourceSupport=false
+          -p:EnableCompressionInSingleFile=true
           -p:HttpActivityPropagationSupport=false
           -o ./dist/self-contained
 

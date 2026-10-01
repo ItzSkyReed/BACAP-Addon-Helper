@@ -29,7 +29,6 @@
     </PropertyGroup>
 
     <PropertyGroup Condition="'$(Configuration)' == 'Release'">
-        <EnableCompressionInSingleFile>true</EnableCompressionInSingleFile>
         <DebugType>none</DebugType>
         <DebugSymbols>false</DebugSymbols>
         <!-- Strips native debug symbols on Linux and macOS -->
