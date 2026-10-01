@@ -30,6 +30,7 @@
 
     <PropertyGroup Condition="'$(Configuration)' == 'Release'">
         <DebugType>none</DebugType>
+        <DebuggerSupport>false</DebuggerSupport>
         <DebugSymbols>false</DebugSymbols>
         <!-- Strips native debug symbols on Linux and macOS -->
         <StripSymbols>true</StripSymbols>
