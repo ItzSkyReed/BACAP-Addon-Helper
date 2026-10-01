@@ -8,7 +8,7 @@ using UI.Styling;
 namespace UI.Actions.Datapacks;
 
 /// <summary>
-/// Action that synchronizes documentation requirements and generates final JSON payloads for web export.
+/// Action that synchronizes documentation requirements and generates final JSON payloads for export.
 /// </summary>
 public class GenerateDocumentationAction(DatapackRegistry registry, GlobalConfig globalConfig) : IManageDatapacksAction
 {
@@ -43,7 +43,7 @@ public class GenerateDocumentationAction(DatapackRegistry registry, GlobalConfig
         }
 
         TuiTheme.Space();
-        TuiTheme.ShowSuccess($"Successfully generated web documentation for {result.ProcessedAddons} addon(s).");
+        TuiTheme.ShowSuccess($"Successfully generated documentation for {result.ProcessedAddons} addon(s).");
         TuiTheme.WaitForKey();
 
         return Task.CompletedTask;

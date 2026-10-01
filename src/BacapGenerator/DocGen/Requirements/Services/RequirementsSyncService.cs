@@ -7,7 +7,7 @@ using JetBrains.Annotations;
 namespace BacapGenerator.DocGen.Requirements.Services;
 
 /// <summary>
-/// Service that coordinates the synchronization of advancement requirement documentation for web export.
+/// Service that coordinates the synchronization of advancement requirement documentation for export.
 /// </summary>
 public static class RequirementsSyncService
 {

@@ -25,7 +25,7 @@ public class AdvancementFunctionsSetupAction(DatapackRegistry registry) : IManag
     /// <returns>A completed <see cref="Task"/> representing the asynchronous operation.</returns>
     public async Task ExecuteAsync()
     {
-        // 1. Collect only advancements where required reward files are physically missing on disk
+        // Collect only advancements where required reward files are physically missing on disk
         var targetAdvancements = registry.Values
             .Where(dp => dp.Settings.IsRewardModifiableAddon())
             .SelectMany(dp => dp.Advancements.OfType<BacapAdvancement>())

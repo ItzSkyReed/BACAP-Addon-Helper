@@ -1,7 +1,7 @@
 ﻿namespace BacapGenerator.DocGen;
 
 /// <summary>
-/// Result of a web documentation sync pipeline execution.
+/// Result of a documentation sync pipeline execution.
 /// </summary>
 public record DocumentationSyncResult(
     bool IsSuccess,

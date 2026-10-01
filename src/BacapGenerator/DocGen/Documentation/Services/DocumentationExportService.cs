@@ -18,7 +18,7 @@ using JetBrains.Annotations;
 namespace BacapGenerator.DocGen.Documentation.Services;
 
 /// <summary>
-/// Service responsible for aggregating datapack advancements and generating the final JSON documentation for web export.
+/// Service responsible for aggregating datapack advancements and generating the final JSON documentation for export.
 /// </summary>
 public static class DocumentationExportService
 {
