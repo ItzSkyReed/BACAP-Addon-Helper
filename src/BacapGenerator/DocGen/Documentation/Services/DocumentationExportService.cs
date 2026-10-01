@@ -24,10 +24,12 @@ public static class DocumentationExportService
 {
     /// <summary>
     /// Generates documentation JSON files for all active primary addons and their compatibilities.
+    /// Iterates strictly over primary addon advancements while attaching alternative descriptions
+    /// and requirements from active compatibility addons.
     /// </summary>
     /// <param name="registry">The source datapack registry.</param>
     /// <param name="config">The global document generator configuration containing I/O paths.</param>
-    /// <exception cref="ArgumentNullException">Thrown when arguments are null.</exception>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="registry"/> or <paramref name="config"/> is null.</exception>
     [PublicAPI]
     public static void GenerateExportFiles(DatapackRegistry registry, DocumentGeneratorConfig config)
     {
@@ -52,22 +54,25 @@ public static class DocumentationExportService
                              && dp.Settings.DocumentGeneratorSettings?.Enabled == true)
                 .ToList();
 
-            var groupDatapacks = new List<Datapack> { primaryAddon };
-            groupDatapacks.AddRange(compatAddons);
+            // Pre-index compatibility advancements by McPath and section_name
+            var compatAdvancementsMap = BuildCompatAdvancementsMap(compatAddons);
 
             var exportEntries = new List<AdvancementDocEntry>();
 
-            foreach (var adv in groupDatapacks.SelectMany(dp => dp.Advancements)
-                         .OfType<BacapAdvancement>().OrderBy(adv => adv.McPath))
+            // Always iterate only over primary addon advancements to prevent duplicate entries
+            foreach (var adv in primaryAddon.Advancements
+                         .OfType<BacapAdvancement>()
+                         .OrderBy(adv => adv.McPath))
             {
                 requirementsMap.TryGetValue(adv.McPath, out var advRequirements);
 
-                var entry = BuildEntry(adv, advRequirements);
+                var altDescriptions = BuildAlternativeDescriptions(adv, compatAdvancementsMap);
+
+                var entry = BuildEntry(adv, advRequirements, altDescriptions);
 
                 exportEntries.Add(entry);
             }
 
-            // Writing JSON файл (for example: docs/generated/bacaped.json)
             var outputPath = Path.Combine(config.OutputDirectory!, $"{primaryAddon.Id}.json");
 
             using var stream = new FileStream(outputPath, FileMode.Create, FileAccess.Write, FileShare.None);
@@ -76,14 +81,89 @@ public static class DocumentationExportService
     }
 
     /// <summary>
+    /// Indexes compatibility addon advancements by their Minecraft path (<see cref="BacapAdvancement.McPath"/>)
+    /// and their configured documentation generator section name.
+    /// </summary>
+    /// <param name="compatAddons">The list of active compatibility addons linked to the primary addon.</param>
+    /// <returns>A dictionary mapping each advancement path to a dictionary of section names and their corresponding compatibility advancements.</returns>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="compatAddons"/> is null.</exception>
+    private static Dictionary<string, Dictionary<string, BacapAdvancement>> BuildCompatAdvancementsMap(
+        IReadOnlyList<Datapack> compatAddons)
+    {
+        ArgumentNullException.ThrowIfNull(compatAddons);
+
+        var map = new Dictionary<string, Dictionary<string, BacapAdvancement>>(StringComparer.OrdinalIgnoreCase);
+
+        foreach (var compatAddon in compatAddons)
+        {
+            var sectionName = compatAddon.Settings.DocumentGeneratorSettings?.SectionName;
+            if (string.IsNullOrWhiteSpace(sectionName))
+                continue;
+
+            foreach (var compatAdv in compatAddon.Advancements.OfType<BacapAdvancement>())
+            {
+                if (!map.TryGetValue(compatAdv.McPath, out var sections))
+                {
+                    sections = new Dictionary<string, BacapAdvancement>(StringComparer.OrdinalIgnoreCase);
+                    map[compatAdv.McPath] = sections;
+                }
+
+                sections[sectionName] = compatAdv;
+            }
+        }
+
+        return map;
+    }
+
+    /// <summary>
+    /// Collects alternative descriptions from compatibility addons for a given primary advancement.
+    /// </summary>
+    /// <param name="primaryAdvancement">The primary addon advancement to inspect.</param>
+    /// <param name="compatAdvancementsMap">The pre-indexed lookup of compatibility advancements by path and section name.</param>
+    /// <returns>A dictionary of alternative descriptions keyed by section name, or <see langword="null"/> if none were found.</returns>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="primaryAdvancement"/> or <paramref name="compatAdvancementsMap"/> is null.</exception>
+    private static Dictionary<string, string>? BuildAlternativeDescriptions(
+        BacapAdvancement primaryAdvancement,
+        Dictionary<string, Dictionary<string, BacapAdvancement>> compatAdvancementsMap)
+    {
+        ArgumentNullException.ThrowIfNull(primaryAdvancement);
+        ArgumentNullException.ThrowIfNull(compatAdvancementsMap);
+
+        if (!compatAdvancementsMap.TryGetValue(primaryAdvancement.McPath, out var sections))
+            return null;
+
+        Dictionary<string, string>? result = null;
+
+        foreach (var (sectionName, compatAdv) in sections)
+        {
+            var compatDesc = compatAdv.CleanDescriptionText;
+            if (string.IsNullOrWhiteSpace(compatDesc))
+                continue;
+
+            // Exclude if description is identical and we only want actual differences
+            if (string.Equals(compatDesc, primaryAdvancement.CleanDescriptionText, StringComparison.Ordinal))
+                continue;
+
+            result ??= new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+            result[sectionName] = compatDesc;
+        }
+
+        return result;
+    }
+
+    /// <summary>
     /// Maps a managed internal advancement to the public documentation model.
     /// Filters out empty or null requirement sections before serialization.
     /// </summary>
     /// <param name="advancement">The source advancement model.</param>
     /// <param name="requirements">The raw requirements dictionary loaded from YAML, where values can be null.</param>
+    /// <param name="alternativeDescriptions">The dictionary containing alternative descriptions from compatibility addons.</param>
     /// <returns>A populated <see cref="AdvancementDocEntry"/> instance.</returns>
     /// <exception cref="ArgumentNullException">Thrown when <paramref name="advancement"/> is null.</exception>
-    private static AdvancementDocEntry BuildEntry(BacapAdvancement advancement, Dictionary<string, string?>? requirements)
+    private static AdvancementDocEntry BuildEntry(
+        BacapAdvancement advancement,
+        Dictionary<string, string?>? requirements,
+        Dictionary<string, string>? alternativeDescriptions)
     {
         ArgumentNullException.ThrowIfNull(advancement);
 
@@ -96,7 +176,8 @@ public static class DocumentationExportService
             Tab = advancement.Tab.FolderName,
             Parent = advancement.Parent,
             Requirements = CleanRequirements(requirements),
-            Rewards = BuildRewards(advancement)
+            Rewards = BuildRewards(advancement),
+            AlternativeDescriptions = alternativeDescriptions is { Count: > 0 } ? alternativeDescriptions : null
         };
     }
 
@@ -117,9 +198,7 @@ public static class DocumentationExportService
         var hasTrophies = trophies.Count > 0;
 
         if (!exp.HasValue && !hasItems && !hasTrophies)
-        {
             return null;
-        }
 
         return new RewardsDocEntry
         {

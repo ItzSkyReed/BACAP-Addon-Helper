@@ -6,6 +6,7 @@ public class AdvancementDocEntry
 {
     [JsonPropertyName("title")] public required string Title { get; init; }
     [JsonPropertyName("description")] public required string Description { get; init; }
+    [JsonPropertyName("alternative_descriptions")] public Dictionary<string, string>? AlternativeDescriptions { get; init; }
     [JsonPropertyName("tier")] public required string Tier { get; init; }
     [JsonPropertyName("tab")] public required string Tab { get; init; }
     [JsonPropertyName("mc_path")] public required string McPath { get; init; }
