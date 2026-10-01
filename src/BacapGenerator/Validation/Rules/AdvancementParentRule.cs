@@ -25,7 +25,7 @@ public sealed class AdvancementParentRule(GenericRuleOptions options, DatapackRe
     public override string RuleId => "INVALID_PARENT";
 
     /// <inheritdoc/>
-    public override string DisplayName => "Advancement Parent Validation";
+    public override string DisplayName => "Advancement Parent ValidationSettings";
 
     /// <summary>
     /// Validates that the target advancement specifies a valid, existing, and non-cyclic parent advancement.

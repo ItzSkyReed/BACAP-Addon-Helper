@@ -2,6 +2,7 @@
 using System.Text.Json;
 using BacapGenerator.Datapacks.Models;
 using Core.McFunctions.Models;
+using Core.Serialization;
 
 namespace BacapGenerator.Io;
 
@@ -42,7 +43,7 @@ public static class DatapackIoManager
             values
         };
 
-        var json = JsonSerializer.Serialize(tagModel, new JsonSerializerOptions { WriteIndented = true });
+        var json = JsonSerializer.Serialize(tagModel, MinecraftDatapackJsonOptions.DatapackIoManager);
         File.WriteAllText(file.FullName, json);
     }
 

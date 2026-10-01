@@ -7,6 +7,7 @@ using BacapGenerator.Datapacks;
 using BacapGenerator.Datapacks.Models;
 using BacapGenerator.Datapacks.Models.Settings;
 using BacapGenerator.Datapacks.Services;
+using BacapGenerator.DocGen;
 using BacapGenerator.Io;
 using Spectre.Console;
 using UI.Interfaces;
@@ -44,29 +45,44 @@ public partial class ReleaseMenu(DatapackRegistry registry, GlobalConfig config,
             .Where(dp => dp.Settings.DatapackType != DatapackType.Reference)
             .ToArray();
 
-        // Pre-release Validation
-        TuiTheme.RenderHeader("Pre-Release Validation");
+        // Pre-release ValidationSettings
+        TuiTheme.RenderHeader("Pre-Release ValidationSettings");
         var validationPassed = true;
 
         foreach (var pack in nonReferencePacks)
         {
             if (!validationService.ValidateAndRenderReport(pack))
-            {
                 validationPassed = false;
-            }
         }
 
         if (!validationPassed)
         {
-            TuiTheme.Space();
-            TuiTheme.ShowError("Validation failed. Please fix the highlighted ERRORS before making a release.");
+            TuiTheme.ShowError("ValidationSettings failed. Please fix the highlighted ERRORS before making a release.");
             TuiTheme.WaitForKey();
             return; // Abort release
         }
 
-        TuiTheme.Space();
+        AnsiConsole.MarkupLine("\n[grey]Synchronizing documentation...[/]");
+        var docResult = DocumentationPipeline.Run(registry, config.DocumentGenerator);
+
+        if (docResult.StubsGenerated)
+        {
+            TuiTheme.ShowError("Documentation is incomplete! Release aborted.");
+            TuiTheme.ShowAlert("Action Required",
+                $"Added [bold cyan]{docResult.TotalAdded}[/] new stubs and injected [bold cyan]{docResult.TotalInjected}[/] missing sections into YAML files.\n\n" +
+                $"[white]1. Open the YAML files in[/] [yellow]{config.DocumentGenerator!.RequirementsDirectory}[/]\n" +
+                $"[white]2. Fill in the required missing descriptions.[/]\n" +
+                $"[white]3. Save the files and restart the release process.[/]",
+                Color.Yellow);
+
+            TuiTheme.WaitForKey();
+            return; // Abort release
+        }
+
+        if (!docResult.WasSkipped)
+            AnsiConsole.MarkupLine($"Documentation generated successfully for {docResult.ProcessedAddons} addon(s).");
+
         TuiTheme.ShowSuccess("All datapacks passed validation! Proceeding with release.");
-        TuiTheme.Space();
 
         // Separate root addons from compatibility addons
         var rootAddons = nonReferencePacks

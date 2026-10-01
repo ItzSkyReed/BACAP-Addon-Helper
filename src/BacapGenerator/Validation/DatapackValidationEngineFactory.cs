@@ -28,7 +28,7 @@ public static class DatapackValidationEngineFactory
         if (!settings.IsValidationActive())
             return engine; // Returns empty engine
 
-        var validationConfig = settings.Validation;
+        var validationConfig = settings.ValidationSettings;
 
         //  Title format
         if (validationConfig.TitleCase.IsEnabled)

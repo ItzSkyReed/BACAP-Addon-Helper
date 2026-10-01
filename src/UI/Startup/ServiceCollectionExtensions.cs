@@ -138,6 +138,7 @@ public static class ServiceCollectionExtensions
             // Datapack Actions
             services.AddTransient<IManageDatapacksAction, GenerateDatapackFunctionsAction>();
             services.AddTransient<IManageDatapacksAction, ValidateDatapacksAction>();
+            services.AddTransient<IManageDatapacksAction, GenerateDocumentationAction>();
             services.AddTransient<IManageDatapacksAction, SyncWithTranslationPack>();
 
             return services;

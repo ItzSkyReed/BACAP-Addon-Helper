@@ -19,7 +19,7 @@ public static class DatapackSettingsExtensions
         public bool IsValidationActive()
         {
             // Reference datapacks should skip validation by default unless explicitly enabled
-            return settings is not { DatapackType: DatapackType.Reference, Validation.IsEnabled: false } && settings.Validation.IsEnabled;
+            return settings is not { DatapackType: DatapackType.Reference, ValidationSettings.IsEnabled: false } && settings.ValidationSettings.IsEnabled;
         }
 
         /// <summary>
@@ -29,7 +29,7 @@ public static class DatapackSettingsExtensions
         /// <returns><see langword="true"/> if missing rewards should be verified.</returns>
         public bool ShouldValidateRewardFiles() =>
             settings.IsValidationActive()
-            && settings.Validation.RewardPaths.IsEnabled
+            && settings.ValidationSettings.RewardPaths.IsEnabled
             && settings.SupportsAnyReward();
 
         private bool SupportsAnyReward() =>

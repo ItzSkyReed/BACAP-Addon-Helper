@@ -123,7 +123,7 @@ public static partial class ConfigurationErrorHandler
         {
             var failures = string.Join("\n[grey]•[/] ", optEx.Failures.Select(Markup.Escape));
             TuiTheme.ShowAlert(
-                header: "[bold red] Configuration Validation Failed [/]",
+                header: "[bold red] Configuration ValidationSettings Failed [/]",
                 content: $"The configuration file contains invalid settings:\n\n[Gray84]•[/] {failures}",
                 borderColor: Color.Red);
             return;

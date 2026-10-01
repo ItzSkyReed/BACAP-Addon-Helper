@@ -106,7 +106,15 @@ public sealed class DatapackSettings
     /// </summary>
     [PublicAPI]
     [ConfigurationKeyName("validation")]
-    public DatapackValidationSettings Validation { get; init; } = new();
+    public DatapackValidationSettings ValidationSettings { get; init; } = new();
+
+    /// <summary>
+    /// Gets the validation rules and thresholds configured for this specific datapack.
+    /// If omitted in configuration, default settings are used.
+    /// </summary>
+    [PublicAPI]
+    [ConfigurationKeyName("document_generator")]
+    public DocumentGeneratorSettings? DocumentGeneratorSettings { get; init; }
 
     [PublicAPI]
     [ConfigurationKeyName("fanpacks_namespace")]
@@ -186,7 +194,7 @@ public sealed class DatapackSettings
         }
 
         LanguagePackSettings?.Validate(datapackId);
-        Validation.Validate(datapackId);
+        ValidationSettings.Validate(datapackId);
 
         foreach (var checklist in Checklists)
         {
@@ -222,5 +230,6 @@ public sealed class DatapackSettings
         }
 
         CompatibilityAddonSettings.Validate(datapackId);
+        DocumentGeneratorSettings?.Validate(datapackId);
     }
 }

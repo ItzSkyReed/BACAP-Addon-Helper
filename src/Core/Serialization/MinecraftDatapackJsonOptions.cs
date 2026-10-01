@@ -35,4 +35,22 @@ public static class MinecraftDatapackJsonOptions
         // Disables aggressive HTML-escaping, keeping characters like ' and & as they are
         Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping
     };
+
+    public static readonly JsonSerializerOptions Documentation = new()
+    {
+        WriteIndented = true,
+        DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
+        PropertyNamingPolicy = JsonNamingPolicy.SnakeCaseLower,
+        Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping
+    };
+
+    public static readonly JsonSerializerOptions RegistryLoader = new()
+    {
+        PropertyNameCaseInsensitive = true
+    };
+
+    public static readonly JsonSerializerOptions DatapackIoManager = new()
+    {
+        WriteIndented = true
+    };
 }

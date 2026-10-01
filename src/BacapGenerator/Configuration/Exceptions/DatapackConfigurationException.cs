@@ -15,7 +15,8 @@ public enum DatapackErrorKind
     InvalidValidationRuleConfiguration,
     InvalidScoreConfiguration,
     InvalidValidationSettings,
-    InvalidCompatibilityAddonSettings
+    InvalidCompatibilityAddonSettings,
+    InvalidDocumentGeneratorSettings
 }
 
 /// <summary>

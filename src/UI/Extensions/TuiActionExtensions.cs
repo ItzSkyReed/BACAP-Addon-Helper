@@ -1,6 +1,7 @@
 ﻿using Spectre.Console;
 using UI.Interfaces;
 using UI.Styling;
+using UI.Diagnostics;
 
 namespace UI.Extensions;
 
@@ -11,7 +12,7 @@ public static class TuiActionExtensions
 {
     /// <summary>
     /// Executes the action within a global error boundary, gracefully handling user cancellations
-    /// and rendering formatted TUI alert panels for unhandled exceptions without crashing the process.
+    /// and delegating exception rendering to the central application error handler.
     /// </summary>
     /// <param name="action">The target action to execute.</param>
     /// <returns>A task representing the asynchronous safe execution.</returns>
@@ -34,13 +35,9 @@ public static class TuiActionExtensions
         }
         catch (Exception ex)
         {
-            TuiTheme.ShowAlert(
-                header: "[bold red] Action Failed [/]",
-                content: $"An unexpected error occurred while running [yellow]{Markup.Escape(action.Title)}[/]:\n\n" +
-                         $"[red]{Markup.Escape(ex.Message)}[/]\n\n" +
-                         $"[Gray84]Exception: {Markup.Escape(ex.GetType().Name)}[/]",
-                borderColor: Color.Red);
+            AppErrorHandler.Handle(ex, showStackTrace: false);
 
+            AnsiConsole.MarkupLine($"\n[grey]Action '[white]{Markup.Escape(action.Title)}[/]' aborted due to the error above.[/]");
             TuiTheme.WaitForKey();
         }
     }

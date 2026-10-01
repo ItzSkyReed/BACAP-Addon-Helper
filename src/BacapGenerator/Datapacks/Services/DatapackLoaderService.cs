@@ -56,6 +56,7 @@ public partial class DatapackLoaderService(
             }
         }
 
+        PerDatapackConfigValidator.ValidateDocumentGeneratorSections(datapackRegistry.Values);
         ResolveOverrides();
     }
 

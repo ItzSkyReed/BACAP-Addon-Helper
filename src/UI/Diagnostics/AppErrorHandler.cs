@@ -1,4 +1,5 @@
 ﻿using BacapGenerator.Configuration.Exceptions;
+using BacapGenerator.DocGen.Requirements.Exceptions;
 using Core.Registries.Exceptions;
 using Microsoft.Extensions.Options;
 using Spectre.Console;
@@ -45,9 +46,17 @@ public static class AppErrorHandler
                 RenderDatapackError(dpEx);
                 break;
 
+            case DuplicateDocumentSectionException dupSecEx:
+                RenderDuplicateDocumentSectionError(dupSecEx);
+                break;
+
             case OptionsValidationException:
             case InvalidOperationException when exception.Source?.Contains("Configuration") == true:
                 ConfigurationErrorHandler.RenderBootstrapError(exception);
+                break;
+
+            case RequirementsYamlParseException yamlEx:
+                RenderYamlParseError(yamlEx);
                 break;
 
             // Binders throw InvalidOperationException containing FormatException on bad TypeConverter conversion
@@ -74,6 +83,48 @@ public static class AppErrorHandler
         }
 
         return 1;
+    }
+
+    /// <summary>
+    /// Displays a styled TUI alert when multiple datapacks use the same document generation section name.
+    /// </summary>
+    /// <param name="ex">The duplicate document section exception.</param>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="ex"/> is <see langword="null"/>.</exception>
+    private static void RenderDuplicateDocumentSectionError(DuplicateDocumentSectionException ex)
+    {
+        ArgumentNullException.ThrowIfNull(ex);
+
+        // Escape string values to prevent Spectre.Console from crashing on accidental brackets in names
+        var section = Markup.Escape(ex.SectionName);
+        var datapacks = string.Join(", ", ex.DatapackIds.Select(id => $"[cyan]{Markup.Escape(id)}[/]"));
+
+        var content = $"Conflict detected in document generator configuration.\n" +
+                      $"Multiple enabled datapacks are claiming the identical section name: [bold red]{section}[/]\n\n" +
+                      $"[bold white]Conflicting Datapacks:[/] {datapacks}\n\n" +
+                      $"[bold white]Tip:[/] Each active datapack must have a unique [yellow]document_generator.section_name[/] " +
+                      $"(e.g., 'default', 'Hardcore') in [white]config.yaml[/] to prevent overwriting each other's documentation.";
+
+        TuiTheme.ShowAlert("[bold red] Configuration Conflict [/]", content, Color.Red);
+    }
+
+    /// <summary>
+    /// Displays a styled TUI alert when the requirements YAML file contains invalid syntax.
+    /// </summary>
+    private static void RenderYamlParseError(RequirementsYamlParseException ex)
+    {
+        ArgumentNullException.ThrowIfNull(ex);
+
+        var file = Markup.Escape(Path.GetFileName(ex.FilePath));
+        var errorMsg = Markup.Escape(ex.InnerException?.Message ?? ex.Message);
+
+        var content = $"Failed to parse document requirements.\n" +
+                      $"File: [bold cyan]{file}[/]\n" +
+                      $"Location: Line [bold yellow]{ex.LineNumber}[/], Col [bold yellow]{ex.Column}[/]\n\n" +
+                      $"[bold red]Error:[/] {errorMsg}\n\n" +
+                      $"[bold white]Tip:[/] YAML is very strict about spaces. Ensure you use spaces (not tabs) for indentation, " +
+                      $"and check that all colons ':' are followed by a space or a newline.";
+
+        TuiTheme.ShowAlert("[bold red] YAML Syntax Error [/]", content, Color.Red);
     }
 
     /// <summary>
@@ -131,6 +182,9 @@ public static class AppErrorHandler
 
             DatapackErrorKind.InvalidCompatibilityAddonSettings or DatapackErrorKind.InvalidValidationSettings =>
                 "Supported boolean values are [yellow]true[/] and [yellow]false[/]",
+
+            DatapackErrorKind.InvalidDocumentGeneratorSettings =>
+                "Documentation section name is missing. Specify [yellow]document_generator.section_name[/] in [white]config.yaml[/].",
 
             _ => "Check datapack definitions in [white]config.yaml[/]."
         };

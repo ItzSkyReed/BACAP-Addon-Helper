@@ -1,6 +1,7 @@
 ﻿using System.Collections.Frozen;
 using System.Text.Json;
 using Core.Registries.Exceptions;
+using Core.Serialization;
 using JetBrains.Annotations;
 
 namespace Core.Registries;
@@ -11,11 +12,6 @@ namespace Core.Registries;
 /// <param name="basePath">The directory where registry JSON files reside.</param>
 public class McRegistryLoader(string basePath)
 {
-    private readonly JsonSerializerOptions _jsonOptions = new()
-    {
-        PropertyNameCaseInsensitive = true
-    };
-
     /// <summary>
     /// Loads a registry JSON file into a frozen dictionary for optimized read access.
     /// </summary>
@@ -39,7 +35,7 @@ public class McRegistryLoader(string basePath)
         try
         {
             using var stream = File.OpenRead(filePath);
-            var registry = JsonSerializer.Deserialize<Dictionary<string, TEntry>>(stream, _jsonOptions);
+            var registry = JsonSerializer.Deserialize<Dictionary<string, TEntry>>(stream, MinecraftDatapackJsonOptions.RegistryLoader);
 
             if (registry is null || registry.Count == 0)
             {
@@ -85,7 +81,7 @@ public class McRegistryLoader(string basePath)
         try
         {
             using var stream = File.OpenRead(filePath);
-            var items = JsonSerializer.Deserialize<HashSet<string>>(stream, _jsonOptions);
+            var items = JsonSerializer.Deserialize<HashSet<string>>(stream, MinecraftDatapackJsonOptions.RegistryLoader);
 
             if (items is null || items.Count == 0)
             {

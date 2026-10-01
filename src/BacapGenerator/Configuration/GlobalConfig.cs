@@ -20,17 +20,24 @@ public sealed class GlobalConfig
     [ConfigurationKeyName("release_path")]
     public string ReleasePath { get; init; } = null!;
 
+    /// <summary>
+    /// Gets the target filesystem path where generated release archives will be written.
+    /// </summary>
+    [ConfigurationKeyName("document_generator")]
+    public DocumentGeneratorConfig? DocumentGenerator { get; init; }
 
     /// <summary>
-    /// Validates all root configuration settings as well as each registered datapack.
+    /// Validates all root configuration settings.
     /// </summary>
     /// <exception cref="InvalidOperationException">Thrown when validation constraints are violated.</exception>
     public void Validate()
     {
         if (string.IsNullOrWhiteSpace(RegistryBasePath))
-            throw new InvalidOperationException($"'{nameof(RegistryBasePath)}' must be provided in config.yaml.");
+            throw new InvalidOperationException("'registry_base_path' must be provided in config.yaml.");
 
         if (string.IsNullOrWhiteSpace(ReleasePath))
-            throw new InvalidOperationException($"'{nameof(ReleasePath)}' must be provided.");
+            throw new InvalidOperationException("'release_path' must be provided.");
+
+        DocumentGenerator?.Validate();
     }
 }
