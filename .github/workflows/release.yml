@@ -51,10 +51,10 @@ jobs:
           -r ${{ matrix.rid }}
           --self-contained true
           -p:PublishSingleFile=true
-          -p:EnableCompressionInSingleFile=true
-          -p:IncludeNativeLibrariesForSelfExtract=true
-          -p:DebugType=None
-          -p:DebugSymbols=false
+          -p:StripSymbols=true
+          -p:DebuggerSupport=false
+          -p:EventSourceSupport=false
+          -p:HttpActivityPropagationSupport=false
           -o ./dist/self-contained
 
       # Framework-dependent build (lightweight single-file, requires .NET 10)
@@ -65,10 +65,8 @@ jobs:
           -r ${{ matrix.rid }}
           --self-contained false
           -p:PublishSingleFile=true
-          -p:DebugType=None
-          -p:DebugSymbols=false
+          -p:StripSymbols=true
           -o ./dist/framework-dependent
-
         # Preparing and renaming binaries
       - name: Prepare Binaries
         run: |

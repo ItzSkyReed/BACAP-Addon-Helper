@@ -23,7 +23,17 @@
         <!-- Suppress CA1707 (assembly name contains underscores) -->
         <NoWarn>$(NoWarn);CA1707</NoWarn>
 
+
+
         <InvariantGlobalization>false</InvariantGlobalization>
+    </PropertyGroup>
+
+    <PropertyGroup Condition="'$(Configuration)' == 'Release'">
+        <EnableCompressionInSingleFile>true</EnableCompressionInSingleFile>
+        <DebugType>none</DebugType>
+        <DebugSymbols>false</DebugSymbols>
+        <!-- Strips native debug symbols on Linux and macOS -->
+        <StripSymbols>true</StripSymbols>
     </PropertyGroup>
 
     <ItemGroup>
@@ -34,9 +44,13 @@
         <ProjectReference Include="..\BacapGenerator\BacapGenerator.csproj" />
     </ItemGroup>
 
+
+
     <ItemGroup>
         <PackageReference Include="dotenv.net" Version="4.2.0" />
-        <PackageReference Include="JetBrains.Annotations" Version="2026.2.0" />
+        <PackageReference Include="JetBrains.Annotations" Version="2026.2.0">
+            <PrivateAssets>all</PrivateAssets>
+        </PackageReference>
         <PackageReference Include="Microsoft.Extensions.Configuration" Version="10.0.11" />
         <PackageReference Include="Microsoft.Extensions.Hosting" Version="10.0.11" />
         <PackageReference Include="Microsoft.Extensions.Logging" Version="10.0.11" />
