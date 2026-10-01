@@ -36,7 +36,7 @@ public static class RegistryErrorHandler
         {
             RegistryErrorKind.DirectoryNotFound => (
                 $"The configured registry directory does not exist:\n[bold cyan]{escapedPath}[/]",
-                "Make sure [yellow]registry_base_path[/] in [white]config.yaml[/] points to an existing folder."
+                "Make sure [yellow]registry_path[/] in [white]config.yaml[/] points to an existing folder."
             ),
             RegistryErrorKind.FileNotFound => (
                 $"Missing required registry file: [bold red]{exception.FileName}[/]\nTarget path: [bold cyan]{escapedPath}[/]",

@@ -57,11 +57,11 @@ public static class ServiceCollectionExtensions
         {
             ComponentRegistry.RegisterAll();
 
-            var registryPath = configuration.GetValue<string>("registry_base_path");
+            var registryPath = configuration.GetValue<string>("registry_path");
             if (string.IsNullOrWhiteSpace(registryPath))
             {
                 throw new RegistryLoadException(
-                    "Configuration key 'registry_base_path' is missing or empty in configuration.",
+                    "Configuration key 'registry_path' is missing or empty in configuration.",
                     RegistryErrorKind.DirectoryNotFound);
             }
 
