@@ -11,4 +11,5 @@ public class TrophyDocEntry
     [JsonPropertyName("title_color")] public string? TitleColor { get; init; }
     [JsonPropertyName("enchantments")] public Dictionary<string, int>? Enchantments { get; init; }
     [JsonPropertyName("unbreakable")] public bool Unbreakable { get; init; }
+    [JsonPropertyName("player_head_data")] public PlayerHeadDocEntry? PlayerHeadData { get; init; }
 }

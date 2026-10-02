@@ -1,4 +1,2 @@
-﻿### Highest priority
+﻿- Update wiki to add information about "player_head_data" and "icon_id" in documentation
 - Tests
-### High priority
-- Data generator for future 'Datapack documentation'

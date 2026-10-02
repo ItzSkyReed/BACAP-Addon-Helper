@@ -22,6 +22,7 @@ namespace BacapGenerator.DocGen.Documentation.Services;
 /// </summary>
 public static class DocumentationExportService
 {
+    private const string PlayerHeadId = "player_head";
     /// <summary>
     /// Generates documentation JSON files for all active primary addons and their compatibilities.
     /// Iterates strictly over primary addon advancements while attaching alternative descriptions
@@ -172,12 +173,19 @@ public static class DocumentationExportService
             McPath = advancement.McPath,
             Title = advancement.TitleText,
             Description = advancement.CleanDescriptionText,
+            IconId = MinecraftUtils.EnsureNamespace(advancement.Advancement.Display!.Icon!.Id),
             Tier = advancement.Tier.TechnicalName(),
             Tab = advancement.Tab.FolderName,
             Parent = advancement.Parent,
             Requirements = CleanRequirements(requirements),
             Rewards = BuildRewards(advancement),
-            AlternativeDescriptions = alternativeDescriptions is { Count: > 0 } ? alternativeDescriptions : null
+            AlternativeDescriptions = alternativeDescriptions is { Count: > 0 } ? alternativeDescriptions : null,
+            PlayerHeadData =
+                MinecraftUtils.StripNamespace(advancement.Advancement.Display!.Icon!.Id)
+                    .Equals(PlayerHeadId, StringComparison.InvariantCultureIgnoreCase)
+                && advancement.Advancement.Display!.Icon!.Components.TryGet<ProfileComponent>(out var component)
+                    ? BuildPlayerHeadData(component)
+                    : null
         };
     }
 
@@ -219,9 +227,13 @@ public static class DocumentationExportService
             .Select(itemStack => new ItemRewardDocEntry
             {
                 Count = itemStack.Count,
-                Id = itemStack.Id,
+                Id = MinecraftUtils.EnsureNamespace(itemStack.Id),
                 CustomName = ExtractCustomName(itemStack),
-                Enchantments = ExtractEnchantments(itemStack.Id, itemStack.Components)
+                Enchantments = ExtractEnchantments(itemStack.Id, itemStack.Components),
+                PlayerHeadData = MinecraftUtils.StripNamespace(itemStack.Id).Equals(PlayerHeadId, StringComparison.InvariantCultureIgnoreCase)
+                                 && itemStack.Components.TryGet<ProfileComponent>(out var component)
+                    ? BuildPlayerHeadData(component)
+                    : null
             })
             .ToList();
     }
@@ -237,14 +249,38 @@ public static class DocumentationExportService
             .Select(trophy => new TrophyDocEntry
             {
                 Count = trophy.Item.Count,
-                Id = trophy.Item.Id,
+                Id = MinecraftUtils.EnsureNamespace(trophy.Item.Id),
                 Title = trophy.Title,
                 TitleColor = trophy.TitleColor,
                 Description = string.Join('\n', trophy.DescriptionLines),
                 Enchantments = ExtractEnchantments(trophy.Item.Id, trophy.Item.Components),
-                Unbreakable = trophy.Item.Components.TryGet<UnbreakableComponent>(out _)
+                Unbreakable = trophy.Item.Components.TryGet<UnbreakableComponent>(out _),
+                PlayerHeadData = MinecraftUtils.StripNamespace(trophy.Item.Id).Equals(PlayerHeadId, StringComparison.InvariantCultureIgnoreCase)
+                                 && trophy.Item.Components.TryGet<ProfileComponent>(out var component)
+                    ? BuildPlayerHeadData(component)
+                    : null
             })
             .ToList();
+    }
+
+    /// <summary>
+    /// Maps an enumerable sequence of trophy definitions to trophy documentation entries.
+    /// </summary>
+    /// <param name="profileComponent">The profile component of head.</param>
+    /// <returns>A list of populated <see cref="TrophyDocEntry"/> instances.</returns>
+    private static PlayerHeadDocEntry BuildPlayerHeadData(ProfileComponent profileComponent)
+    {
+        var textureBase64 = profileComponent.Properties?[0].Value;
+        string? textureHash = null;
+
+        if (!string.IsNullOrEmpty(textureBase64))
+            textureHash = MinecraftUtils.ExtractTextureHash(textureBase64);
+
+        return new PlayerHeadDocEntry
+        {
+            Uuid = profileComponent.Id,
+            TextureHash = textureHash
+        };
     }
 
     /// <summary>

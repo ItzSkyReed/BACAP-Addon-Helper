@@ -1,4 +1,5 @@
 ﻿using System.Buffers;
+using System.Text;
 using JetBrains.Annotations;
 
 namespace BacapGenerator.Utils;
@@ -155,6 +156,80 @@ public static class MinecraftUtils
 
         var colonIndex = resourceLocation.IndexOf(':');
         return colonIndex >= 0 ? resourceLocation[(colonIndex + 1)..] : resourceLocation;
+    }
+
+    /// <summary>
+    /// Ensures that a resource location has a namespace, prepending the default namespace if none is present.
+    /// </summary>
+    /// <param name="resourceLocation">The resource location (e.g., "stick", "minecraft:stick", or "blazeandcave:weaponry").</param>
+    /// <param name="defaultNamespace">The default namespace to apply if missing. Defaults to "minecraft".</param>
+    /// <returns>The normalized resource location with a namespace.</returns>
+    /// <exception cref="ArgumentException">Thrown if <paramref name="resourceLocation"/> is null or whitespace.</exception>
+    /// <example>
+    /// <code>
+    /// string item1 = MinecraftUtils.EnsureNamespace("stick"); // "minecraft:stick"
+    /// string item2 = MinecraftUtils.EnsureNamespace("minecraft:stick"); // "minecraft:stick"
+    /// string item3 = MinecraftUtils.EnsureNamespace("blazeandcave:weaponry"); // "blazeandcave:weaponry"
+    /// </code>
+    /// </example>
+    public static string EnsureNamespace(string resourceLocation, string defaultNamespace = "minecraft")
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(resourceLocation);
+
+        return resourceLocation.Contains(':')
+            ? resourceLocation
+            : $"{defaultNamespace}:{resourceLocation}";
+    }
+
+    /// <summary>
+    /// Efficiently extracts the texture hash from a Base64-encoded Minecraft skin payload
+    /// with zero intermediate heap allocations.
+    /// </summary>
+    /// <param name="base64Payload">The Base64 string from the profile properties.</param>
+    /// <returns>The 64-character texture hash.</returns>
+    /// <exception cref="ArgumentException">Thrown when <paramref name="base64Payload"/> is whitespace.</exception>
+    /// <exception cref="FormatException">Thrown when Base64 is invalid or the texture URL marker is missing.</exception>
+    /// <example>
+    /// <code>
+    /// string b64 = "eyJ0ZXh0dXJlcyI6eyJTS0lOIjp7InVybCI6Imh0dHA6Ly90ZXh0dXJlcy5taW5lY3JhZnQubmV0L3RleHR1cmUvNWM2ZDVhYmJmNjhjY2IyMzg2YmYxNmFmMjVhYzM4ZDhiNzdiYjBlMDQzMTUyNDYxYmQ5N2YzZjYzMGRiYjhiYyJ9fX0=";
+    /// string hash = MinecraftTextureUtils.ExtractTextureHash(b64); // "5c6d5abbf68ccb2386bf16af25ac38d8b77bb0e043152461bd97f3f630dbb8bc"
+    /// </code>
+    /// </example>
+    public static string ExtractTextureHash(ReadOnlySpan<char> base64Payload)
+    {
+        if (base64Payload.IsWhiteSpace())
+            throw new ArgumentException("The Base64 payload cannot be null or whitespace.", nameof(base64Payload));
+
+        // Standard skin payload is ~150-250 bytes decoded; 512 bytes is safe.
+        var maxByteCount = base64Payload.Length * 3 / 4;
+        byte[]? rented = null;
+        var buffer = maxByteCount <= 512
+            ? stackalloc byte[512]
+            : rented = ArrayPool<byte>.Shared.Rent(maxByteCount);
+
+        try
+        {
+            if (!Convert.TryFromBase64Chars(base64Payload, buffer, out int bytesWritten))
+                throw new FormatException("Invalid Base64 format.");
+
+            ReadOnlySpan<byte> decoded = buffer[..bytesWritten];
+            var marker = "/texture/"u8;
+
+            var markerIndex = decoded.IndexOf(marker);
+            if (markerIndex < 0)
+                throw new FormatException("The payload does not contain a valid Minecraft texture URL.");
+
+            var remainder = decoded[(markerIndex + marker.Length)..];
+            var endQuoteIndex = remainder.IndexOf((byte)'"');
+            var hashBytes = endQuoteIndex >= 0 ? remainder[..endQuoteIndex] : remainder;
+
+            return Encoding.UTF8.GetString(hashBytes);
+        }
+        finally
+        {
+            if (rented is not null)
+                ArrayPool<byte>.Shared.Return(rented);
+        }
     }
 
     /// <summary>

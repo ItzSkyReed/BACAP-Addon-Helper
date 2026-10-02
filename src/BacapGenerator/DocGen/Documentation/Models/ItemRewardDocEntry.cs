@@ -8,4 +8,5 @@ public class ItemRewardDocEntry
     [JsonPropertyName("count")] public required int Count { get; init; }
     [JsonPropertyName("enchantments")] public Dictionary<string, int>? Enchantments { get; init; }
     [JsonPropertyName("custom_name")] public string? CustomName { get; init; }
+    [JsonPropertyName("player_head_data")] public PlayerHeadDocEntry? PlayerHeadData { get; init; }
 }
