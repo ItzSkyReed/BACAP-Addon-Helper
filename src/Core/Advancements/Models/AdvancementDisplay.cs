@@ -27,7 +27,7 @@ public record AdvancementDisplay
     [JsonConverter(typeof(TextComponentJsonConverter))]
     public TextComponent? Description { get; init; }
 
-    [JsonPropertyName("frame")] public AdvancementFrame? Frame { get; init; } = AdvancementFrame.Task;
+    [JsonPropertyName("frame")] public AdvancementFrame Frame { get; init; } = AdvancementFrame.Task;
 
     [JsonIgnore]
     public bool ShowToast { get; init; } = true;

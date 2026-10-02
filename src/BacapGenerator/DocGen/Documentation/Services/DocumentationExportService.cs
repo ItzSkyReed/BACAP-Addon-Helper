@@ -172,6 +172,7 @@ public static class DocumentationExportService
         {
             McPath = advancement.McPath,
             Title = advancement.TitleText,
+            Frame = advancement.Advancement.Display!.Frame.ToString().ToLowerInvariant(),
             Description = advancement.CleanDescriptionText,
             IconId = MinecraftUtils.EnsureNamespace(advancement.Advancement.Display!.Icon!.Id),
             Tier = advancement.Tier.TechnicalName(),
