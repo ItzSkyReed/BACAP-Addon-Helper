@@ -1,2 +1,1 @@
-﻿- Update wiki to add information about "player_head_data", frame and "icon_id" in documentation
-- Tests
+﻿- Tests
