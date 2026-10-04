@@ -16,11 +16,18 @@ public static class DocumentationPipeline
 {
     /// <summary>
     /// Runs the documentation pipeline.
-    /// If new YAML stubs are created, it aborts generation and returns <see cref="DocumentationSyncResult.StubsGenerated"/>.
+    /// Detects orphaned requirements, synchronizes YAML requirement files, and generates final documentation.
+    /// If new YAML stubs are created, generation is aborted and <see cref="DocumentationSyncResult.StubsGenerated"/> is returned.
     /// </summary>
+    /// <param name="registry">The source datapack registry containing loaded datapacks.</param>
+    /// <param name="docConfig">The documentation generator configuration containing file paths.</param>
+    /// <returns>A <see cref="DocumentationSyncResult"/> containing sync statistics and detected orphaned requirements.</returns>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="registry"/> is <see langword="null"/>.</exception>
     [PublicAPI]
     public static DocumentationSyncResult Run(DatapackRegistry registry, DocumentGeneratorConfig? docConfig)
     {
+        ArgumentNullException.ThrowIfNull(registry);
+
         if (docConfig is null)
             return DocumentationSyncResult.Skipped("The 'document_generator' section is not configured.");
 
@@ -33,6 +40,7 @@ public static class DocumentationPipeline
 
         var totalAdded = 0;
         var totalInjected = 0;
+        var orphanedAdvancementsMap = new Dictionary<string, IReadOnlyList<string>>(StringComparer.OrdinalIgnoreCase);
 
         // Sync YAML Requirements
         foreach (var primaryAddon in primaryAddons)
@@ -46,11 +54,9 @@ public static class DocumentationPipeline
             groupDatapacks.AddRange(compatAddons);
 
             var sectionsMap = new Dictionary<string, HashSet<string>>(StringComparer.OrdinalIgnoreCase);
-
             foreach (var dp in groupDatapacks)
             {
                 var sectionName = dp.Settings.DocumentGeneratorSettings!.SectionName;
-
                 foreach (var adv in dp.Advancements.OfType<BacapAdvancement>())
                 {
                     if (!sectionsMap.TryGetValue(adv.McPath, out var sections))
@@ -63,19 +69,34 @@ public static class DocumentationPipeline
             }
 
             var yamlPath = Path.Combine(docConfig.RequirementsDirectory!, $"{primaryAddon.Id}.yaml");
-            var (added, injected) = RequirementsIoManager.SyncRequirementsFile(yamlPath, sectionsMap);
 
+            // Detect requirement paths that no longer exist in the datapacks
+            if (File.Exists(yamlPath))
+            {
+                var existingRequirements = RequirementsIoManager.ReadRequirements(yamlPath);
+                var orphaned = existingRequirements.Keys
+                    .Where(mcPath => !sectionsMap.ContainsKey(mcPath))
+                    .Order()
+                    .ToList();
+
+                if (orphaned.Count > 0)
+                {
+                    orphanedAdvancementsMap[primaryAddon.Id] = orphaned;
+                }
+            }
+
+            var (added, injected) = RequirementsIoManager.SyncRequirementsFile(yamlPath, sectionsMap);
             totalAdded += added;
             totalInjected += injected;
         }
 
         // If we had to add new requirements, abort so the user can fill them
         if (totalAdded > 0 || totalInjected > 0)
-            return DocumentationSyncResult.StubsGeneratedResult(totalAdded, totalInjected);
+            return DocumentationSyncResult.StubsGeneratedResult(totalAdded, totalInjected, orphanedAdvancementsMap);
 
         // Generate JSON
         DocumentationExportService.GenerateExportFiles(registry, docConfig);
 
-        return DocumentationSyncResult.Success(primaryAddons.Count);
+        return DocumentationSyncResult.Success(primaryAddons.Count, orphanedAdvancementsMap);
     }
 }

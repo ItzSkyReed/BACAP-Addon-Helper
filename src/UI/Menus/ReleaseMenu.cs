@@ -7,7 +7,6 @@ using BacapGenerator.Datapacks;
 using BacapGenerator.Datapacks.Models;
 using BacapGenerator.Datapacks.Models.Settings;
 using BacapGenerator.Datapacks.Services;
-using BacapGenerator.DocGen;
 using BacapGenerator.Io;
 using Spectre.Console;
 using UI.Interfaces;
@@ -17,10 +16,17 @@ using UI.Styling;
 namespace UI.Menus;
 
 /// <summary>
-/// Sub-menu for managing existing advancements.
+/// Sub-menu for managing existing advancements and coordinating datapack releases.
 /// </summary>
-public partial class ReleaseMenu(DatapackRegistry registry, GlobalConfig config, ValidationRunnerService validationService) : IMainMenuAction
+public partial class ReleaseMenu(
+    DatapackRegistry registry,
+    GlobalConfig config,
+    ValidationRunnerService validationService,
+    DocumentationRunnerService? documentationRunner = null) : IMainMenuAction
 {
+    private readonly DocumentationRunnerService _documentationRunner =
+        documentationRunner ?? new DocumentationRunnerService(registry, config);
+
     [GeneratedRegex(@"^[0-9]+\.[0-9]+(\.[0-9]+)?(-(alpha|beta))?$", RegexOptions.IgnoreCase)]
     private static partial Regex VersionPatternRegex();
 
@@ -63,24 +69,11 @@ public partial class ReleaseMenu(DatapackRegistry registry, GlobalConfig config,
         }
 
         AnsiConsole.MarkupLine("\n[grey]Synchronizing documentation...[/]");
-        var docResult = DocumentationPipeline.Run(registry, config.DocumentGenerator);
-
-        if (docResult.StubsGenerated)
+        if (!_documentationRunner.RunAndRenderReport(promptOnOrphaned: true))
         {
-            TuiTheme.ShowError("Documentation is incomplete! Release aborted.");
-            TuiTheme.ShowAlert("Action Required",
-                $"Added [bold cyan]{docResult.TotalAdded}[/] new stubs and injected [bold cyan]{docResult.TotalInjected}[/] missing sections into YAML files.\n\n" +
-                $"[white]1. Open the YAML files in[/] [yellow]{config.DocumentGenerator!.RequirementsDirectory}[/]\n" +
-                $"[white]2. Fill in the required missing descriptions.[/]\n" +
-                $"[white]3. Save the files and restart the release process.[/]",
-                Color.Yellow);
-
             TuiTheme.WaitForKey();
-            return; // Abort release
+            return; // Abort release if stubs were generated or user refused orphaned requirements
         }
-
-        if (!docResult.WasSkipped)
-            AnsiConsole.MarkupLine($"Documentation generated successfully for {docResult.ProcessedAddons} addon(s).");
 
         TuiTheme.ShowSuccess("All datapacks passed validation! Proceeding with release.");
 
@@ -115,12 +108,10 @@ public partial class ReleaseMenu(DatapackRegistry registry, GlobalConfig config,
             // Process archiving for each member of the family
             foreach (var datapack in releaseFamily)
             {
-                // Todo I dont like this
                 AnsiConsole.MarkupLine($"  [green]•[/] Processing [white]{datapack.ReleaseName}[/] (version [teal]{version}[/])...");
 
                 if (datapack.Settings.DatapackType == DatapackType.Addon)
                 {
-                    // Todo: Better generation information
                     GlobalAdvancementsService.GenerateAndSaveAll(datapack);
                     GlobalFunctionsService.GenerateAndSaveAll(datapack);
 
@@ -150,7 +141,6 @@ public partial class ReleaseMenu(DatapackRegistry registry, GlobalConfig config,
             throw new InvalidOperationException($"Found orphaned CompatibilityAddons without a registered parent Addon: {orphanNames}");
         }
     }
-
 
     /// <summary>
     /// Prompts the user to enter a version string matching the pattern 'X.Y[.Z][-alpha|-beta]'.
