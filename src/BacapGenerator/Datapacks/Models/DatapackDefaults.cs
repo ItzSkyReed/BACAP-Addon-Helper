@@ -138,18 +138,6 @@ public static class DatapackDefaults
         _ => throw new ArgumentOutOfRangeException(nameof(tier), tier, "Unsupported advancement tier.")
     };
 
-    public static IReadOnlyList<AdvancementMessageSettingsEntry> MessageSettingsEntiries = new List<AdvancementMessageSettingsEntry>
-    {
-        AdvancementLegendEntry,
-        MilestoneEntry,
-        SuperChallengeEntry,
-        HiddenEntry,
-        ChallengeEntry,
-        GoalEntry,
-        TaskEntry
-    };
-
-
     private static readonly BacapTierProfile AdvancementLegendTierProfile = new()
     {
         Frame = AdvancementFrame.Challenge,
