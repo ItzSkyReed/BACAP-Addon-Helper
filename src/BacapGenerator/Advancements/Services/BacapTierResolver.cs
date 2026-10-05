@@ -37,15 +37,17 @@ public static class BacapTierResolver
     {
         var actualFrame = frame ?? AdvancementFrame.Task;
 
-        var resolved = (hidden, filename, tab, actualFrame, descriptionColor) switch
+        var cleanDescriptionColor = descriptionColor?.ToLowerInvariant();
+
+        var resolved = (hidden, filename, tab, actualFrame, cleanDescriptionColor) switch
         {
             (true, _, _, _, _) => BacapAdvancementTier.Hidden,
 
-            (_, "root", _, _, "#CCCCCC") => BacapAdvancementTier.Root,
+            (_, "root", _, _, "#cccccc") => BacapAdvancementTier.Root,
 
-            (_, _, var t, _, "gold") when t == BacapTab.Bacap => BacapAdvancementTier.AdvancementLegend,
+            (_, _, var t, _, "gold" or "#ffaa00") when t == BacapTab.Bacap => BacapAdvancementTier.AdvancementLegend,
 
-            (_, _, var t, _, "yellow") when t == BacapTab.Bacap => BacapAdvancementTier.Milestone,
+            (_, _, var t, _, "yellow" or "#ffff55") when t == BacapTab.Bacap => BacapAdvancementTier.Milestone,
 
             var (_, _, t, _, _) when t == BacapTab.Challenges => BacapAdvancementTier.SuperChallenge,
 
