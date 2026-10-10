@@ -250,7 +250,7 @@ public static class DocumentationExportService
                 continue;
 
             parentDoc.Title = parent.TitleText;
-            parentDoc.Description = parent.DescriptionText;
+            parentDoc.Description = parent.CleanDescriptionText;
             parentDoc.Tab = parent.Tab.FolderName;
             parentDoc.Tier = parent.Tier.TechnicalName();
 
