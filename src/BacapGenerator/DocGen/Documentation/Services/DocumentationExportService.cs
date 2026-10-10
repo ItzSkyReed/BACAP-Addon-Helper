@@ -257,7 +257,7 @@ public static class DocumentationExportService
             var display = parent.Advancement.Display!;
 
             parentDoc.Frame = display.Frame.ToString().ToLowerInvariant();
-            parentDoc.IconId = display.Icon?.Id;
+            parentDoc.IconId = MinecraftUtils.EnsureNamespace(display.Icon!.Id);
 
             if (MinecraftUtils.StripNamespace(display.Icon!.Id).Equals(PlayerHeadId, StringComparison.OrdinalIgnoreCase) &&
                 display.Icon!.Components.TryGet<ProfileComponent>(out var component))
