@@ -23,6 +23,7 @@ namespace BacapGenerator.DocGen.Documentation.Services;
 public static class DocumentationExportService
 {
     private const string PlayerHeadId = "player_head";
+
     /// <summary>
     /// Generates documentation JSON files for all active primary addons and their compatibilities.
     /// Iterates strictly over primary addon advancements while attaching alternative descriptions
@@ -69,7 +70,7 @@ public static class DocumentationExportService
 
                 var altDescriptions = BuildAlternativeDescriptions(adv, compatAdvancementsMap);
 
-                var entry = BuildEntry(adv, advRequirements, altDescriptions);
+                var entry = BuildEntry(adv, advRequirements, altDescriptions, registry);
 
                 exportEntries.Add(entry);
             }
@@ -159,12 +160,14 @@ public static class DocumentationExportService
     /// <param name="advancement">The source advancement model.</param>
     /// <param name="requirements">The raw requirements dictionary loaded from YAML, where values can be null.</param>
     /// <param name="alternativeDescriptions">The dictionary containing alternative descriptions from compatibility addons.</param>
+    /// <param name="registry">Datapack registry</param>
     /// <returns>A populated <see cref="AdvancementDocEntry"/> instance.</returns>
     /// <exception cref="ArgumentNullException">Thrown when <paramref name="advancement"/> is null.</exception>
     private static AdvancementDocEntry BuildEntry(
         BacapAdvancement advancement,
         Dictionary<string, string?>? requirements,
-        Dictionary<string, string>? alternativeDescriptions)
+        Dictionary<string, string>? alternativeDescriptions,
+        DatapackRegistry registry)
     {
         ArgumentNullException.ThrowIfNull(advancement);
 
@@ -177,7 +180,7 @@ public static class DocumentationExportService
             IconId = MinecraftUtils.EnsureNamespace(advancement.Advancement.Display!.Icon!.Id),
             Tier = advancement.Tier.TechnicalName(),
             Tab = advancement.Tab.FolderName,
-            Parent = advancement.Parent,
+            Parent = BuildParent(advancement, registry),
             Requirements = CleanRequirements(requirements),
             Rewards = BuildRewards(advancement),
             AlternativeDescriptions = alternativeDescriptions is { Count: > 0 } ? alternativeDescriptions : null,
@@ -215,6 +218,56 @@ public static class DocumentationExportService
             Items = hasItems ? items : null,
             Trophies = hasTrophies ? trophies : null
         };
+    }
+
+    /// <summary>
+    /// Builds the aggregated documentation model for an advancement's parent.
+    /// </summary>
+    /// <param name="advancement">The source advancement containing the parent identifier.</param>
+    /// <param name="registry">The registry containing all loaded datapacks to search within.</param>
+    /// <returns>
+    /// A populated <see cref="ParentAdvancementDocEntry"/> instance if <see cref="BacapAdvancement.Parent"/> is defined;
+    /// otherwise, <see langword="null"/>.
+    /// </returns>
+    private static ParentAdvancementDocEntry? BuildParent(BacapAdvancement advancement, DatapackRegistry registry)
+    {
+        var parentId = advancement.Parent;
+        if (parentId is null)
+            return null;
+
+        var parentDoc = new ParentAdvancementDocEntry
+        {
+            McPath = parentId
+        };
+
+        // Reference (0) -> Addon (1) -> CompatibilityAddon (2)
+        var sortedDatapacks = registry.Values.OrderBy(d => d.Settings.DatapackType);
+
+        foreach (var datapack in sortedDatapacks)
+        {
+            if (!datapack.TryGetAdvancement(parentId, out var parentManagedAdv) ||
+                parentManagedAdv is not BacapAdvancement parent)
+                continue;
+
+            parentDoc.Title = parent.TitleText;
+            parentDoc.Description = parent.DescriptionText;
+            parentDoc.Tab = parent.Tab.FolderName;
+            parentDoc.Tier = parent.Tier.TechnicalName();
+
+            var display = parent.Advancement.Display!;
+
+            parentDoc.Frame = display.Frame.ToString().ToLowerInvariant();
+            parentDoc.IconId = display.Icon?.Id;
+
+            if (MinecraftUtils.StripNamespace(display.Icon!.Id).Equals(PlayerHeadId, StringComparison.OrdinalIgnoreCase) &&
+                display.Icon!.Components.TryGet<ProfileComponent>(out var component))
+                parentDoc.PlayerHeadData = BuildPlayerHeadData(component);
+
+
+            break;
+        }
+
+        return parentDoc;
     }
 
     /// <summary>
