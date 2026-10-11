@@ -24,7 +24,4 @@ public class ParentAdvancementDocEntry
 
     [JsonPropertyName("tier")]
     public string? Tier { get; set; }
-
-    [JsonPropertyName("tab")]
-    public string? Tab { get; set; }
 }

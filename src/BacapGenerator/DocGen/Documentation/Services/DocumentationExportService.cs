@@ -251,7 +251,6 @@ public static class DocumentationExportService
 
             parentDoc.Title = parent.TitleText;
             parentDoc.Description = parent.CleanDescriptionText;
-            parentDoc.Tab = parent.Tab.FolderName;
             parentDoc.Tier = parent.Tier.TechnicalName();
 
             var display = parent.Advancement.Display!;
