@@ -97,7 +97,7 @@ public class AdvancementEditorAction(DatapackRegistry registry) : IManageAdvance
     {
         while (true)
         {
-            TuiTheme.RenderHeader($"Edit Advancement: {advancement.TitleText} [{advancement.Datapack.Id}]");
+            TuiTheme.RenderHeader(Markup.Escape($"Edit Advancement: {advancement.TitleText} [{advancement.Datapack.Id}]"));
 
             var descPreview = Truncate(advancement.DescriptionText, 80);
             var choices = BuildAvailableOptions(advancement.Datapack.Settings);
