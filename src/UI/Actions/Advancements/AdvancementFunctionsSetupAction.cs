@@ -152,7 +152,7 @@ public class AdvancementFunctionsSetupAction(DatapackRegistry registry) : IManag
             .AddRow($"[{TuiTheme.TablePropertyColor}]Title:[/]", $"[white]{Markup.Escape(advancement.TitleText)}[/]")
             .AddRow($"[{TuiTheme.TablePropertyColor}]Description:[/]", $"[Gray84]{Markup.Escape(advancement.CleanDescriptionText)}[/]")
             .AddRow($"[{TuiTheme.TablePropertyColor}]Tab:[/]", $"[{advancement.Tab.Color}]■[/] [white]{advancement.Tab.DisplayName}[/]")
-            .AddRow($"[{TuiTheme.TablePropertyColor}]Tier:[/]", $"[{advancement.Tier.Color()}]{advancement.Tier}[/]")
+            .AddRow($"[{TuiTheme.TablePropertyColor}]Tier:[/]", $"[{advancement.Tier.Color()}]{advancement.Tier.DisplayName()}[/]")
             .AddRow($"[{TuiTheme.TablePropertyColor}]McPath:[/]", $"[cyan]{Markup.Escape(advancement.McPath)}[/]")
             .AddEmptyRow()
             .AddRow($"[{TuiTheme.TablePropertyColor}]Experience:[/]", expStatus)
