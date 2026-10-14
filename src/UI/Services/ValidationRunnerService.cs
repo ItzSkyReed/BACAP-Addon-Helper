@@ -34,7 +34,7 @@ public sealed class ValidationRunnerService(DatapackRegistry datapackRegistry)
 
         if (!datapack.Settings.ValidationSettings.IsEnabled)
         {
-            TuiTheme.ShowInfo($"ValidationSettings is disabled for '{datapack.ReleaseName}'. Skipping.", "darkorange");
+            TuiTheme.ShowInfo($"Validation is disabled for '{datapack.ReleaseName}'. Skipping.", "darkorange");
             return true;
         }
 
@@ -43,11 +43,11 @@ public sealed class ValidationRunnerService(DatapackRegistry datapackRegistry)
 
         if (issues.Count == 0)
         {
-            TuiTheme.ShowSuccess($"ValidationSettings passed for '{datapack.ReleaseName}'!");
+            TuiTheme.ShowSuccess($"Validation passed for '{datapack.ReleaseName}'!");
             return true;
         }
 
-        var rootNodeMarkup = $"[bold cyan]ValidationSettings Report:[/] {datapack.ReleaseName}";
+        var rootNodeMarkup = $"[bold cyan]Validation Report:[/] {datapack.ReleaseName}";
         var tree = TuiTheme.CreateTree(rootNodeMarkup);
 
         var severityGroups = issues

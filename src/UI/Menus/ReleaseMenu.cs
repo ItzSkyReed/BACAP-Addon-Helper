@@ -51,8 +51,8 @@ public partial class ReleaseMenu(
             .Where(dp => dp.Settings.DatapackType != DatapackType.Reference)
             .ToArray();
 
-        // Pre-release ValidationSettings
-        TuiTheme.RenderHeader("Pre-Release ValidationSettings");
+        // Pre-release Validation
+        TuiTheme.RenderHeader("Pre-Release Validation");
         var validationPassed = true;
 
         foreach (var pack in nonReferencePacks)
@@ -63,7 +63,7 @@ public partial class ReleaseMenu(
 
         if (!validationPassed)
         {
-            TuiTheme.ShowError("ValidationSettings failed. Please fix the highlighted ERRORS before making a release.");
+            TuiTheme.ShowError("Validation failed. Please fix the highlighted ERRORS before making a release.");
             TuiTheme.WaitForKey();
             return; // Abort release
         }
