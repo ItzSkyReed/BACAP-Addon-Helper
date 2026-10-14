@@ -25,6 +25,12 @@ public static class LanguagePackIoManager
         AllowTrailingCommas = true
     };
 
+    private static readonly JsonReaderOptions LineReaderOptions = new()
+    {
+        CommentHandling = JsonCommentHandling.Skip,
+        AllowTrailingCommas = true
+    };
+
     /// <summary>
     /// Reads and extracts all translation keys declared in the embedded BACAP base language template file.
     /// </summary>
@@ -49,7 +55,6 @@ public static class LanguagePackIoManager
         return translations.Keys;
     }
 
-
     /// <summary>
     /// Scans and loads all language JSON files under <c>assets/minecraft/lang/</c>.
     /// Quarantines corrupted files into <see cref="LanguagePack.CorruptedFiles"/> to prevent data corruption.
@@ -58,11 +63,6 @@ public static class LanguagePackIoManager
     /// <returns>A populated <see cref="LanguagePack"/> instance containing both valid and corrupted file references.</returns>
     /// <exception cref="ArgumentException">Thrown when <paramref name="packRootPath"/> is null or empty.</exception>
     /// <exception cref="DirectoryNotFoundException">Thrown when the target language directory does not exist.</exception>
-    /// <example>
-    /// <code>
-    /// LanguagePack pack = LanguagePackIoManager.LoadPack("./resourcepacks/Enhanced_Discoveries_Lang");
-    /// </code>
-    /// </example>
     [PublicAPI]
     public static LanguagePack LoadPack(string packRootPath)
     {
@@ -140,7 +140,8 @@ public static class LanguagePackIoManager
     }
 
     /// <summary>
-    /// Safely updates a language file on disk by appending missing keys and removing unused ones.
+    /// Safely updates a language file on disk while preserving user comments and blank lines.
+    /// Removes unused keys, normalizes trailing commas on the last property, and appends missing keys as comments.
     /// </summary>
     /// <param name="file">The language file to patch.</param>
     /// <param name="missingKeys">The collection of missing keys to append.</param>
@@ -163,7 +164,7 @@ public static class LanguagePackIoManager
             return false;
 
         var rawLines = File.ReadAllLines(file.File.FullName, Encoding.UTF8).ToList();
-        var closingBraceIndex = FindClosingBraceIndex(rawLines);
+        var closingBraceIndex = EnsureStandaloneClosingBrace(rawLines);
 
         if (closingBraceIndex < 0)
         {
@@ -174,14 +175,14 @@ public static class LanguagePackIoManager
 
         var modified = false;
 
-        // Remove obsolete unused keys from the file
+        // 1. Remove obsolete unused keys from the file
         if (hasUnused)
         {
             var removeSet = unusedKeysToRemove!.ToHashSet(StringComparer.Ordinal);
 
             for (var i = closingBraceIndex - 1; i >= 0; i--)
             {
-                if (!TryExtractJsonKey(rawLines[i], out var key) || !removeSet.Contains(key))
+                if (!TryExtractPropertyKey(rawLines[i], out var key) || !removeSet.Contains(key))
                     continue;
 
                 rawLines.RemoveAt(i);
@@ -194,56 +195,29 @@ public static class LanguagePackIoManager
         if (RemoveExistingMissedSection(rawLines, ref closingBraceIndex))
             modified = true;
 
-        // Locate the last actual JSON property
+        // Locate the last actual JSON property line and normalize its trailing comma / reminder comment
         var lastPropertyIndex = FindLastPropertyIndex(rawLines, closingBraceIndex);
         var indent = "    ";
 
         if (lastPropertyIndex >= 0)
         {
             var line = rawLines[lastPropertyIndex];
-            var trimmedLine = line.TrimEnd();
-
-            // Strip previous reminder comment if present
-            if (trimmedLine.EndsWith(DontForgetComment, StringComparison.OrdinalIgnoreCase))
-            {
-                trimmedLine = trimmedLine[..^DontForgetComment.Length].TrimEnd();
-                rawLines[lastPropertyIndex] = trimmedLine;
-                modified = true;
-            }
-
             var leadingSpaces = line.Length - line.TrimStart().Length;
             if (leadingSpaces > 0)
                 indent = line[..leadingSpaces];
 
-            if (hasMissing)
+            var updatedLastLine = FormatLastPropertyLine(line, hasMissingKeys: hasMissing);
+            if (!string.Equals(line, updatedLastLine, StringComparison.Ordinal))
             {
-                // Attach reminder comment instead of appending a comma
-                if (!trimmedLine.EndsWith(','))
-                    rawLines[lastPropertyIndex] = $"{trimmedLine}{DontForgetComment}";
-
-                var entriesToInsert = new List<string>
-                {
-                    $"{indent}// Missed translations:"
-                };
-
-                entriesToInsert.AddRange(TranslationEntryFormatter.FormatEntries(missingKeys, indent, asComment: true));
-
-                rawLines.InsertRange(closingBraceIndex, entriesToInsert);
+                rawLines[lastPropertyIndex] = updatedLastLine;
                 modified = true;
             }
-            else
-            {
-                // Clean up trailing comma on the last property if no missing keys are being appended
-                if (trimmedLine.EndsWith(','))
-                {
-                    rawLines[lastPropertyIndex] = trimmedLine[..^1];
-                    modified = true;
-                }
-            }
         }
-        else if (hasMissing)
+
+        // Append new "// Missed translations:" block if needed
+        if (hasMissing)
         {
-            var entriesToInsert = new List<string>
+            var entriesToInsert = new List<string>(missingKeys.Count + 1)
             {
                 $"{indent}// Missed translations:"
             };
@@ -255,12 +229,12 @@ public static class LanguagePackIoManager
         }
 
         if (!modified)
-            return modified;
+            return false;
 
         File.WriteAllLines(file.File.FullName, rawLines, Utf8NoBom);
         file.File.Refresh();
 
-        return modified;
+        return true;
     }
 
     /// <summary>
@@ -319,10 +293,6 @@ public static class LanguagePackIoManager
     /// <summary>
     /// Parses translations from a stream reader, sanitizing '#' comments to '//' for System.Text.Json compatibility.
     /// </summary>
-    /// <param name="reader">The text reader providing the JSON payload.</param>
-    /// <param name="sourceIdentifier">File name or resource identifier used for error reporting.</param>
-    /// <returns>A dictionary containing translation key-value mappings.</returns>
-    /// <exception cref="CorruptedLanguageFileException">Thrown when the JSON payload is malformed or not a root object.</exception>
     private static Dictionary<string, string> ParseTranslations(TextReader reader, string sourceIdentifier)
     {
         var sb = new StringBuilder();
@@ -330,7 +300,6 @@ public static class LanguagePackIoManager
         while (reader.ReadLine() is { } line)
         {
             var trimmed = line.TrimStart();
-            // Normalize '#' comments to '//' for JsonCommentHandling.Skip
             if (trimmed.StartsWith('#'))
                 sb.Append("//").AppendLine(trimmed[1..]);
             else
@@ -367,76 +336,93 @@ public static class LanguagePackIoManager
         }
     }
 
-    private static bool TryExtractJsonKey(string line, [NotNullWhen(true)] out string? key)
+    /// <summary>
+    /// Extracts the JSON property key from a single line using <see cref="Utf8JsonReader"/>.
+    /// Safely handles all JSON escape sequences (<c>\"</c>, <c>\\</c>, <c>\uXXXX</c>) and trailing comments.
+    /// </summary>
+    private static bool TryExtractPropertyKey(string line, [NotNullWhen(true)] out string? key)
     {
         key = null;
-        var trimmed = line.TrimStart();
+        var trimmed = line.AsSpan().TrimStart();
 
-        if (!trimmed.StartsWith('"'))
+        if (!trimmed.StartsWith("\""))
             return false;
 
-        var inEscape = false;
-        var quoteEnd = -1;
-
-        for (var i = 1; i < trimmed.Length; i++)
-        {
-            if (inEscape)
-            {
-                inEscape = false;
-                continue;
-            }
-
-            if (trimmed[i] == '\\')
-            {
-                inEscape = true;
-                continue;
-            }
-
-            if (trimmed[i] != '"')
-                continue;
-
-            quoteEnd = i;
-            break;
-        }
-
-        if (quoteEnd == -1)
-            return false;
-
-        var colonFound = false;
-        for (var i = quoteEnd + 1; i < trimmed.Length; i++)
-        {
-            if (char.IsWhiteSpace(trimmed[i]))
-                continue;
-
-            if (trimmed[i] == ':')
-                colonFound = true;
-
-            break;
-        }
-
-        if (!colonFound)
-            return false;
+        // Wrap the single line in braces so Utf8JsonReader treats it as a valid JSON object property
+        var wrappedJson = Encoding.UTF8.GetBytes($"{{{trimmed}}}");
+        var reader = new Utf8JsonReader(wrappedJson, LineReaderOptions);
 
         try
         {
-            key = JsonSerializer.Deserialize<string>(trimmed[..(quoteEnd + 1)]);
-            return key is not null;
+            if (reader.Read() && reader.TokenType == JsonTokenType.StartObject &&
+                reader.Read() && reader.TokenType == JsonTokenType.PropertyName)
+            {
+                key = reader.GetString();
+                return key is not null;
+            }
         }
-        catch
+        catch (JsonException)
         {
-            return false;
+            // Line is not a valid JSON property
         }
+
+        return false;
     }
 
-    private static int FindClosingBraceIndex(List<string> lines)
+    /// <summary>
+    /// Finds the closing root brace <c>}</c> and, if it is sharing a line with a property
+    /// (e.g. <c>"key": "val" }</c>), splits <c>}</c> onto its own line so insertions never corrupt syntax.
+    /// </summary>
+    private static int EnsureStandaloneClosingBrace(List<string> lines)
     {
         for (var i = lines.Count - 1; i >= 0; i--)
         {
-            if (lines[i].TrimEnd().EndsWith('}'))
+            var trimmed = lines[i].AsSpan().Trim();
+            if (trimmed.IsEmpty || trimmed.StartsWith("//") || trimmed.StartsWith("#"))
+                continue;
+
+            var bracePos = lines[i].LastIndexOf('}');
+            if (bracePos < 0)
+                continue;
+
+            var beforeBrace = lines[i][..bracePos];
+            if (string.IsNullOrWhiteSpace(beforeBrace))
                 return i;
+
+            lines[i] = beforeBrace.TrimEnd();
+            lines.Insert(i + 1, "}");
+            return i + 1;
+
         }
 
         return -1;
+    }
+
+    /// <summary>
+    /// Formats the last property line by stripping old reminder comments, removing trailing commas when no missing keys follow,
+    /// or attaching the <see cref="DontForgetComment"/> reminder when missing keys are appended.
+    /// </summary>
+    private static string FormatLastPropertyLine(string line, bool hasMissingKeys)
+    {
+        var trimmedEnd = line.TrimEnd();
+
+        // Strip previous reminder comment if present
+        if (trimmedEnd.EndsWith(DontForgetComment, StringComparison.OrdinalIgnoreCase))
+        {
+            trimmedEnd = trimmedEnd[..^DontForgetComment.Length].TrimEnd();
+        }
+
+        if (hasMissingKeys)
+        {
+            return trimmedEnd.EndsWith(',')
+                ? trimmedEnd
+                : $"{trimmedEnd}{DontForgetComment}";
+        }
+
+        // No missing keys: ensure the last property in JSON does not have a trailing comma
+        return trimmedEnd.EndsWith(',')
+            ? trimmedEnd[..^1]
+            : trimmedEnd;
     }
 
     private static bool RemoveExistingMissedSection(List<string> lines, ref int closingBraceIndex)
@@ -445,7 +431,7 @@ public static class LanguagePackIoManager
 
         for (var i = 0; i < closingBraceIndex; i++)
         {
-            if (!lines[i].Trim().StartsWith("// Missed translations:", StringComparison.OrdinalIgnoreCase))
+            if (!lines[i].AsSpan().Trim().StartsWith("// Missed translations:", StringComparison.OrdinalIgnoreCase))
                 continue;
 
             missedHeaderIndex = i;
@@ -465,12 +451,8 @@ public static class LanguagePackIoManager
     {
         for (var i = beforeIndex - 1; i >= 0; i--)
         {
-            var trimmed = lines[i].Trim();
-
-            if (string.IsNullOrWhiteSpace(trimmed) || trimmed.StartsWith('#') || trimmed.StartsWith("//"))
-                continue;
-
-            return i;
+            if (TryExtractPropertyKey(lines[i], out _))
+                return i;
         }
 
         return -1;
