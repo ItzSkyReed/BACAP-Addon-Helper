@@ -1,7 +1,12 @@
-﻿using BacapGenerator.Configuration;
+﻿using BacapGenerator.Advancements.Services;
+using BacapGenerator.Checklists;
+using BacapGenerator.Configuration;
 using BacapGenerator.Datapacks;
 using BacapGenerator.Datapacks.Models.Settings;
 using BacapGenerator.Datapacks.Services;
+using BacapGenerator.DocGen;
+using BacapGenerator.DocGen.Documentation.Services;
+using BacapGenerator.LanguagePacks.Services;
 using Core.DataComponents;
 using Core.Registries;
 using Core.Registries.Exceptions;
@@ -81,10 +86,24 @@ public static class ServiceCollectionExtensions
         /// <returns>The service collection instance for method chaining.</returns>
         public IServiceCollection AddDatapackServices()
         {
+            // Core state & factories
             services.AddSingleton<DatapackRegistry>();
-            services.AddTransient<IDatapackFactory, DatapackFactory>();
+            services.AddSingleton<IDatapackFactory, DatapackFactory>();
             services.AddTransient<DatapackLoaderService>();
-            services.AddTransient<ValidationRunnerService>();
+
+            // Domain generation & sync services (Stateless -> Singleton)
+            services.AddSingleton<GlobalAdvancementsService>();
+            services.AddSingleton<GlobalFunctionsService>();
+            services.AddSingleton<ChecklistsService>();
+            services.AddSingleton<TranslationPackSyncService>();
+
+            // Documentation services (Stateless -> Singleton)
+            services.AddSingleton<DocumentationExportService>();
+            services.AddSingleton<DocumentationPipeline>();
+
+            // UI Runner services (Stateless -> Singleton)
+            services.AddSingleton<ValidationRunnerService>();
+            services.AddSingleton<DocumentationRunnerService>();
 
             return services;
         }

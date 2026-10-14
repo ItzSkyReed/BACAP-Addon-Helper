@@ -10,7 +10,7 @@ namespace UI.Actions.Advancements;
 /// Action that triggers the generation and persistence of milestone and advancement legend files for the BACAP Enhanced addon.
 /// </summary>
 /// <param name="registry">The central registry providing access to loaded datapacks.</param>
-public class GenerateMilestonesAction(DatapackRegistry registry) : IManageAdvancementsAction
+public class GenerateMilestonesAction(DatapackRegistry registry, GlobalAdvancementsService globalAdvancementsService) : IManageAdvancementsAction
 {
     /// <inheritdoc/>
     public string Title => "Generate Milestones & Advancement Legend";
@@ -33,7 +33,7 @@ public class GenerateMilestonesAction(DatapackRegistry registry) : IManageAdvanc
         var addons = registry.Values.Where(d => d.Settings.DatapackType == DatapackType.Addon).ToArray();
 
         foreach (var addon in addons)
-            GlobalAdvancementsService.GenerateAndSaveAll(addon);
+            globalAdvancementsService.GenerateAndSaveAll(addon);
 
         TuiTheme.Space();
         TuiTheme.ShowSuccess($"Successfully generated and saved milestone and legend files for {string.Join(", ", addons.Select(d => d.Id))}!");

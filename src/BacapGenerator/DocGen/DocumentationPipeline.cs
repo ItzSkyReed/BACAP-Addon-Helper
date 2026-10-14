@@ -12,7 +12,7 @@ namespace BacapGenerator.DocGen;
 /// <summary>
 /// Orchestrates the synchronization of YAML requirements and the generation of JSON documentation.
 /// </summary>
-public static class DocumentationPipeline
+public sealed class DocumentationPipeline(DatapackRegistry registry, DocumentationExportService documentationExportService)
 {
     /// <summary>
     /// Runs the documentation pipeline.
@@ -24,7 +24,7 @@ public static class DocumentationPipeline
     /// <returns>A <see cref="DocumentationSyncResult"/> containing sync statistics and detected orphaned requirements.</returns>
     /// <exception cref="ArgumentNullException">Thrown when <paramref name="registry"/> is <see langword="null"/>.</exception>
     [PublicAPI]
-    public static DocumentationSyncResult Run(DatapackRegistry registry, DocumentGeneratorConfig? docConfig)
+    public DocumentationSyncResult Run(DocumentGeneratorConfig? docConfig)
     {
         ArgumentNullException.ThrowIfNull(registry);
 
@@ -95,7 +95,7 @@ public static class DocumentationPipeline
             return DocumentationSyncResult.StubsGeneratedResult(totalAdded, totalInjected, orphanedAdvancementsMap);
 
         // Generate JSON
-        DocumentationExportService.GenerateExportFiles(registry, docConfig);
+        documentationExportService.GenerateExportFiles(docConfig);
 
         return DocumentationSyncResult.Success(primaryAddons.Count, orphanedAdvancementsMap);
     }

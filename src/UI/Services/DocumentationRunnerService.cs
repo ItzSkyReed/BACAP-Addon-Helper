@@ -9,7 +9,7 @@ namespace UI.Services;
 /// <summary>
 /// A shared UI service responsible for running the documentation pipeline and rendering reports in the console.
 /// </summary>
-public sealed class DocumentationRunnerService(DatapackRegistry datapackRegistry, GlobalConfig globalConfig)
+public sealed class DocumentationRunnerService(DocumentationPipeline documentationPipeline, GlobalConfig globalConfig)
 {
     /// <summary>
     /// Executes the documentation pipeline, renders warnings, stubs alerts, and orphaned requirements directly to the console.
@@ -19,7 +19,7 @@ public sealed class DocumentationRunnerService(DatapackRegistry datapackRegistry
     public bool RunAndRenderReport(bool promptOnOrphaned = false)
     {
         var docConfig = globalConfig.DocumentGenerator;
-        var result = DocumentationPipeline.Run(datapackRegistry, docConfig);
+        var result = documentationPipeline.Run(docConfig);
 
         if (result.WasSkipped)
         {

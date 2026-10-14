@@ -11,7 +11,7 @@ namespace BacapGenerator.Datapacks.Services;
 /// <summary>
 /// Orchestrates the generation and saving of global datapack functions, custom counters, and their tags.
 /// </summary>
-public static class GlobalFunctionsService
+public sealed class GlobalFunctionsService
 {
     /// <summary>
     /// Generates standard and custom datapack functions (scores, points, coop, trophies) and writes them to disk,
@@ -28,7 +28,7 @@ public static class GlobalFunctionsService
     /// GlobalFunctionsService.GenerateAndSaveAll(datapack, allAdvancements);
     /// </code>
     /// </example>
-    public static void GenerateAndSaveAll(Datapack datapack, IReadOnlyList<BacapAdvancement>? allAdvancementsPool = null)
+    public void GenerateAndSaveAll(Datapack datapack, IReadOnlyList<BacapAdvancement>? allAdvancementsPool = null)
     {
         ArgumentNullException.ThrowIfNull(datapack);
 

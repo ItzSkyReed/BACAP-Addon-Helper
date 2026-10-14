@@ -13,10 +13,8 @@ namespace UI.Actions.Datapacks;
 public class GenerateDocumentationAction(
     DatapackRegistry registry,
     GlobalConfig globalConfig,
-    DocumentationRunnerService? documentationRunner = null) : IManageDatapacksAction
+    DocumentationRunnerService documentationRunner) : IManageDatapacksAction
 {
-    private readonly DocumentationRunnerService _documentationRunner =
-        documentationRunner ?? new DocumentationRunnerService(registry, globalConfig);
 
     public string Title => "Sync Requirements & Generate Documentation";
 
@@ -29,7 +27,7 @@ public class GenerateDocumentationAction(
         TuiTheme.RenderHeader(Title);
         AnsiConsole.MarkupLine("[grey]Running documentation pipeline...[/]");
 
-        _documentationRunner.RunAndRenderReport(promptOnOrphaned: false);
+        documentationRunner.RunAndRenderReport(promptOnOrphaned: false);
 
         TuiTheme.WaitForKey();
         return Task.CompletedTask;

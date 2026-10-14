@@ -22,11 +22,11 @@ public partial class ReleaseMenu(
     DatapackRegistry registry,
     GlobalConfig config,
     ValidationRunnerService validationService,
-    DocumentationRunnerService? documentationRunner = null) : IMainMenuAction
+    DocumentationRunnerService documentationRunner,
+    GlobalAdvancementsService globalAdvancementsService,
+    GlobalFunctionsService globalFunctionsService,
+    ChecklistsService checklistsService) : IMainMenuAction
 {
-    private readonly DocumentationRunnerService _documentationRunner =
-        documentationRunner ?? new DocumentationRunnerService(registry, config);
-
     [GeneratedRegex(@"^[0-9]+\.[0-9]+(\.[0-9]+)?(-(alpha|beta))?$", RegexOptions.IgnoreCase)]
     private static partial Regex VersionPatternRegex();
 
@@ -69,7 +69,7 @@ public partial class ReleaseMenu(
         }
 
         AnsiConsole.MarkupLine("\n[grey]Synchronizing documentation...[/]");
-        if (!_documentationRunner.RunAndRenderReport(promptOnOrphaned: true))
+        if (documentationRunner.RunAndRenderReport(promptOnOrphaned: true))
         {
             TuiTheme.WaitForKey();
             return; // Abort release if stubs were generated or user refused orphaned requirements
@@ -112,10 +112,10 @@ public partial class ReleaseMenu(
 
                 if (datapack.Settings.DatapackType == DatapackType.Addon)
                 {
-                    GlobalAdvancementsService.GenerateAndSaveAll(datapack);
-                    GlobalFunctionsService.GenerateAndSaveAll(datapack);
+                    globalAdvancementsService.GenerateAndSaveAll(datapack);
+                    globalFunctionsService.GenerateAndSaveAll(datapack);
 
-                    ChecklistsService.GenerateAndSaveAll(datapack);
+                    checklistsService.GenerateAndSaveAll(datapack);
 
                     foreach (var advancement in datapack.Advancements.OfType<ValidAdvancement>())
                     {

@@ -10,7 +10,7 @@ namespace UI.Actions.Datapacks;
 /// Action that generates global datapack functions (update_score, update_points, etc.) for the BACAP Enhanced addon.
 /// </summary>
 /// <param name="registry">The central registry providing access to loaded datapacks.</param>
-public class GenerateDatapackFunctionsAction(DatapackRegistry registry) : IManageDatapacksAction
+public class GenerateDatapackFunctionsAction(DatapackRegistry registry, GlobalFunctionsService globalFunctionsService) : IManageDatapacksAction
 {
     /// <inheritdoc/>
     public string Title => "Generate Global Datapack Functions";
@@ -33,7 +33,7 @@ public class GenerateDatapackFunctionsAction(DatapackRegistry registry) : IManag
         var addons = registry.Values.Where(d => d.Settings.DatapackType == DatapackType.Addon).ToArray();
 
         foreach (var addon in addons)
-            GlobalFunctionsService.GenerateAndSaveAll(addon);
+            globalFunctionsService.GenerateAndSaveAll(addon);
 
         TuiTheme.Space();
         TuiTheme.ShowSuccess($"Successfully generated global functions for {string.Join(", ", addons.Select(d => d.Id))}");

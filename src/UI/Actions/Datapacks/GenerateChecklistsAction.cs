@@ -11,7 +11,7 @@ namespace UI.Actions.Datapacks;
 /// for loaded datapacks that have checklists configured.
 /// </summary>
 /// <param name="registry">The central registry providing access to loaded datapacks.</param>
-public class GenerateChecklistsAction(DatapackRegistry registry) : IManageDatapacksAction
+public class GenerateChecklistsAction(DatapackRegistry registry, ChecklistsService checklistsService) : IManageDatapacksAction
 {
     /// <inheritdoc/>
     public string Title => "Generate Checklist Functions";
@@ -43,7 +43,7 @@ public class GenerateChecklistsAction(DatapackRegistry registry) : IManageDatapa
 
         foreach (var pack in targetPacks)
         {
-            var count = ChecklistsService.GenerateAndSaveAll(pack);
+            var count = checklistsService.GenerateAndSaveAll(pack);
             TuiTheme.ShowSuccess($"Generated [white]{count}[/] checklist(s) for [cyan]{pack.ReleaseName}[/]");
         }
 

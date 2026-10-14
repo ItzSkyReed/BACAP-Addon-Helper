@@ -10,7 +10,7 @@ namespace BacapGenerator.LanguagePacks.Services;
 /// Service that coordinates end-to-end translation pack synchronization:
 /// updates <c>base_translation.json</c>, discovers missing keys, and patches individual language files safely.
 /// </summary>
-public static class TranslationPackSyncService
+public class TranslationPackSyncService(DatapackRegistry registry)
 {
     /// <summary>
     /// Synchronizes translation files and updates base templates across all registered primary addon groups.
@@ -19,7 +19,7 @@ public static class TranslationPackSyncService
     /// <param name="registry">The source datapack registry.</param>
     /// <returns>A list of diagnostic results per addon group.</returns>
     /// <exception cref="ArgumentNullException">Thrown when <paramref name="registry"/> is <see langword="null"/>.</exception>
-    public static IReadOnlyList<TranslationPackSyncResult> SyncAll(DatapackRegistry registry)
+    public IReadOnlyList<TranslationPackSyncResult> SyncAll()
     {
         ArgumentNullException.ThrowIfNull(registry);
 

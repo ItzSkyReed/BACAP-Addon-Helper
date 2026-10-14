@@ -10,14 +10,14 @@ namespace BacapGenerator.Advancements.Services;
 /// Orchestrates the generation and saving of special global advancements
 /// like Milestones and the Advancement Legend for a given datapack.
 /// </summary>
-public static class GlobalAdvancementsService
+public sealed class GlobalAdvancementsService
 {
     /// <summary>
     /// Generates and saves all milestones and the legend advancement for the datapack.
     /// </summary>
     /// <param name="datapack">The target datapack to process.</param>
     /// <exception cref="ArgumentNullException">Thrown when <paramref name="datapack"/> is null.</exception>
-    public static void GenerateAndSaveAll(Datapack datapack)
+    public void GenerateAndSaveAll(Datapack datapack)
     {
         ArgumentNullException.ThrowIfNull(datapack);
 

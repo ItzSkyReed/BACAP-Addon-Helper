@@ -20,7 +20,7 @@ namespace BacapGenerator.DocGen.Documentation.Services;
 /// <summary>
 /// Service responsible for aggregating datapack advancements and generating the final JSON documentation for export.
 /// </summary>
-public static class DocumentationExportService
+public class DocumentationExportService(DatapackRegistry registry)
 {
     private const string PlayerHeadId = "player_head";
 
@@ -33,7 +33,7 @@ public static class DocumentationExportService
     /// <param name="config">The global document generator configuration containing I/O paths.</param>
     /// <exception cref="ArgumentNullException">Thrown when <paramref name="registry"/> or <paramref name="config"/> is null.</exception>
     [PublicAPI]
-    public static void GenerateExportFiles(DatapackRegistry registry, DocumentGeneratorConfig config)
+    public void GenerateExportFiles(DocumentGeneratorConfig config)
     {
         ArgumentNullException.ThrowIfNull(registry);
         ArgumentNullException.ThrowIfNull(config);

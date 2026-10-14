@@ -8,7 +8,7 @@ namespace BacapGenerator.Checklists;
 /// <summary>
 /// Service coordinating the synthesis and persistence of all configured checklist functions for a datapack.
 /// </summary>
-public static class ChecklistsService
+public sealed class ChecklistsService
 {
     /// <summary>
     /// Generates and writes all checklist trigger callbacks and category verification functions
@@ -26,7 +26,7 @@ public static class ChecklistsService
     /// </code>
     /// </example>
     [PublicAPI]
-    public static int GenerateAndSaveAll(Datapack datapack)
+    public int GenerateAndSaveAll(Datapack datapack)
     {
         ArgumentNullException.ThrowIfNull(datapack);
 

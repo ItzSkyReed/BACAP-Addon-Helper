@@ -1,5 +1,4 @@
-﻿using BacapGenerator.Datapacks;
-using BacapGenerator.LanguagePacks.Services;
+﻿using BacapGenerator.LanguagePacks.Services;
 using Spectre.Console;
 using UI.Interfaces;
 using UI.Styling;
@@ -9,7 +8,7 @@ namespace UI.Actions.Datapacks;
 /// <summary>
 /// Action that synchronizes base translation templates and updates language pack files with missing translation entries.
 /// </summary>
-public sealed class SyncWithTranslationPack(DatapackRegistry datapackRegistry) : IManageDatapacksAction
+public sealed class SyncWithTranslationPack(TranslationPackSyncService translationPackSyncService) : IManageDatapacksAction
 {
 
     /// <inheritdoc/>
@@ -29,7 +28,7 @@ public sealed class SyncWithTranslationPack(DatapackRegistry datapackRegistry) :
     {
         TuiTheme.RenderHeader(Title);
 
-        var results = TranslationPackSyncService.SyncAll(datapackRegistry);
+        var results = translationPackSyncService.SyncAll();
 
         if (results.Count == 0)
         {
