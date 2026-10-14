@@ -82,9 +82,6 @@ public sealed class RewardFunctionPathRule(GenericRuleOptions options)
         if (settings.RequiresTrophyReward(bacapAdvancement) && !bacapAdvancement.TrophyRewardFunction.File.Exists)
             ReportMissingFile(bacapAdvancement, "Trophy reward function file does not exist on disk.", context);
 
-        if (settings.RequiresExpReward(bacapAdvancement) && !bacapAdvancement.ExpRewardFunction.File.Exists)
-            ReportMissingFile(bacapAdvancement, "Experience reward function file does not exist on disk.", context);
-
         if (!bacapAdvancement.MsgFunction.File.Exists)
             ReportMissingFile(bacapAdvancement, "Message function file does not exist on disk.", context);
 
