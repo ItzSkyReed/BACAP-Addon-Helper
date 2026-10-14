@@ -1,9 +1,10 @@
 ﻿using System.Text;
 using BacapGenerator.DocGen.Requirements.Exceptions;
 using JetBrains.Annotations;
+using YamlDotNet.Core;
 using YamlDotNet.Serialization;
+using YamlDotNet.Serialization.EventEmitters;
 
-// Обрати внимание: теперь тут string? в самом конце, потому что YAML вернет null для пустых полей
 using RequirementsMap = System.Collections.Generic.Dictionary<string, System.Collections.Generic.Dictionary<string, string?>>;
 
 namespace BacapGenerator.Io;
@@ -15,6 +16,30 @@ public static class RequirementsIoManager
 {
     private static readonly UTF8Encoding Utf8NoBom = new(encoderShouldEmitUTF8Identifier: false);
 
+    private static readonly IDeserializer YamlDeserializer = new DeserializerBuilder()
+        .IgnoreUnmatchedProperties()
+        .Build();
+
+    private static readonly ISerializer YamlSerializer = new SerializerBuilder()
+        .ConfigureDefaultValuesHandling(DefaultValuesHandling.Preserve)
+        .WithEventEmitter(next => new MultilineLiteralScalarEmitter(next))
+        .Build();
+
+    /// <summary>
+    /// Synchronizes the target requirements YAML file with the required advancement sections.
+    /// Parses the YAML DOM, injects missing advancements and sections in memory, and serializes the clean structure back to disk.
+    /// </summary>
+    /// <param name="filePath">The path to the target YAML file.</param>
+    /// <param name="advancementSections">A map of advancement Minecraft paths to their required documentation section names.</param>
+    /// <returns>A tuple containing the number of newly added advancements and newly injected sections.</returns>
+    /// <exception cref="ArgumentException">Thrown when <paramref name="filePath"/> is null or whitespace.</exception>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="advancementSections"/> is null.</exception>
+    /// <exception cref="RequirementsYamlParseException">Thrown when the existing YAML file contains invalid syntax.</exception>
+    /// <example>
+    /// <code>
+    /// var (added, injected) = RequirementsIoManager.SyncRequirementsFile("requirements/bacaped.yaml", sectionsMap);
+    /// </code>
+    /// </example>
     [PublicAPI]
     public static (int AddedAdvancements, int InjectedSections) SyncRequirementsFile(
         string filePath,
@@ -26,91 +51,36 @@ public static class RequirementsIoManager
         if (advancementSections.Count == 0)
             return (0, 0);
 
-        var existingKeys = new Dictionary<string, HashSet<string>>(StringComparer.Ordinal);
-        var lines = new List<string>();
+        var rawData = ReadRequirements(filePath);
+        var data = new RequirementsMap(rawData, StringComparer.Ordinal);
 
-        if (File.Exists(filePath))
-        {
-            lines = File.ReadAllLines(filePath, Utf8NoBom).ToList();
-            var yamlContent = string.Join(Environment.NewLine, lines);
-
-            var deserializer = new DeserializerBuilder()
-                .IgnoreUnmatchedProperties()
-                .Build();
-
-            try
-            {
-                var existingData = deserializer.Deserialize<RequirementsMap>(yamlContent);
-
-                foreach (var (mcPath, sections) in existingData)
-                    existingKeys[mcPath] = new HashSet<string>(sections.Keys, StringComparer.Ordinal);
-            }
-            catch (YamlDotNet.Core.YamlException ex)
-            {
-                throw new RequirementsYamlParseException(
-                    filePath,
-                    ex.Message,
-                    ex.Start.Line,
-                    ex.Start.Column,
-                    ex);
-            }
-        }
-
-        var modified = false;
         var addedAdvancementsCount = 0;
         var injectedSectionsCount = 0;
-        var completelyMissingAdvancements = new List<string>();
 
         foreach (var (mcPath, neededSections) in advancementSections)
         {
-            if (!existingKeys.TryGetValue(mcPath, out var existingSections))
+            if (!data.TryGetValue(mcPath, out var existingSections))
             {
-                completelyMissingAdvancements.Add(mcPath);
+                var newSections = new Dictionary<string, string?>(StringComparer.Ordinal);
+                foreach (var section in neededSections)
+                {
+                    newSections[section] = null;
+                }
+
+                data[mcPath] = newSections;
+                addedAdvancementsCount++;
                 continue;
             }
 
-            var missingSections = neededSections.Where(s => !existingSections.Contains(s)).ToList();
-
-            if (missingSections.Count <= 0)
-                continue;
-
-            var keyLineIndex = lines.FindIndex(l => l.Trim() == $"{mcPath}:");
-
-            if (keyLineIndex < 0)
-                continue;
-
-            var insertIndex = keyLineIndex + 1;
-            foreach (var section in missingSections)
+            foreach (var section in neededSections)
             {
-                // ПРОСТО ПИШЕМ КЛЮЧ БЕЗ ЗНАЧЕНИЯ И БЕЗ |-
-                lines.Insert(insertIndex++, $"  {section}:");
+                if (!existingSections.TryAdd(section, null)) continue;
                 injectedSectionsCount++;
             }
-            modified = true;
         }
 
-        if (completelyMissingAdvancements.Count > 0)
-        {
-            if (lines.Count > 0 && !string.IsNullOrWhiteSpace(lines[^1]))
-                lines.Add(string.Empty);
-
-            lines.Add($"# Auto-generated stubs (Added: {DateTime.Now:yyyy-MM-dd HH:mm})");
-            lines.Add(string.Empty);
-
-            foreach (var mcPath in completelyMissingAdvancements)
-            {
-                lines.Add($"{mcPath}:");
-
-                lines.AddRange(advancementSections[mcPath].Select(section => $"  {section}:"));
-
-                lines.Add(string.Empty);
-                addedAdvancementsCount++;
-            }
-            modified = true;
-        }
-
-        if (!modified)
-            return (addedAdvancementsCount, injectedSectionsCount);
+        if (addedAdvancementsCount == 0 && injectedSectionsCount == 0)
+            return (0, 0);
 
         var directory = Path.GetDirectoryName(filePath);
         if (!string.IsNullOrWhiteSpace(directory))
@@ -118,11 +88,24 @@ public static class RequirementsIoManager
             Directory.CreateDirectory(directory);
         }
 
-        File.WriteAllLines(filePath, lines, Utf8NoBom);
+        var serializedYaml = FormatWithRootSpacing(YamlSerializer.Serialize(data));
+        File.WriteAllText(filePath, serializedYaml, Utf8NoBom);
 
         return (addedAdvancementsCount, injectedSectionsCount);
     }
 
+    /// <summary>
+    /// Reads and deserializes the requirements YAML file into a nested dictionary.
+    /// Returns an empty dictionary if the file does not exist or is empty.
+    /// </summary>
+    /// <param name="filePath">The path to the YAML file to read.</param>
+    /// <returns>A dictionary mapping advancement paths to their section descriptions.</returns>
+    /// <exception cref="RequirementsYamlParseException">Thrown when the YAML file contains syntax errors.</exception>
+    /// <example>
+    /// <code>
+    /// RequirementsMap requirements = RequirementsIoManager.ReadRequirements("requirements/bacaped.yaml");
+    /// </code>
+    /// </example>
     [PublicAPI]
     public static RequirementsMap ReadRequirements(string filePath)
     {
@@ -130,15 +113,15 @@ public static class RequirementsIoManager
             return [];
 
         var yamlContent = File.ReadAllText(filePath, Utf8NoBom);
-        var deserializer = new DeserializerBuilder()
-            .IgnoreUnmatchedProperties()
-            .Build();
+        if (string.IsNullOrWhiteSpace(yamlContent))
+            return [];
 
         try
         {
-            return deserializer.Deserialize<RequirementsMap>(yamlContent);
+            // YamlDotNet returns null when the file contains only whitespace or comments
+            return YamlDeserializer.Deserialize<RequirementsMap?>(yamlContent) ?? [];
         }
-        catch (YamlDotNet.Core.YamlException ex)
+        catch (YamlException ex)
         {
             throw new RequirementsYamlParseException(
                 filePath,
@@ -146,6 +129,52 @@ public static class RequirementsIoManager
                 ex.Start.Line,
                 ex.Start.Column,
                 ex);
+        }
+    }
+
+    /// <summary>
+    /// Inserts an empty line between top-level advancement blocks to keep the YAML file clean and readable.
+    /// </summary>
+    private static string FormatWithRootSpacing(string yaml)
+    {
+        var sb = new StringBuilder(yaml.Length + 128);
+        using var reader = new StringReader(yaml);
+
+        var isFirstRootEntry = true;
+
+        while (reader.ReadLine() is { } line)
+        {
+            var isRootKeyLine = line.Length > 0 && !char.IsWhiteSpace(line[0]);
+            if (isRootKeyLine)
+            {
+                if (!isFirstRootEntry)
+                    sb.AppendLine();
+
+                isFirstRootEntry = false;
+            }
+
+            sb.AppendLine(line);
+        }
+
+        return sb.ToString();
+    }
+
+    /// <summary>
+    /// Custom YAML event emitter that formats multiline strings using literal block style (<c>|-</c>)
+    /// instead of escaped double-quoted strings.
+    /// </summary>
+    private sealed class MultilineLiteralScalarEmitter(IEventEmitter nextEmitter) : ChainedEventEmitter(nextEmitter)
+    {
+        public override void Emit(ScalarEventInfo eventInfo, IEmitter emitter)
+        {
+            if (eventInfo.Source.Type == typeof(string) &&
+                eventInfo.Source.Value is string value &&
+                value.Contains('\n'))
+            {
+                eventInfo.Style = ScalarStyle.Literal;
+            }
+
+            base.Emit(eventInfo, emitter);
         }
     }
 }
