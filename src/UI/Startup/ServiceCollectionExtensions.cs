@@ -159,6 +159,7 @@ public static class ServiceCollectionExtensions
             services.AddTransient<IManageDatapacksAction, ValidateDatapacksAction>();
             services.AddTransient<IManageDatapacksAction, GenerateDocumentationAction>();
             services.AddTransient<IManageDatapacksAction, SyncWithTranslationPack>();
+            services.AddTransient<IManageDatapacksAction, GenerateChecklistsAction>();
 
             return services;
         }
