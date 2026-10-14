@@ -124,19 +124,9 @@ public static partial class TrophyRewardMenu
                 })
         );
 
-        var extraComponents = new List<IDataComponent>();
-        if (!string.IsNullOrWhiteSpace(rawLore))
-        {
-            var wrappedLines = LoreWizard.WrapText(rawLore);
-            var loreTextComponents = wrappedLines
-                .Select(line => (TextComponent)new TranslatableComponent(
-                    Translate: line,
-                    Style: new TextStyle(Color: color)
-                ))
-                .ToList();
-
-            extraComponents.Add(new LoreComponent(loreTextComponents));
-        }
+        var descriptionLines = !string.IsNullOrWhiteSpace(rawLore)
+            ? LoreWizard.WrapText(rawLore)
+            : null;
 
         return TrophyReward.CreateNew(
             advancement: advancement,
@@ -145,7 +135,7 @@ public static partial class TrophyRewardMenu
             titleColor: color,
             count: count,
             deliveryType: deliveryType,
-            extraSetComponents: extraComponents
+            descriptionLines: descriptionLines
         );
     }
 
@@ -246,12 +236,12 @@ public static partial class TrophyRewardMenu
 
                 case TrophyEditOption.ChangeColor:
                     var newColor = PromptTrophyColor(mcData, current.TitleColor ?? "#B0CCD8");
-                    UpdateTrophyColor(current, newColor);
+                    UpdateTrophyColor(current, newColor, advancement);
                     SaveIntermediate(advancement, trophies);
                     break;
 
                 case TrophyEditOption.ChangeLore:
-                    UpdateTrophyLore(current);
+                    UpdateTrophyLore(current, advancement);
                     SaveIntermediate(advancement, trophies);
                     break;
 
@@ -297,38 +287,30 @@ public static partial class TrophyRewardMenu
     }
 
     /// <summary>
-    /// Updates the custom name and all lore line colors across the trophy stack.
+    /// Updates the custom name color and re-standardizes the trophy lore so description lines
+    /// adopt the new color while preserving the 'Awarded for achieving' footer styling.
     /// </summary>
     /// <param name="trophy">The trophy reward to update.</param>
     /// <param name="newColor">The new hex color code.</param>
-    private static void UpdateTrophyColor(TrophyReward trophy, string newColor)
+    /// <param name="advancement">The parent advancement awarding this trophy.</param>
+    private static void UpdateTrophyColor(TrophyReward trophy, string newColor, BacapAdvancement advancement)
     {
         var title = trophy.Title ?? "Trophy";
         var nameStyle = new TextStyle(Color: newColor, Bold: true, Italic: false);
         trophy.Item.Components.Set(new CustomNameComponent(new TranslatableComponent(title, Style: nameStyle)));
 
-        if (!trophy.Item.Components.TryGet<LoreComponent>(out var existingLore))
-        {
-            return;
-        }
-
-        var updatedLines = existingLore.Lines
-            .Select(line => line switch
-            {
-                TranslatableComponent tc => tc with { Style = (tc.Style ?? new TextStyle()) with { Color = newColor } },
-                PlainTextComponent ptc => ptc with { Style = (ptc.Style ?? new TextStyle()) with { Color = newColor } },
-                _ => line
-            })
-            .ToList();
-
-        trophy.Item.Components.Set(new LoreComponent(updatedLines));
+        // Re-apply standard lore: description lines will automatically use the updated TitleColor,
+        // while the footer retains gray and the advancement's tier color.
+        trophy.SetStandardLore(trophy.DescriptionLines, advancement);
     }
 
     /// <summary>
-    /// Prompts a new description and wraps it into translatable lore lines matching the trophy's title color.
+    /// Prompts a new description and wraps it into translatable lore lines matching the trophy's title color,
+    /// while preserving the standard 'Awarded for achieving' footer.
     /// </summary>
     /// <param name="trophy">The trophy reward to update.</param>
-    private static void UpdateTrophyLore(TrophyReward trophy)
+    /// <param name="advancement">The parent advancement awarding this trophy.</param>
+    private static void UpdateTrophyLore(TrophyReward trophy, BacapAdvancement advancement)
     {
         var existingText = string.Join(" ", trophy.DescriptionLines);
         var input = AnsiConsole.Prompt(
@@ -339,22 +321,15 @@ public static partial class TrophyRewardMenu
 
         if (string.IsNullOrWhiteSpace(input))
         {
-            trophy.Item.Components.Remove<LoreComponent>();
-            TuiTheme.ShowSuccess("Lore cleared.");
+            trophy.SetStandardLore(null, advancement);
+            TuiTheme.ShowSuccess("Lore description cleared (standard footer preserved).");
             TuiTheme.WaitForKey();
             return;
         }
 
-        var color = trophy.TitleColor ?? "#B0CCD8";
         var wrappedLines = LoreWizard.WrapText(input, maxWidth: 45);
-        var loreComponents = wrappedLines
-            .Select(line => (TextComponent)new TranslatableComponent(
-                Translate: line,
-                Style: new TextStyle(Color: color)
-            ))
-            .ToList();
+        trophy.SetStandardLore(wrappedLines, advancement);
 
-        trophy.Item.Components.Set(new LoreComponent(loreComponents));
         TuiTheme.ShowSuccess($"Updated lore with {wrappedLines.Count} line(s).");
         TuiTheme.WaitForKey();
     }
