@@ -214,7 +214,7 @@ public static class DocumentationExportService
 
         return new RewardsDocEntry
         {
-            Experince = exp,
+            Experience = exp,
             Items = hasItems ? items : null,
             Trophies = hasTrophies ? trophies : null
         };
