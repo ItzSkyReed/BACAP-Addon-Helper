@@ -182,7 +182,6 @@ public sealed class SyncPacksMenu(DatapackRegistry registry, UserConfig config) 
             File.Copy(file, destinationFilePath, overwrite: true);
         }
     }
-
     /// <summary>
     /// Displays a standardized status line for an environment path configuration.
     /// </summary>
@@ -192,19 +191,25 @@ public sealed class SyncPacksMenu(DatapackRegistry registry, UserConfig config) 
     /// <param name="isOptional">Indicates whether this path is optional under current conditions.</param>
     private static void RenderPathStatus(string label, string? path, bool isValid, bool isOptional = false)
     {
+        var escapedLabel = Markup.Escape(label);
+        var escapedPath = path is not null ? Markup.Escape(path) : null;
+
         if (isValid)
         {
-            AnsiConsole.MarkupLine($"  [Grey84]{label}:[/] [green]{path}[/]");
+            AnsiConsole.MarkupLine($"  [Grey84]{escapedLabel}:[/] [green]{escapedPath}[/]");
             return;
         }
 
         if (isOptional && string.IsNullOrWhiteSpace(path))
         {
-            AnsiConsole.MarkupLine($"  [Grey84]{label}:[/] [grey]not configured (optional)[/]");
+            AnsiConsole.MarkupLine($"  [Grey84]{escapedLabel}:[/] [grey]not configured (optional)[/]");
             return;
         }
 
-        var displayValue = string.IsNullOrWhiteSpace(path) ? "not configured" : $"directory not found ({path})";
-        AnsiConsole.MarkupLine($"  [Grey84]{label}:[/] [red]{displayValue}[/]");
+        var displayValue = string.IsNullOrWhiteSpace(escapedPath)
+            ? "not configured"
+            : $"directory not found ({escapedPath})";
+
+        AnsiConsole.MarkupLine($"  [Grey84]{escapedLabel}:[/] [red]{displayValue}[/]");
     }
 }
