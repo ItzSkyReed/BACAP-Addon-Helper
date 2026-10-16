@@ -23,7 +23,7 @@ public static class UserConfigLoader
     /// </example>
     public static UserConfig Load(string envFilePath = ".env")
     {
-        IDictionary<string, string>? envValues = null;
+        Dictionary<string, string>? envValues = null;
 
         if (!File.Exists(envFilePath))
             return new UserConfig
