@@ -1,6 +1,4 @@
-﻿using BacapGenerator.Configuration;
-using BacapGenerator.Datapacks;
-using Spectre.Console;
+﻿using Spectre.Console;
 using UI.Interfaces;
 using UI.Services;
 using UI.Styling;
@@ -10,10 +8,7 @@ namespace UI.Actions.Datapacks;
 /// <summary>
 /// Action that synchronizes documentation requirements and generates final JSON payloads for export.
 /// </summary>
-public class GenerateDocumentationAction(
-    DatapackRegistry registry,
-    GlobalConfig globalConfig,
-    DocumentationRunnerService documentationRunner) : IManageDatapacksAction
+public class GenerateDocumentationAction(DocumentationRunnerService documentationRunner) : IManageDatapacksAction
 {
 
     public string Title => "Sync Requirements & Generate Documentation";
