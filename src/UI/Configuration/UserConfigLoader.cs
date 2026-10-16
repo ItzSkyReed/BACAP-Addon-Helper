@@ -1,6 +1,4 @@
-﻿using dotenv.net;
-
-namespace UI.Configuration;
+﻿namespace UI.Configuration;
 
 /// <summary>
 /// Provides functionality to load and construct <see cref="UserConfig"/> from system environment variables and an optional .env file.
@@ -16,35 +14,9 @@ public static class UserConfigLoader
     /// </summary>
     /// <param name="envFilePath">The file path to the environment file. Defaults to <c>".env"</c>.</param>
     /// <returns>A populated <see cref="UserConfig"/> instance.</returns>
-    /// <example>
-    /// <code>
-    /// UserConfig config = UserConfigLoader.Load();
-    /// </code>
-    /// </example>
     public static UserConfig Load(string envFilePath = ".env")
     {
-        Dictionary<string, string>? envValues = null;
-
-        if (!File.Exists(envFilePath))
-            return new UserConfig
-            {
-                WorldDatapacksPath = ResolvePath(WorldDatapacksEnvKey, envValues),
-                WorldCompatDatapacksPath = ResolvePath(WorldCompatDatapacksEnvKey, envValues),
-                ResourcePacksPath = ResolvePath(ResourcePacksEnvKey, envValues)
-            };
-
-        var rawEnv = DotEnv.Read(new DotEnvOptions(
-            envFilePaths: [envFilePath],
-            ignoreExceptions: true,
-            trimValues: true));
-
-        // Sanitize keys in case the .env file was saved with a UTF-8 BOM (\uFEFF) on the first line
-        envValues = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
-        foreach (var (key, value) in rawEnv)
-        {
-            var cleanKey = key.Trim().TrimStart('\uFEFF');
-            envValues[cleanKey] = value;
-        }
+        var envValues = ParseEnvFile(envFilePath);
 
         return new UserConfig
         {
@@ -55,25 +27,61 @@ public static class UserConfigLoader
     }
 
     /// <summary>
-    /// Resolves an environment setting from process environment variables, falling back to parsed .env file values,
-    /// strips surrounding quotes, and expands any embedded system variables (e.g., %APPDATA%).
+    /// Parses a .env file natively, handling UTF-8 BOM, comments, quotes, and Windows backslashes safely.
     /// </summary>
-    /// <param name="key">The environment variable key name.</param>
-    /// <param name="fileEnv">The parsed key-value pairs from the .env file, if available.</param>
-    /// <returns>A normalized full directory path, or <see langword="null"/> if not configured or invalid.</returns>
+    private static Dictionary<string, string>? ParseEnvFile(string envFilePath)
+    {
+        if (!File.Exists(envFilePath))
+            return null;
+
+        var result = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+
+        // File.ReadLines automatically strips UTF-8 BOM and reads lazily
+        foreach (var rawLine in File.ReadLines(envFilePath))
+        {
+            var line = rawLine.AsSpan().Trim().TrimStart('\uFEFF');
+            if (line.IsEmpty || line[0] == '#')
+                continue;
+
+            var eqIndex = line.IndexOf('=');
+            if (eqIndex <= 0)
+                continue;
+
+            var key = line[..eqIndex].Trim();
+            var value = line[(eqIndex + 1)..].Trim();
+
+            // Strip surrounding quotes without corrupting Windows backslashes
+            if (value.Length >= 2 &&
+                ((value[0] == '"' && value[^1] == '"') || (value[0] == '\'' && value[^1] == '\'')))
+            {
+                value = value[1..^1].Trim();
+            }
+
+            result[key.ToString()] = value.ToString();
+        }
+
+        return result;
+    }
+
     private static string? ResolvePath(string key, IDictionary<string, string>? fileEnv)
     {
-        // Process / OS environment variables take precedence
+        // Check standard OS environment variable
         var rawValue = Environment.GetEnvironmentVariable(key);
 
-        // Fall back to .env file entries
+        // Fallback for cmd.exe `for /f` bug when reading UTF-8 with BOM on line 1 (prepends "\uFEFF" or "ï»¿" to the first variable name)
+        if (string.IsNullOrWhiteSpace(rawValue))
+        {
+            rawValue = Environment.GetEnvironmentVariable("\uFEFF" + key)
+                       ?? Environment.GetEnvironmentVariable("ï»¿" + key);
+        }
+
+        // 3. Fall back to parsed .env file entries
         if (string.IsNullOrWhiteSpace(rawValue) && fileEnv != null && fileEnv.TryGetValue(key, out var fileValue))
             rawValue = fileValue;
 
         if (string.IsNullOrWhiteSpace(rawValue))
             return null;
 
-        // Trim whitespace and strip matching or stray surrounding quotes (' or ")
         var sanitizedValue = rawValue.Trim().Trim('\'', '"').Trim();
         if (string.IsNullOrWhiteSpace(sanitizedValue))
             return null;
@@ -86,7 +94,6 @@ public static class UserConfigLoader
         }
         catch (Exception ex) when (ex is ArgumentException or PathTooLongException or NotSupportedException)
         {
-            // Return the raw expanded string if Path.GetFullPath fails so the UI can still display the broken value
             return expandedPath;
         }
     }
