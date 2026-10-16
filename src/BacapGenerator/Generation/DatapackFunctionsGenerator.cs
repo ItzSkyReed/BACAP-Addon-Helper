@@ -210,7 +210,7 @@ public static class DatapackFunctionsGenerator
     /// <param name="subcommand">The command to execute if the condition matches.</param>
     /// <returns>An <see cref="ExecuteCommand"/> instance targeting players with the specified advancement.</returns>
     private static ExecuteCommand CreateAdvancementExecuteCommand(string targetSelector, string mcPath, ICommand subcommand) =>
-        new($"as {targetSelector}[advancements={{[{mcPath}]=true}}]", subcommand);
+        new($"as {targetSelector}[advancements={{{mcPath}=true}}]", subcommand);
 
     /// <summary>
     /// Pre-allocates lines and populates a new <see cref="McFunction"/> using the provided line-command factory.
