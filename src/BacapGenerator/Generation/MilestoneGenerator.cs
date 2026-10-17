@@ -48,7 +48,7 @@ public static partial class MilestoneGenerator
         var criteria = new Dictionary<string, JsonElement>(advancements.Count);
         var advMap = new Dictionary<string, bool>(1);
 
-        foreach (var adv in advancements)
+        foreach (var adv in advancements.OrderBy(adv => adv.McPath))
         {
             ArgumentException.ThrowIfNullOrWhiteSpace(adv.McPath);
 

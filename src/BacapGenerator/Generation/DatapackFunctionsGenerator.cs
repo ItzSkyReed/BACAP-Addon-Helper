@@ -223,7 +223,7 @@ public static class DatapackFunctionsGenerator
         Func<BacapAdvancement, ICommand> commandFactory)
     {
         var lines = new List<IMcFunctionLine>(advancements.Count);
-        lines.AddRange(advancements.Select(advancement => new ExecutableLine(commandFactory(advancement))));
+        lines.AddRange(advancements.OrderBy(adv => adv.McPath).Select(advancement => new ExecutableLine(commandFactory(advancement))));
 
         return new McFunction(lines);
     }
