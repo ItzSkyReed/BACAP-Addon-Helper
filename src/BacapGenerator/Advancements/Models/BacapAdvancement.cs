@@ -111,7 +111,8 @@ public class BacapAdvancement : ValidAdvancement
 
     /// <summary>
     /// Gets or sets the underlying core <see cref="Advancement"/> data model.
-    /// Mutating this property validates the advancement state and synchronizes attached function files.
+    /// Mutating this property validates the advancement state, synchronizes attached function files,
+    /// and ensures display properties match the resolved tier profile whenever the tier changes.
     /// </summary>
     /// <exception cref="ArgumentNullException">Thrown when setting a <see langword="null"/> value.</exception>
     /// <exception cref="ArgumentException">Thrown when the new state fails BACAP tier validation.</exception>
@@ -128,6 +129,10 @@ public class BacapAdvancement : ValidAdvancement
                 throw new ArgumentException($"Cannot update advancement: {error}", nameof(value));
             }
 
+            // Synchronize visual profile if the tier changed due to parent, tab, or structural mutations
+            if (newTier != _tier)
+                value = ApplyTierDisplayProfile(value, newTier);
+
             _tab = newTab;
             _tier = newTier;
             base.Advancement = value;
@@ -137,7 +142,7 @@ public class BacapAdvancement : ValidAdvancement
         }
     }
 
-/// <summary>
+    /// <summary>
     /// Gets the display configuration guaranteed to exist for playable BACAP advancements.
     /// </summary>
     [PublicAPI]
@@ -281,27 +286,59 @@ public class BacapAdvancement : ValidAdvancement
                 updatedRewards = updatedRewards with { Function = updatedFunction };
             }
 
-            var currentDescription = Display.Description ?? new PlainTextComponent(string.Empty);
-            var updatedDescription = currentDescription with
+            // Apply Display tier profile and update rewards;
+            // assigning Advancement triggers validation and internal tier synchronization
+            Advancement = ApplyTierDisplayProfile(Advancement, value) with
             {
-                Style = (currentDescription.Style ?? new TextStyle()) with
-                {
-                    Color = tierProfile.DescriptionColor
-                }
-            };
-
-            // Atomically update state via Display accessor
-            Advancement = Advancement with
-            {
-                Display = Display with
-                {
-                    Hidden = tierProfile.IsHidden,
-                    Frame = tierProfile.Frame ?? Display.Frame,
-                    Description = updatedDescription
-                },
                 Rewards = updatedRewards
             };
         }
+    }
+
+    /// <summary>
+    /// Applies the visual metadata defined by the specified tier profile (description color, frame, and visibility)
+    /// to the advancement display configuration if it is not already matching.
+    /// </summary>
+    /// <param name="advancement">The target advancement instance to transform.</param>
+    /// <param name="targetTier">The tier whose profile styles should be applied.</param>
+    /// <returns>
+    /// A modified copy of <paramref name="advancement"/> with updated display settings,
+    /// or the original instance if the display already matches the tier profile.
+    /// </returns>
+    private static Advancement ApplyTierDisplayProfile(Advancement advancement, BacapAdvancementTier targetTier)
+    {
+        var tierProfile = targetTier.GetTierProfile();
+        var display = advancement.Display;
+        var currentDesc = display?.Description;
+        var currentColor = currentDesc?.Style?.Color;
+
+        // Skip reallocation if the display already matches the target tier profile
+        if (display is not null &&
+            display.Hidden == tierProfile.IsHidden &&
+            display.Frame == (tierProfile.Frame ?? display.Frame) &&
+            string.Equals(currentColor, tierProfile.DescriptionColor, StringComparison.OrdinalIgnoreCase))
+        {
+            return advancement;
+        }
+
+        var baseDesc = currentDesc ?? new PlainTextComponent(string.Empty);
+        var updatedDesc = baseDesc with
+        {
+            Style = (baseDesc.Style ?? new TextStyle()) with
+            {
+                Color = tierProfile.DescriptionColor
+            }
+        };
+
+        return advancement with
+        {
+            Display = (display ?? new AdvancementDisplay()) with
+            {
+                Hidden = tierProfile.IsHidden,
+                Frame = tierProfile.Frame ?? display!.Frame,
+                Description = updatedDesc
+            }
+        };
     }
 
     /// <summary>

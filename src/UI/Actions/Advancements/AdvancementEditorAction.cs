@@ -444,7 +444,6 @@ public class AdvancementEditorAction(DatapackRegistry registry) : IManageAdvance
 
     private static string FormatExpSummary(BacapAdvancement advancement)
     {
-        // Если это оверрайд и локальный файл награды пока не создан пользователем
         if (advancement is { IsOverride: true, ExpRewardFunction.File.Exists: false })
             return "[Gray84]Inherited from parent[/]";
 
