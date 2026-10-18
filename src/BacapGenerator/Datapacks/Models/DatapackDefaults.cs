@@ -169,7 +169,8 @@ public static class DatapackDefaults
 
     private static readonly BacapTierProfile HiddenTierProfile = new()
     {
-        DescriptionColor = "light_purple"
+        DescriptionColor = "light_purple",
+        IsHidden = true
     };
 
     private static readonly BacapTierProfile ChallengeTierProfile = new()
