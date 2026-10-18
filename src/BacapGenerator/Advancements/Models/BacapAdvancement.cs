@@ -112,7 +112,7 @@ public class BacapAdvancement : ValidAdvancement
     /// <summary>
     /// Gets or sets the underlying core <see cref="Advancement"/> data model.
     /// Mutating this property validates the advancement state, enforces the resolved tier's visual profile,
-    /// and synchronizes attached function files.
+    /// and synchronizes both the advancement file path and attached function files.
     /// </summary>
     /// <exception cref="ArgumentNullException">Thrown when setting a <see langword="null"/> value.</exception>
     /// <exception cref="ArgumentException">Thrown when the new state fails BACAP tier validation.</exception>
@@ -131,6 +131,10 @@ public class BacapAdvancement : ValidAdvancement
 
             // Ensure Display (color, frame, hidden) always matches the resolved tier profile
             value = ApplyTierDisplayProfile(value, newTier);
+
+            // If the tab changed (via Tab, Parent, or Tier mutation), update the advancement's own McPath & File
+            if (newTab != _tab)
+                base.McPath = MinecraftUtils.ReplaceFirstPathSegment(base.McPath, newTab.FolderName);
 
             _tab = newTab;
             _tier = newTier;
