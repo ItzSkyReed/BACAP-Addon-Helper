@@ -168,7 +168,7 @@ public static class DatapackFunctionsGenerator
         return BuildFunction(advancements, advancement =>
         {
             var functionCommand = new FunctionCommand(
-                $"[{advancement.Datapack.Settings.RewardNamespace}]:trophy/[{MinecraftUtils.StripNamespace(advancement.McPath)}]");
+                $"{advancement.Datapack.Settings.RewardNamespace}:trophy/{MinecraftUtils.StripNamespace(advancement.McPath)}");
 
             return CreateAdvancementExecuteCommand("@s", advancement.McPath, functionCommand);
         });
