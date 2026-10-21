@@ -262,7 +262,7 @@ public static partial class TrophyRewardMenu
                     break;
 
                 case TrophyEditOption.Delete:
-                    if (AnsiConsole.Confirm($"Remove trophy [yellow]{Markup.Escape(current.Title ?? current.Item.Id)}[/]?", defaultValue: false))
+                    if (await AnsiConsole.ConfirmAsync($"Remove trophy [yellow]{Markup.Escape(current.Title ?? current.Item.Id)}[/]?", defaultValue: false))
                     {
                         trophies.RemoveAt(index);
                         SaveIntermediate(advancement, trophies);
