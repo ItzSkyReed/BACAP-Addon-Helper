@@ -155,7 +155,7 @@ public static class DatapackDefaults
 
     private static readonly BacapTierProfile MilestoneTierProfile = new()
     {
-        Frame = AdvancementFrame.Challenge,
+        Frame = AdvancementFrame.Goal,
         DescriptionColor = "yellow",
         RequiredTab = BacapTab.Bacap
     };
