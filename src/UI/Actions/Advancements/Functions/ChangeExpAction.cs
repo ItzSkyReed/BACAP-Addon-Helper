@@ -8,18 +8,23 @@ namespace UI.Actions.Advancements.Functions;
 /// <summary>
 /// Action that configures or clears the experience reward for a specific BACAP advancement.
 /// </summary>
-public class ChangeExpAction(BacapAdvancement advancement) : IManageAdvancementsAction
+/// <param name="advancement">The target advancement to configure.</param>
+/// <param name="askConfirmation">
+/// If <see langword="true"/>, asks whether the user wants to configure experience before prompting for the value.
+/// If <see langword="false"/>, jumps directly to the amount input prompt.
+/// </param>
+public class ChangeExpAction(BacapAdvancement advancement, bool askConfirmation = true) : IManageAdvancementsAction
 {
     public string Title => "Change experience reward";
 
     /// <summary>
-    /// Prompts the user to grant an experience reward and persists the updated advancement state to disk.
+    /// Prompts the user to grant an experience reward and persists the updated reward function to disk.
     /// Continues prompting until a valid non-negative integer is provided.
     /// </summary>
     /// <returns>A completed <see cref="Task"/>.</returns>
     public Task ExecuteAsync()
     {
-        var wantExp = AnsiConsole.Confirm(
+        var wantExp = !askConfirmation || AnsiConsole.Confirm(
             $"Add an Experience reward to [green]{Markup.Escape(advancement.TitleText)}[/]?",
             defaultValue: true
         );
@@ -29,7 +34,7 @@ public class ChangeExpAction(BacapAdvancement advancement) : IManageAdvancements
         if (wantExp)
         {
             amount = AnsiConsole.Prompt(
-                new TextPrompt<int>("Enter experience amount (or [yellow]0[/] to leave empty):")
+                new TextPrompt<int>("Enter experience amount (or [yellow]0[/] to clear):")
                     .DefaultValue(advancement.ExpRewardFunction.ExperienceAmount)
                     .ValidationErrorMessage("[red]Please enter a valid integer number.[/]")
                     .Validate(val => val switch
@@ -41,8 +46,8 @@ public class ChangeExpAction(BacapAdvancement advancement) : IManageAdvancements
         }
 
         advancement.ExpRewardFunction.ExperienceAmount = amount;
-
         AdvancementIoManager.SaveRewardFunction(advancement, advancement.ExpRewardFunction);
+
         return Task.CompletedTask;
     }
 }

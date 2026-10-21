@@ -164,17 +164,17 @@ public class AdvancementEditorAction(DatapackRegistry registry) : IManageAdvance
                     break;
 
                 case AdvancementEditOption.ManageExperience:
-                    await new ChangeExpAction(advancement).ExecuteAsync();
+                    await new ChangeExpAction(advancement, askConfirmation: false).ExecuteAsync();
                     AdvancementIoManager.SaveAdvancement(advancement);
                     break;
 
                 case AdvancementEditOption.ManageItems:
-                    await new ChangeItemAction(advancement).ExecuteAsync();
+                    await new ChangeItemAction(advancement, askConfirmation: false).ExecuteAsync();
                     AdvancementIoManager.SaveAdvancement(advancement);
                     break;
 
                 case AdvancementEditOption.ManageTrophies:
-                    await new ChangeTrophyAction(advancement).ExecuteAsync();
+                    await new ChangeTrophyAction(advancement, askConfirmation: false).ExecuteAsync();
                     AdvancementIoManager.SaveAdvancement(advancement);
                     break;
 
