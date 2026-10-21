@@ -74,7 +74,7 @@ public class AdvancementInfoAction(DatapackRegistry registry, MinecraftData mine
             : null;
 
         // Resolve color based on parent tier, fallback to default grey
-        var parentColor = parentAdvancement?.Tier.Color() ?? "Grey84";
+        var parentColor = parentAdvancement?.Tier.Color ?? "Grey84";
         var parentText = Markup.Escape(parentMcPath ?? "None (Root)");
 
         table.AddRow(
@@ -107,7 +107,7 @@ public class AdvancementInfoAction(DatapackRegistry registry, MinecraftData mine
         table.AddRow($"[{TuiTheme.TablePropertyColor}]Description[/]", $"[white]{descText}[/]");
 
         table.AddRow($"[{TuiTheme.TablePropertyColor}]Tab[/]", $"[{bacap.Tab.Color}]■[/] [{bacap.Tab.Color}]{Markup.Escape(bacap.Tab.DisplayName)}[/] [Gray84]({bacap.Tab.FolderName})[/]");
-        table.AddRow($"[{TuiTheme.TablePropertyColor}]Tier[/]", $"[{bacap.Tier.Color()}]{bacap.Tier.DisplayName()}[/]");
+        table.AddRow($"[{TuiTheme.TablePropertyColor}]Tier[/]", $"[{bacap.Tier.Color}]{bacap.Tier.DisplayName}[/]");
 
         // Experience reward
         var expAmount = bacap.ExpRewardFunction.ExperienceAmount;

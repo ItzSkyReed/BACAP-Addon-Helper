@@ -22,7 +22,7 @@ public class AdvancementStatsAction(DatapackRegistry registry) : IManageAdvancem
 
         // Build columns dynamically
         var columns = new List<string> { "Datapack" };
-        columns.AddRange(tiers.Select(t => $"[{t.Color()}]{t.DisplayName()}[/]"));
+        columns.AddRange(tiers.Select(t => $"[{t.Color}]{t.DisplayName}[/]"));
         columns.Add("[bold yellow]Total[/]");
 
         var table = TuiTheme.CreateTable([.. columns]);

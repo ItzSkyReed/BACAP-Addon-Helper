@@ -86,7 +86,7 @@ public static class DatapackFunctionsGenerator
                 Selector.SelectedPlayer,
                 DatapackDefaults.PointsScoreboard,
                 "+=",
-                Selector.Custom(advancement.Tier.TechnicalName()),
+                Selector.Custom(advancement.Tier.TechnicalName),
                 "bac_points");
 
             return CreateAdvancementExecuteCommand("@a", advancement.McPath, scoreboardCommand);
@@ -126,7 +126,7 @@ public static class DatapackFunctionsGenerator
                 Selector.SelectedPlayer,
                 settings.Scoreboard,
                 settings.Operation,
-                Selector.Custom(advancement.Tier.TechnicalName()),
+                Selector.Custom(advancement.Tier.TechnicalName),
                 settings.SourceScoreboard);
 
             return CreateAdvancementExecuteCommand("@a", advancement.McPath, scoreboardCommand);

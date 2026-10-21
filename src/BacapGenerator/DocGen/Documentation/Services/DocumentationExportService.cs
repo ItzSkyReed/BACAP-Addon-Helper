@@ -178,7 +178,7 @@ public class DocumentationExportService(DatapackRegistry registry)
             Frame = advancement.Advancement.Display!.Frame.ToString().ToLowerInvariant(),
             Description = advancement.CleanDescriptionText,
             IconId = MinecraftUtils.EnsureNamespace(advancement.Advancement.Display!.Icon!.Id),
-            Tier = advancement.Tier.TechnicalName(),
+            Tier = advancement.Tier.TechnicalName,
             Tab = advancement.Tab.FolderName,
             Parent = BuildParent(advancement, registry),
             Requirements = CleanRequirements(requirements),
@@ -251,7 +251,7 @@ public class DocumentationExportService(DatapackRegistry registry)
 
             parentDoc.Title = parent.TitleText;
             parentDoc.Description = parent.CleanDescriptionText;
-            parentDoc.Tier = parent.Tier.TechnicalName();
+            parentDoc.Tier = parent.Tier.TechnicalName;
 
             var display = parent.Advancement.Display!;
 
