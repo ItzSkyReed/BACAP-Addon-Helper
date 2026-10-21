@@ -121,7 +121,7 @@ public class AdvancementEditorAction(DatapackRegistry registry) : IManageAdvance
                             $"Parent [Gray84]({Markup.Escape(advancement.Parent ?? "None")})[/]",
 
                         AdvancementEditOption.ChangeTier =>
-                            $"Tier [yellow]{advancement.Tier}[/]",
+                            $"Tier [yellow]{advancement.Tier.DisplayName}[/]",
 
                         AdvancementEditOption.ManageExperience =>
                             $"Experience Reward [grey]—[/] {FormatExpSummary(advancement)}",
@@ -357,13 +357,13 @@ public class AdvancementEditorAction(DatapackRegistry registry) : IManageAdvance
             new SelectionPrompt<BacapAdvancementTier>()
                 .Title("Select new advancement tier:")
                 .AddChoices(EditableTiers)
-                .UseConverter(t => $"[yellow]{t}[/]")
+                .UseConverter(t => $"[yellow]{t.DisplayName}[/]")
         );
 
         TryApplyMutation(
             advancement,
             () => advancement.Tier = newTier,
-            $"Tier changed to '{newTier}'.");
+            $"Tier changed to '{newTier.DisplayName}'.");
     }
 
     /// <summary>
