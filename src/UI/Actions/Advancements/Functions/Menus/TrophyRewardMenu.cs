@@ -178,7 +178,7 @@ public static partial class TrophyRewardMenu
             var lorePreview = loreCount switch
             {
                 0 => "None",
-                1 => $"\"{Markup.Escape(Truncate(current.DescriptionLines[0], 24))}\"",
+                1 => $"\"{Markup.Escape(Truncate(current.DescriptionLines[0], 50))}\"",
                 _ => $"{loreCount} lines"
             };
 
@@ -262,7 +262,7 @@ public static partial class TrophyRewardMenu
                     break;
 
                 case TrophyEditOption.Delete:
-                    if (await AnsiConsole.ConfirmAsync($"Remove trophy [yellow]{Markup.Escape(current.Title ?? current.Item.Id)}[/]?", defaultValue: false))
+                    if (AnsiConsole.Confirm($"Remove trophy [yellow]{Markup.Escape(current.Title ?? current.Item.Id)}[/]?", defaultValue: false))
                     {
                         trophies.RemoveAt(index);
                         SaveIntermediate(advancement, trophies);
