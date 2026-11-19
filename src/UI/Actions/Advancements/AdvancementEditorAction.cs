@@ -302,7 +302,6 @@ public class AdvancementEditorAction(DatapackRegistry registry) : IManageAdvance
 
             case searchChoice:
             {
-                // Can be any valid advancement (including technical root advancements like 'minecraft:adventure/root')
                 var candidate = await AdvancementSearcher.PromptSearch(allValidAdvancements);
                 if (candidate is null)
                     return;
@@ -316,14 +315,14 @@ public class AdvancementEditorAction(DatapackRegistry registry) : IManageAdvance
 
                 TryApplyMutation(
                     advancement,
-                    () => advancement.Parent = candidate.McPath,
+                    () => advancement.SetParent(candidate),
                     $"Parent set to '{candidate.McPath}'.");
                 return;
             }
 
             case manualChoice:
             {
-                var newParent = AnsiConsole.Prompt(
+                var newParentPath = AnsiConsole.Prompt(
                     new TextPrompt<string>("Enter parent McPath (e.g. 'minecraft:adventure/root'):")
                         .DefaultValue(advancement.Parent ?? string.Empty)
                         .Validate(input =>
@@ -338,10 +337,12 @@ public class AdvancementEditorAction(DatapackRegistry registry) : IManageAdvance
                         })
                 ).Trim();
 
+                var candidate = allValidAdvancements.First(a => a.McPath.Equals(newParentPath, StringComparison.OrdinalIgnoreCase));
+
                 TryApplyMutation(
                     advancement,
-                    () => advancement.Parent = newParent,
-                    $"Parent set to '{newParent}'.");
+                    () => advancement.SetParent(candidate),
+                    $"Parent set to '{candidate.McPath}'.");
                 return;
             }
         }

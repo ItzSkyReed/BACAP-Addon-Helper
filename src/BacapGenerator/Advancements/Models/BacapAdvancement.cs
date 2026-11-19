@@ -132,6 +132,11 @@ public class BacapAdvancement : ValidAdvancement
             // Ensure Display (color, frame, hidden) always matches the resolved tier profile
             value = ApplyTierDisplayProfile(value, newTier);
 
+            // If the tab changed (via Tab, Parent, or Tier mutation), update the advancement's own McPath & File.
+            // Overrides must keep their original McPath so they continue overriding the target advancement.
+            if (newTab != _tab && !IsOverride)
+                base.McPath = MinecraftUtils.ReplaceFirstPathSegment(base.McPath, newTab.FolderName);
+
             // If the tab changed (via Tab, Parent, or Tier mutation), update the advancement's own McPath & File
             if (newTab != _tab)
                 base.McPath = MinecraftUtils.ReplaceFirstPathSegment(base.McPath, newTab.FolderName);
@@ -484,6 +489,56 @@ public class BacapAdvancement : ValidAdvancement
                 Rewards = updatedRewards
             };
         }
+    }
+
+    /// <summary>
+    /// Sets the parent advancement using a resolved <see cref="ValidAdvancement"/> instance,
+    /// extracting the target <see cref="BacapTab"/> from the parent's reward function path
+    /// (or falling back to its <see cref="ManagedAdvancement.McPath"/> if no reward function is present).
+    /// </summary>
+    /// <param name="parent">The resolved parent advancement.</param>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="parent"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentException">
+    /// Thrown when a valid BACAP tab cannot be determined from the parent's reward path or McPath.
+    /// </exception>
+    /// <exception cref="InvalidOperationException">Thrown when attempting to modify a read-only instance.</exception>
+    /// <example>
+    /// <code>
+    /// advancement.SetParent(parentAdvancement);
+    /// </code>
+    /// </example>
+    [PublicAPI]
+    public void SetParent(ValidAdvancement parent)
+    {
+        ArgumentNullException.ThrowIfNull(parent);
+
+        var rewardPath = parent.Advancement.Rewards?.Function;
+
+        // Primary: extract tab from parent's reward function path (reliable for vanilla overrides)
+        // Fallback: extract tab from parent's McPath (e.g. technical roots without rewards)
+        if (!BacapUtils.TryExtractTabFromPath(rewardPath, out var newTab) &&
+            !BacapTab.TryExtractTabFromMcPath(parent.McPath, out newTab))
+        {
+            throw new ArgumentException(
+                $"Cannot determine a valid BACAP tab from parent '{parent.McPath}' (reward: '{rewardPath ?? "none"}').",
+                nameof(parent));
+        }
+
+        if (Advancement.Parent == parent.McPath && _tab == newTab)
+            return;
+
+        var updatedRewards = Advancement.Rewards;
+        if (!string.IsNullOrWhiteSpace(updatedRewards?.Function))
+        {
+            var updatedFunction = MinecraftUtils.ReplaceFirstPathSegment(updatedRewards.Function, newTab.FolderName);
+            updatedRewards = updatedRewards with { Function = updatedFunction };
+        }
+
+        Advancement = Advancement with
+        {
+            Parent = parent.McPath,
+            Rewards = updatedRewards
+        };
     }
 
     [PublicAPI]
