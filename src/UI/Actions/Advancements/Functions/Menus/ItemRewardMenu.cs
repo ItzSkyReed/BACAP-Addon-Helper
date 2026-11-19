@@ -92,6 +92,13 @@ public static class ItemRewardMenu
     /// <param name="index">The index of the item being edited.</param>
     /// <param name="mcData">The loaded Minecraft registry data.</param>
     /// <param name="advancement">The advancement being modified.</param>
+    /// <summary>
+    /// Displays a sub-menu for an individual reward item with dynamic status previews.
+    /// </summary>
+    /// <param name="items">The active list of reward items.</param>
+    /// <param name="index">The index of the item being edited.</param>
+    /// <param name="mcData">The loaded Minecraft registry data.</param>
+    /// <param name="advancement">The advancement being modified.</param>
     private static async Task EditSingleItem(
         List<ItemStack> items,
         int index,
@@ -110,21 +117,24 @@ public static class ItemRewardMenu
                 _ => $"{componentCount} active"
             };
 
-            var action = AnsiConsole.Prompt(
-                new SelectionPrompt<ItemEditOption>()
-                    .Title("Choose an action:")
-                    .AddChoices(Enum.GetValues<ItemEditOption>())
-                    .UseConverter(opt => opt switch
-                    {
-                        ItemEditOption.ChangeId => $"Change ID [Gray84]({current.Id})[/]",
-                        ItemEditOption.ChangeAmount => $"Change Amount [Gray84]({current.Count}x)[/]",
-                        ItemEditOption.EditComponents => $"Edit Components [Gray84]({componentsPreview})[/]",
-                        ItemEditOption.Delete => "[red]Delete Item[/]",
-                        ItemEditOption.Back => TuiTheme.BackOptionString,
-                        _ => opt.ToString()
-                    }));
+            var action = await TuiTheme.PromptValueSelectionOrDefaultAsync(
+                "Choose an action (press [bold]Q[/] to return):",
+                Enum.GetValues<ItemEditOption>(),
+                opt => opt switch
+                {
+                    ItemEditOption.ChangeId => $"Change ID [Gray84]({current.Id})[/]",
+                    ItemEditOption.ChangeAmount => $"Change Amount [Gray84]({current.Count}x)[/]",
+                    ItemEditOption.EditComponents => $"Edit Components [Gray84]({componentsPreview})[/]",
+                    ItemEditOption.Delete => "[red]Delete Item[/]",
+                    ItemEditOption.Back => TuiTheme.BackOptionString,
+                    _ => opt.ToString()
+                });
 
-            switch (action)
+            // Aborted via Q or explicitly selected Back
+            if (action is null or ItemEditOption.Back)
+                return;
+
+            switch (action.Value)
             {
                 case ItemEditOption.ChangeId:
                     var newId = ItemPromptUtils.PromptItemId(mcData, current.Id);
@@ -152,10 +162,8 @@ public static class ItemRewardMenu
                         TuiTheme.WaitForKey();
                         return;
                     }
-                    break;
 
-                case ItemEditOption.Back:
-                    return;
+                    break;
             }
         }
     }

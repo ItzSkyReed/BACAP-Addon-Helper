@@ -92,102 +92,102 @@ public class AdvancementEditorAction(DatapackRegistry registry) : IManageAdvance
     /// otherwise, <see langword="false"/>.
     /// </returns>
     private static async Task<bool> OpenAdvancementEditorAsync(
-        BacapAdvancement advancement,
-        IReadOnlyList<ValidAdvancement> allValidAdvancements)
+    BacapAdvancement advancement,
+    IReadOnlyList<ValidAdvancement> allValidAdvancements)
+{
+    while (true)
     {
-        while (true)
-        {
-            TuiTheme.RenderHeader(Markup.Escape($"Edit Advancement: {advancement.TitleText} [{advancement.Datapack.Id}]"));
+        TuiTheme.RenderHeader(Markup.Escape($"Edit Advancement: {advancement.TitleText} [{advancement.Datapack.Id}]"));
 
-            var descPreview = Truncate(advancement.DescriptionText, 80);
-            var choices = BuildAvailableOptions(advancement.Datapack.Settings);
+        var descPreview = Truncate(advancement.DescriptionText, 80);
+        var choices = BuildAvailableOptions(advancement.Datapack.Settings);
 
-            var option = AnsiConsole.Prompt(
-                new SelectionPrompt<AdvancementEditOption>()
-                    .Title("Choose an advancement property or function to configure:")
-                    .AddChoices(choices)
-                    .UseConverter(opt => opt switch
-                    {
-                        AdvancementEditOption.ChangeTitle =>
-                            $"Title [Gray84]({Markup.Escape(advancement.TitleText)})[/]",
-
-                        AdvancementEditOption.ChangeDescription =>
-                            $"Description [Gray84]({Markup.Escape(descPreview)})[/]",
-
-                        AdvancementEditOption.ChangeTab =>
-                            $"Tab [{advancement.Tab.Color}]■[/] [white]{advancement.Tab.DisplayName}[/] [Gray84]({advancement.Tab.FolderName})[/]",
-
-                        AdvancementEditOption.ChangeParent =>
-                            $"Parent [Gray84]({Markup.Escape(advancement.Parent ?? "None")})[/]",
-
-                        AdvancementEditOption.ChangeTier =>
-                            $"Tier [yellow]{advancement.Tier.DisplayName}[/]",
-
-                        AdvancementEditOption.ManageExperience =>
-                            $"Experience Reward [grey]—[/] {FormatExpSummary(advancement)}",
-
-                        AdvancementEditOption.ManageItems =>
-                            $"Item Rewards [grey]—[/] {FormatItemSummary(advancement)}",
-
-                        AdvancementEditOption.ManageTrophies =>
-                            $"Trophy Rewards [grey]—[/] {FormatTrophySummary(advancement)}",
-
-                        AdvancementEditOption.Delete =>
-                            "[red]Delete Advancement[/]",
-
-                        AdvancementEditOption.Back =>
-                            TuiTheme.BackOptionString,
-
-                        _ => opt.ToString()
-                    }));
-
-            switch (option)
+        var option = await TuiTheme.PromptValueSelectionOrDefaultAsync(
+            "Choose an advancement property or function to configure (press [bold]Q[/] to return):",
+            choices,
+            opt => opt switch
             {
-                case AdvancementEditOption.ChangeTitle:
-                    EditTitle(advancement);
-                    break;
+                AdvancementEditOption.ChangeTitle =>
+                    $"Title [Gray84]({Markup.Escape(advancement.TitleText)})[/]",
 
-                case AdvancementEditOption.ChangeDescription:
-                    EditDescription(advancement);
-                    break;
+                AdvancementEditOption.ChangeDescription =>
+                    $"Description [Gray84]({Markup.Escape(descPreview)})[/]",
 
-                case AdvancementEditOption.ChangeTab:
-                    EditTab(advancement);
-                    break;
+                AdvancementEditOption.ChangeTab =>
+                    $"Tab [{advancement.Tab.Color}]■[/] [white]{advancement.Tab.DisplayName}[/] [Gray84]({advancement.Tab.FolderName})[/]",
 
-                case AdvancementEditOption.ChangeParent:
-                    await EditParent(advancement, allValidAdvancements);
-                    break;
+                AdvancementEditOption.ChangeParent =>
+                    $"Parent [Gray84]({Markup.Escape(advancement.Parent ?? "None")})[/]",
 
-                case AdvancementEditOption.ChangeTier:
-                    EditTier(advancement);
-                    break;
+                AdvancementEditOption.ChangeTier =>
+                    $"Tier [yellow]{advancement.Tier.DisplayName}[/]",
 
-                case AdvancementEditOption.ManageExperience:
-                    await new ChangeExpAction(advancement, askConfirmation: false).ExecuteAsync();
-                    AdvancementIoManager.SaveAdvancement(advancement);
-                    break;
+                AdvancementEditOption.ManageExperience =>
+                    $"Experience Reward [grey]—[/] {FormatExpSummary(advancement)}",
 
-                case AdvancementEditOption.ManageItems:
-                    await new ChangeItemAction(advancement, askConfirmation: false).ExecuteAsync();
-                    AdvancementIoManager.SaveAdvancement(advancement);
-                    break;
+                AdvancementEditOption.ManageItems =>
+                    $"Item Rewards [grey]—[/] {FormatItemSummary(advancement)}",
 
-                case AdvancementEditOption.ManageTrophies:
-                    await new ChangeTrophyAction(advancement, askConfirmation: false).ExecuteAsync();
-                    AdvancementIoManager.SaveAdvancement(advancement);
-                    break;
+                AdvancementEditOption.ManageTrophies =>
+                    $"Trophy Rewards [grey]—[/] {FormatTrophySummary(advancement)}",
 
-                case AdvancementEditOption.Delete:
-                    if (TryDeleteAdvancement(advancement))
-                        return true;
-                    break;
+                AdvancementEditOption.Delete =>
+                    "[red]Delete Advancement[/]",
 
-                case AdvancementEditOption.Back:
-                    return false;
-            }
+                AdvancementEditOption.Back =>
+                    TuiTheme.BackOptionString,
+
+                _ => opt.ToString()
+            });
+
+        // Aborted via Q or explicitly selected Back
+        if (option is null or AdvancementEditOption.Back)
+            return false;
+
+        switch (option.Value)
+        {
+            case AdvancementEditOption.ChangeTitle:
+                EditTitle(advancement);
+                break;
+
+            case AdvancementEditOption.ChangeDescription:
+                EditDescription(advancement);
+                break;
+
+            case AdvancementEditOption.ChangeTab:
+                EditTab(advancement);
+                break;
+
+            case AdvancementEditOption.ChangeParent:
+                await EditParent(advancement, allValidAdvancements);
+                break;
+
+            case AdvancementEditOption.ChangeTier:
+                EditTier(advancement);
+                break;
+
+            case AdvancementEditOption.ManageExperience:
+                await new ChangeExpAction(advancement, askConfirmation: false).ExecuteAsync();
+                AdvancementIoManager.SaveAdvancement(advancement);
+                break;
+
+            case AdvancementEditOption.ManageItems:
+                await new ChangeItemAction(advancement, askConfirmation: false).ExecuteAsync();
+                AdvancementIoManager.SaveAdvancement(advancement);
+                break;
+
+            case AdvancementEditOption.ManageTrophies:
+                await new ChangeTrophyAction(advancement, askConfirmation: false).ExecuteAsync();
+                AdvancementIoManager.SaveAdvancement(advancement);
+                break;
+
+            case AdvancementEditOption.Delete:
+                if (TryDeleteAdvancement(advancement))
+                    return true;
+                break;
         }
     }
+}
 
     /// <summary>
     /// Constructs the list of permitted menu choices according to datapack capabilities.

@@ -8,7 +8,6 @@ using Core.Registries;
 using Core.TextComponents.Components;
 using Core.TextComponents.Models;
 using Spectre.Console;
-
 using UI.Actions.Common;
 using UI.Actions.Common.Components;
 using UI.Actions.Common.Components.Wizards;
@@ -159,9 +158,10 @@ public static partial class TrophyRewardMenu
     /// Displays a sub-menu for an individual trophy reward with dynamic status previews.
     /// </summary>
     /// <param name="trophies">The active list of trophy rewards.</param>
-    /// <param name="index">The index of the trophy being edited.</param>
+    /// <param name="index">The zero-based index of the trophy being edited.</param>
     /// <param name="mcData">The loaded Minecraft registry data.</param>
     /// <param name="advancement">The advancement being modified.</param>
+    /// <returns>A completed <see cref="Task"/> representing the asynchronous operation.</returns>
     private static async Task EditSingleTrophy(
         List<TrophyReward> trophies,
         int index,
@@ -191,25 +191,28 @@ public static partial class TrophyRewardMenu
 
             var componentCount = current.Item.Components.Added.Count;
 
-            var action = AnsiConsole.Prompt(
-                new SelectionPrompt<TrophyEditOption>()
-                    .Title("Choose an action:")
-                    .AddChoices(Enum.GetValues<TrophyEditOption>())
-                    .UseConverter(opt => opt switch
-                    {
-                        TrophyEditOption.ChangeBaseId => $"Change Base Item ID [Gray84]({current.Item.Id})[/]",
-                        TrophyEditOption.ChangeAmount => $"Change Amount [Gray84]({current.Item.Count}x)[/]",
-                        TrophyEditOption.ChangeTitle => $"Change Title [Gray84]({Markup.Escape(current.Title ?? "None")})[/]",
-                        TrophyEditOption.ChangeColor => $"Change Color [{color}]■[/] [Gray84]({color})[/]",
-                        TrophyEditOption.ChangeLore => $"Change Description (Lore) [Gray84]({lorePreview})[/]",
-                        TrophyEditOption.ToggleDelivery => $"Toggle Delivery type [Gray84]({deliveryPreview})[/]",
-                        TrophyEditOption.EditComponents => $"Edit Extra Components [Gray84]({componentCount} active)[/]",
-                        TrophyEditOption.Delete => "[red]Delete Trophy[/]",
-                        TrophyEditOption.Back => TuiTheme.BackOptionString,
-                        _ => opt.ToString()
-                    }));
+            var action = await TuiTheme.PromptValueSelectionOrDefaultAsync(
+                "Choose an action (press [bold]Q[/] to return):",
+                Enum.GetValues<TrophyEditOption>(),
+                opt => opt switch
+                {
+                    TrophyEditOption.ChangeBaseId => $"Change Base Item ID [Gray84]({current.Item.Id})[/]",
+                    TrophyEditOption.ChangeAmount => $"Change Amount [Gray84]({current.Item.Count}x)[/]",
+                    TrophyEditOption.ChangeTitle => $"Change Title [Gray84]({Markup.Escape(current.Title ?? "None")})[/]",
+                    TrophyEditOption.ChangeColor => $"Change Color [{color}]■[/] [Gray84]({color})[/]",
+                    TrophyEditOption.ChangeLore => $"Change Description (Lore) [Gray84]({lorePreview})[/]",
+                    TrophyEditOption.ToggleDelivery => $"Toggle Delivery type [Gray84]({deliveryPreview})[/]",
+                    TrophyEditOption.EditComponents => $"Edit Extra Components [Gray84]({componentCount} active)[/]",
+                    TrophyEditOption.Delete => "[red]Delete Trophy[/]",
+                    TrophyEditOption.Back => TuiTheme.BackOptionString,
+                    _ => opt.ToString()
+                });
 
-            switch (action)
+            // Aborted via Q or explicitly selected Back
+            if (action is null or TrophyEditOption.Back)
+                return;
+
+            switch (action.Value)
             {
                 case TrophyEditOption.ChangeBaseId:
                     var newId = ItemPromptUtils.PromptItemId(mcData, current.Item.Id);
@@ -262,7 +265,8 @@ public static partial class TrophyRewardMenu
                     break;
 
                 case TrophyEditOption.Delete:
-                    if (AnsiConsole.Confirm($"Remove trophy [yellow]{Markup.Escape(current.Title ?? current.Item.Id)}[/]?", defaultValue: false))
+                    if (await AnsiConsole.ConfirmAsync($"Remove trophy [yellow]{Markup.Escape(current.Title ?? current.Item.Id)}[/]?",
+                            defaultValue: false))
                     {
                         trophies.RemoveAt(index);
                         SaveIntermediate(advancement, trophies);
@@ -270,10 +274,8 @@ public static partial class TrophyRewardMenu
                         TuiTheme.WaitForKey();
                         return;
                     }
-                    break;
 
-                case TrophyEditOption.Back:
-                    return;
+                    break;
             }
         }
     }
