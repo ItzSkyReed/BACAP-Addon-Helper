@@ -69,7 +69,7 @@ public partial class ReleaseMenu(
         }
 
         AnsiConsole.MarkupLine("\n[grey]Synchronizing documentation...[/]");
-        if (documentationRunner.RunAndRenderReport(promptOnOrphaned: true))
+        if (!documentationRunner.RunAndRenderReport(promptOnOrphaned: true))
         {
             TuiTheme.WaitForKey();
             return; // Abort release if stubs were generated or user refused orphaned requirements
