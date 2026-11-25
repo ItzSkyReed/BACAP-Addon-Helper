@@ -1,5 +1,4 @@
-﻿
-using Core.SNBT;
+﻿using Core.SNBT;
 using Core.SNBT.Nodes;
 
 using Core.SNBT.Interfaces;
@@ -10,13 +9,15 @@ using Core.DataComponents.Interfaces;
 namespace Core.DataComponents.Components;
 
 /// <summary>
-/// Controls tooltip visibility, allowing individual component tooltips or the entire tooltip to be suppressed (<c>minecraft:tooltip_display</c>).
+/// Controls tooltip visibility and formatting, allowing individual component tooltips or the entire tooltip to be suppressed (<c>minecraft:tooltip_display</c>).
 /// </summary>
 /// <param name="HideTooltip">If <see langword="true"/>, the item displays no tooltip when hovered. Defaults to <see langword="false"/>.</param>
+/// <param name="SplitLines">If <see langword="false"/>, opts the item out of tooltip line splitting and word-wrapping behavior. Defaults to <see langword="true"/>.</param>
 /// <param name="HiddenComponents">Optional list of component resource identifiers whose tooltips are hidden.</param>
 [UsedImplicitly]
 public record TooltipDisplayComponent(
     bool HideTooltip = false,
+    bool SplitLines = true,
     List<string>? HiddenComponents = null
 ) : ICompoundComponent<TooltipDisplayComponent>
 {
@@ -28,25 +29,23 @@ public record TooltipDisplayComponent(
     /// </summary>
     /// <param name="hiddenComponents">The component resource locations to hide from tooltips.</param>
     public TooltipDisplayComponent(params string[] hiddenComponents)
-        : this(HideTooltip: false, HiddenComponents: hiddenComponents.ToList())
+        : this(HideTooltip: false, SplitLines: true, HiddenComponents: hiddenComponents.ToList())
     {
     }
 
     /// <summary>
-    /// Parses a <see cref="TooltipDisplayComponent"/> from an SNBT node representation.
+    /// Parses a <see cref="TooltipDisplayComponent"/> from an SNBT compound representation.
     /// </summary>
-    /// <param name="compound">The SNBT node to parse, which must be an <see cref="SnbtCompound"/>.</param>
+    /// <param name="compound">The SNBT compound to parse.</param>
     /// <returns>A populated <see cref="TooltipDisplayComponent"/> instance.</returns>
-    /// <exception cref="ArgumentException">Thrown when <paramref name="compound"/> is not an <see cref="SnbtCompound"/>.</exception>
     /// <example>
     /// <code>
-    /// var node = SnbtParser.Parse("{hidden_components: [\"minecraft:enchantments\"], hide_tooltip: 0b}");
-    /// var component = TooltipDisplayComponent.Parse(node);
+    /// var compound = (SnbtCompound)SnbtParser.Parse("{hidden_components: [\"minecraft:enchantments\"], hide_tooltip: 0b, split_lines: 0b}");
+    /// var component = TooltipDisplayComponent.Parse(compound);
     /// </code>
     /// </example>
     public static TooltipDisplayComponent Parse(SnbtCompound compound)
     {
-
         List<string>? hiddenComponents = null;
         if (compound.GetNode("hidden_components") is SnbtList list)
         {
@@ -60,6 +59,7 @@ public record TooltipDisplayComponent(
 
         return new TooltipDisplayComponent(
             HideTooltip: compound.GetBool("hide_tooltip"),
+            SplitLines: compound.GetBool("split_lines", defaultValue: true),
             HiddenComponents: hiddenComponents
         );
     }
@@ -71,7 +71,8 @@ public record TooltipDisplayComponent(
     public ISnbtNode ToSnbt()
     {
         var builder = Snbt.Compound()
-            .PutOptional("hide_tooltip", HideTooltip, false);
+            .PutOptional("hide_tooltip", HideTooltip, false)
+            .PutOptional("split_lines", SplitLines, true);
 
         if (HiddenComponents is { Count: > 0 })
         {
